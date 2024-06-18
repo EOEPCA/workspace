@@ -1,11 +1,11 @@
-site_name: EOEPCA Workspace
-site_url: https://eoepca.readthedocs.io/projects/template/en/latest/
+site_name: EOEPCA Workspace Building Block
+site_url: https://eoepca.readthedocs.io/projects/workspace/
 repo_url: https://github.com/EOEPCA/workspace/
 edit_uri: "edit/main/docs/"
 
 nav:
   - Home: home.html
-  - Building-block Name:
+  - Workspace:
     - index.md
     - Getting Started:
       - getting-started/quick-start.md
