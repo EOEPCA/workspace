@@ -1,6 +1,6 @@
-site_name: EOEPCA Document Template
+site_name: EOEPCA Workspace
 site_url: https://eoepca.readthedocs.io/projects/template/en/latest/
-repo_url: https://github.com/EOEPCA/document-template/
+repo_url: https://github.com/EOEPCA/workspace/
 edit_uri: "edit/main/docs/"
 
 nav:
