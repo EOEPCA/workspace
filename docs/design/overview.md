@@ -26,17 +26,17 @@ The reconciliation process within the **Workspace Controller** for each workspac
 - Establish a dedicated namespace for each project/user in the Host Kubernetes cluster.
 - Apply Kubernetes policies such as ResourceQuota, LimitRange, and NetworkPolicy to the namespace.
 - Deploy a vCluster with best-practice configurations within the namespace.
-- Create a new GIT repository (or a folder in an existing GIT repository, depending on the global setup) to store the desired manifests for Workspace Services to be reconciled through Flux GitOps principles.
-- Connect Flux to reconcile the GIT repository (or folder) with the vCluster.
+- Create a new Git repository (or a folder in an existing Git repository, depending on the global setup) to store the desired manifests for Workspace Services to be reconciled through Flux GitOps principles.
+- Connect Flux to reconcile the Git repository (or folder) with the vCluster.
 - Implement Kubernetes Validating Webhooks to enforce bucket creation policies, such as maximum number and size, and naming pattern conventions, within the namespace.
 
 and finally exposes
 
 - vCluster credentials for direct "virtual" Kubernetes cluster access,
-- GIT settings used for Flux,
+- Git settings used for Flux,
 - The current reconciliation state.
 
-An operator can establish a workspace for a project/user imperatively via the Kubernetes API by submitting a Workspace manifest or by following a declarative (Gitops-style) approach with the Workspace manifest checked in to GIT. The Kubernetes Web UI Dashboard may be deployed on the "host" Kubernetes cluster supporting the operator process in a graphical way during **Workspace Provisioning**. For **Workspace Utilization** dedicated Grafana dashboard are established tracking workspace metrics.
+An operator can establish a workspace for a project/user imperatively via the Kubernetes API by submitting a Workspace manifest or by following a declarative GitOps approach with the Workspace manifest checked in to Git. The Kubernetes Web UI Dashboard may be deployed on the "host" Kubernetes cluster supporting the operator process in a graphical way during **Workspace Provisioning**. For **Workspace Utilization** dedicated Grafana dashboard are established tracking workspace metrics.
 
 Note: The EOEPCA 1.x workspace API is obsolete and not included in EOEPCA+.
 
