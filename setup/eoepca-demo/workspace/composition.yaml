@@ -1,0 +1,113 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: workspace
+spec:
+  compositeTypeRef:
+    apiVersion: epca.eo/v1beta1
+    kind: XWorkspace
+  mode: Pipeline
+  pipeline:
+  - step: namespace
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: namespace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  labels:
+                    workspace: "true"
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+      - name: resourcequota
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: ResourceQuota
+                metadata:
+                  name: default
+                spec:
+                  hard: {}
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        #- type: FromCompositeFieldPath
+        #  fromFieldPath: "metadata.name"
+        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.subscription"
+          toFieldPath: "spec.forProvider.manifest.spec.hard"
+          transforms:
+          - type: map
+            map: 
+              bronze:
+                limits.cpu: 1500m
+                limits.memory: 6Gi
+                pods: "5"
+                requests.cpu: "1"
+                requests.memory: 4Gi
+              silver:
+                limits.cpu: "3"
+                limits.memory: 12Gi
+                pods: "10"
+                requests.cpu: "2"
+                requests.memory: 8Gi
+              gold:
+                limits.cpu: "6"
+                limits.memory: 20Gi
+                pods: "20"
+                requests.cpu: "4"
+                requests.memory: 16Gi
+      - name: storage
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: epca.eo/v1beta1
+                kind: Storage
+                metadata: 
+                  name: default            
+                spec:
+                  location: EU
+                  acl: private
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        #- type: FromCompositeFieldPath
+        #  fromFieldPath: "metadata.name"
+        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      # - name: github TODO
+      # - name: vcluster TODO
+      # - name: gitops TODO
+      # - name: validation webhook TODO
+
+

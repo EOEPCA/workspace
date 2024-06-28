@@ -1,0 +1,55 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: storage
+spec:
+  compositeTypeRef:
+    apiVersion: epca.eo/v1beta1
+    kind: XStorage
+  mode: Pipeline
+  pipeline:
+  - step: bucket
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: bucket-results
+        base:
+          apiVersion: minio.crossplane.io/v1
+          kind: Bucket
+          metadata: {}
+          spec:
+            forProvider:
+              region: eu-central-1
+            providerConfigRef:
+              name: provider-minio
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "metadata.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-results'
+      - name: bucket-stage
+        base:
+          apiVersion: minio.crossplane.io/v1
+          kind: Bucket
+          metadata: {}
+          spec:
+            forProvider:
+              region: eu-central-1
+            providerConfigRef:
+              name: provider-minio
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "metadata.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-stage'
