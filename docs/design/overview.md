@@ -12,8 +12,8 @@ As laid out in the [System Architecture document](https://eoepca.readthedocs.io/
 * **Workspace Services**<br>
   Comprising the **extensible set of Services** dynamically instantiated on a workspace within the scope of a project/user.
 
-* **Workspace UI**<br>
-  **Web-enabled user interface** for the capabilities offered by the Workspace and Storage Controllers.
+* **Workspace & Storage UI**<br>
+  **Web-enabled user interfaces** designed for operators resp. users, offering relevant capabilities in an intuitive manner.
 
 ## Design
 
@@ -59,4 +59,4 @@ and finally exposes:
 
 The **Storage Layer** is implemented as a microservice that allows users to search and browse through the content of the storage buckets connected to a given workspace using directory-based file system semantics. For "text files" like markdown, direct preview capabilities are provided. Besides navigation and search, the main use case for the Storage Layer is sharing specific content via pre-signed URLs, enabling direct HTTP access without requiring user authentication.
 
-Note: The EOEPCA+ acknowledges that object storage solutions like AWS S3 store content as key-value pairs without true directory functionality, which can have performance implications when using a file system abstraction. By supporting only read-only browsing and not allowing modifications like move or rename operations, treating bucket content as files within the storage layer has been identified as the most intuitive approach for users to navigate content hierarchies.
+Note: The EOEPCA+ team acknowledges that object storage solutions like AWS S3 store content as key-value pairs without true directory functionality, which can have performance implications when using a file system abstraction. By supporting only read-only browsing and not allowing modifications like move or rename operations, treating bucket content as files within the storage layer has been identified as the most intuitive approach for users to navigate content hierarchies.
