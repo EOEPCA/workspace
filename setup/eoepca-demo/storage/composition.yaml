@@ -53,3 +53,90 @@ spec:
             string:
               type: Format
               fmt: '%s-stage'
+      - name: policy-results
+        base:
+          apiVersion: minio.crossplane.io/v1
+          kind: Policy
+          metadata: {}
+          spec:
+            forProvider: {}
+            providerConfigRef:
+              name: provider-minio
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "metadata.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-results'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.allowBucket"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-results'
+      - name: policy-stage
+        base:
+          apiVersion: minio.crossplane.io/v1
+          kind: Policy
+          metadata: {}
+          spec:
+            forProvider: {}
+            providerConfigRef:
+              name: provider-minio
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "metadata.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-stage'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.allowBucket"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-stage'
+      - name: user
+        base:
+          apiVersion: minio.crossplane.io/v1
+          kind: User
+          metadata: {}
+          spec:
+            forProvider:
+              policies: []
+            providerConfigRef:
+              name: provider-minio
+            writeConnectionSecretToRef:
+              name: bucket-credentials
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.policies[0]"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-results'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.policies[1]"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-stage'

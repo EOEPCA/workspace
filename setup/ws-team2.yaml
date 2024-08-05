@@ -1,6 +1,6 @@
 apiVersion: epca.eo/v1beta1
 kind: Workspace
 metadata:
-  name: workspace-1
+  name: ws-team2
 spec:
-  subscription: bronze
+  subscription: gold
