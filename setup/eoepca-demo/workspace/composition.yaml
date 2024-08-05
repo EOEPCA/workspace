@@ -105,9 +105,121 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "metadata.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      - name: deployment-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: workspace-ui
+                labels:
+                  app.kubernetes.io/instance: workspace-ui
+                  app.kubernetes.io/name: workspace-ui
+                spec:
+                  strategy:
+                    rollingUpdate:
+                      maxUnavailable: 0
+                    type: RollingUpdate
+                  replicas: 1
+                  revisionHistoryLimit: 2
+                  selector:
+                    matchLabels:
+                      app.kubernetes.io/instance: workspace-ui
+                      app.kubernetes.io/name: workspace-ui
+                  template:
+                    metadata:
+                      labels:
+                        app.kubernetes.io/instance: workspace-ui
+                        app.kubernetes.io/name: workspace-ui
+                    spec:
+                      containers:
+                      - name: workspace-ui
+                        image: ghcr.io/versioneer-tech/package-r:v1.0.4
+                        ports:
+                        - name: http
+                          containerPort: 80
+                          protocol: TCP
+                        env:
+                        - name: BUCKET_DEFAULT
+                          value: "<replaced>"
+                        - name: BRANDING_NAME
+                          value: "Workspace UI"
+                        - name: AWS_ACCESS_KEY_ID
+                          valueFrom:
+                            secretKeyRef:
+                              name: bucket-credentials
+                              key: AWS_ACCESS_KEY_ID
+                        - name: AWS_SECRET_ACCESS_KEY
+                          valueFrom:
+                            secretKeyRef:
+                              name: bucket-credentials
+                              key: AWS_SECRET_ACCESS_KEY
+                        - name: AWS_REGION
+                          value: eu-central-1
+                        - name: AWS_ENDPOINT_URL
+                          value: https://minio.develop.eoepca.org                        
+                        resources:
+                          limits:
+                            cpu: 1
+                            memory: 512Mi
+                          requests:
+                            cpu: 0.1
+                            memory: 128Mi
+                        imagePullPolicy: Always                  
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        #- type: FromCompositeFieldPath
+        #  fromFieldPath: "metadata.name"
+        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].env[0].value"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-stage'
+      - name: service-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: Service
+                metadata:
+                  name: workspace-ui
+                spec:
+                  type: ClusterIP
+                  selector:
+                    app.kubernetes.io/instance: workspace-ui
+                    app.kubernetes.io/name: workspace-ui
+                  ports:
+                    - name: http
+                      protocol: TCP
+                      port: 80
+                      targetPort: http                
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        #- type: FromCompositeFieldPath
+        #  fromFieldPath: "metadata.name"
+        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "metadata.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       # - name: github TODO
       # - name: vcluster TODO
       # - name: gitops TODO
       # - name: validation webhook TODO
-
-
