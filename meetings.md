@@ -29,7 +29,8 @@
 
 the Workspace UI got extended to support browsing of multiple buckets as well as to directly connect to K8s for configuration
 
-> [!Note] Upcoming:
+> [!Note]
+> Upcoming:
 > - store (and leverage) above RemoteUrls for data sharing in dedicated K8s CRD instead of an internal database -> https://github.com/EOEPCA/workspace/issues/9
 > - extend concept on how RemoteUrls can be leveraged besides requesting a list of presigned urls for the individual shared objects -> https://github.com/EOEPCA/workspace/issues/10
 
@@ -50,15 +51,17 @@ this pipeline includes:
 - 2 buckets (stage & results) with scoped policies are created and credentials exposed
 - Workspace UI providing view on bucket also allowing to share items in buckets is automatically deployed (in addition to generic Minio console)
 
-> [!Note] Upcoming:
-> - [ ] align on best way to install & upgrade CRDs on K8s cluster with EOEPCA core team -> scheduled for Fr 20240906
-> - [ ] allow to manually connect existing buckets to a workspace -> depending on dynamic configuration (see below)
+> [!Note]
+> Upcoming:
+> - align on best way to install & upgrade CRDs on K8s cluster with EOEPCA core team -> scheduled for Fr 20240906
+> - allow to manually connect existing buckets to a workspace -> depending on dynamic configuration (see below)
 
 ## Workspace UI & Data Sharing
 
 the currently deployed status of Workspace UI allows authenticated users to browse and select a path in a configured bucket and to share all objects below this path with a stable url, with this stable share urls anyone (i.e. anonymous access) is able to browse the shared objects as well to request via API or via file download a list with presigned urls for each shared object
 
-> [!Note] Upcoming:
+> [!Note]
+> Upcoming:
 > - allow to browse multiple buckets (e.g. all buckets provisioned for a workspace) and allow sharing objects from them -> https://github.com/EOEPCA/workspace/issues/7
 > - become K8s-native and make the configuration dynamic (i.e. config like bucketnames and secrets should be read via K8s API dynamically and not be statically injected) -> https://github.com/EOEPCA/workspace/issues/7
 > - extend sharing logic storage to be K8s-native -> update in 20240903
