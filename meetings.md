@@ -1,3 +1,9 @@
+# Agenda 20240917
+
+- aligned on process how CRDs can be rolled out on cluster by making them part of ArgoCD deployment
+
+- pipeline adapted to rollout latest version of Workspace UI with all connected buckets to a workspace
+
 # Agenda 20240903
 
 ## Workspace Concepts and API Interfaces
@@ -19,20 +25,19 @@
 
 - exposes bucket details and credentials as K8s secret to be used internally but also may be used within EOEPCA context by other tooling or the end-user 
 
-3) RemoteUrl CRD (https://github.com/EOEPCA/workspace/issues/9)
+3) Source CRD (https://github.com/EOEPCA/workspace/issues/9)
 
-- used by the Workspace Storage Layer for the end-user
+- used by the Storage Layer API in the Workspace UI to show connected buckets
 
-- exposes an url allowing to request access to the shared objects
+- exposes a secret name providing url and credentials to access the shared objects
 
 ## Workspace UI
 
-the Workspace UI got extended to support browsing of multiple buckets as well as to directly connect to K8s for configuration
+the Workspace UI got extended to support browsing of multiple buckets as well as to get the necessary connection information directly from K8s
 
 > [!Note]
 > Upcoming:
-> - store (and leverage) above RemoteUrls for data sharing in dedicated K8s CRD instead of an internal database -> https://github.com/EOEPCA/workspace/issues/9
-> - extend concept on how RemoteUrls can be leveraged besides requesting a list of presigned urls for the individual shared objects -> https://github.com/EOEPCA/workspace/issues/10
+> - update deployments to leverage above Sources exposed via K8s -> https://github.com/EOEPCA/workspace/issues/9
 
 # Agenda 20240806
 

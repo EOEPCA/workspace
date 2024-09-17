@@ -139,7 +139,7 @@ spec:
                     spec:
                       containers:
                       - name: workspace-ui
-                        image: ghcr.io/versioneer-tech/package-r:v1.0.4
+                        image: ghcr.io/versioneer-tech/package-r:v1.2.1
                         ports:
                         - name: http
                           containerPort: 80
