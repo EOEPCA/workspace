@@ -1,8 +1,22 @@
+# Agenda 20241001
+
+- trimmed down workspace-api for v2.0, see Compatibility matrix (https://github.com/EOEPCA/workspace/issues/24)
+
+- clean deployments of workspace components to follow, there will be one global Workspace UI for demonstration and each user/team will have its own dedicated Workspace UI
+
+- present slides and sketch demo for Q2/2024 review, Q3/2024 outlook
+
 # Agenda 20240917
 
 - aligned on process how CRDs can be rolled out on cluster by making them part of ArgoCD deployment
 
 - pipeline adapted to rollout latest version of Workspace UI with all connected buckets to a workspace
+
+> [!Note]
+> Upcoming:
+> - link external buckets via Storage Layer API (and subsequently expose capabilities in Workspace UI)
+> - Storage Layer API endpoint documentation
+
 
 # Agenda 20240903
 

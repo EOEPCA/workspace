@@ -3,6 +3,7 @@ kind: Composition
 metadata:
   name: storage
 spec:
+  writeConnectionSecretsToNamespace: workspace
   compositeTypeRef:
     apiVersion: epca.eo/v1beta1
     kind: XStorage
@@ -15,7 +16,7 @@ spec:
       apiVersion: pt.fn.crossplane.io/v1beta1
       kind: Resources
       resources:
-      - name: bucket-results
+      - name: bucket
         base:
           apiVersion: minio.crossplane.io/v1
           kind: Bucket
@@ -29,11 +30,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "metadata.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-results'
       - name: bucket-stage
         base:
           apiVersion: minio.crossplane.io/v1
@@ -53,7 +49,7 @@ spec:
             string:
               type: Format
               fmt: '%s-stage'
-      - name: policy-results
+      - name: policy
         base:
           apiVersion: minio.crossplane.io/v1
           kind: Policy
@@ -66,19 +62,9 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "metadata.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-results'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.allowBucket"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-results'
       - name: policy-stage
         base:
           apiVersion: minio.crossplane.io/v1
@@ -116,22 +102,17 @@ spec:
             providerConfigRef:
               name: provider-minio
             writeConnectionSecretToRef:
-              name: bucket
+              namespace: workspace
         patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.policies[0]"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-results'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.policies[1]"
@@ -155,4 +136,4 @@ spec:
           fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY          
         - name: bucketname
           type: FromFieldPath
-          fromFieldPath: spec.claimRef.namespace
+          fromFieldPath: metadata.name

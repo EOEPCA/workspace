@@ -32,7 +32,7 @@ spec:
               name: provider-kubernetes
         patches:
         - type: FromCompositeFieldPath
-          fromFieldPath: "metadata.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.name"
       - name: resourcequota
         base:
@@ -51,11 +51,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        #- type: FromCompositeFieldPath
-        #  fromFieldPath: "metadata.name"
-        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
         - type: FromCompositeFieldPath
-          fromFieldPath: "metadata.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.subscription"
@@ -96,14 +93,13 @@ spec:
                 spec:
                   location: EU
                   acl: private
+                  writeConnectionSecretToRef:
+                    name: bucket
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        #- type: FromCompositeFieldPath
-        #  fromFieldPath: "metadata.name"
-        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
         - type: FromCompositeFieldPath
-          fromFieldPath: "metadata.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: deployment-workspace-ui
         base:
@@ -139,7 +135,7 @@ spec:
                     spec:
                       containers:
                       - name: workspace-ui
-                        image: ghcr.io/versioneer-tech/package-r:v1.2.1
+                        image: ghcr.io/versioneer-tech/package-r:v1.2.5
                         ports:
                         - name: http
                           containerPort: 80
@@ -152,17 +148,19 @@ spec:
                         - name: AWS_ACCESS_KEY_ID
                           valueFrom:
                             secretKeyRef:
-                              name: bucket-credentials
-                              key: AWS_ACCESS_KEY_ID
+                              name: bucket
+                              key: access
                         - name: AWS_SECRET_ACCESS_KEY
                           valueFrom:
                             secretKeyRef:
-                              name: bucket-credentials
-                              key: AWS_SECRET_ACCESS_KEY
+                              name: bucket
+                              key: secret
                         - name: AWS_REGION
                           value: eu-central-1
                         - name: AWS_ENDPOINT_URL
-                          value: https://minio.develop.eoepca.org                        
+                          value: https://minio.develop.eoepca.org
+                        - name: PASSWORD
+                          value: "changeme"
                         resources:
                           limits:
                             cpu: 1
@@ -174,14 +172,11 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        #- type: FromCompositeFieldPath
-        #  fromFieldPath: "metadata.name"
-        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
         - type: FromCompositeFieldPath
-          fromFieldPath: "metadata.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
-          fromFieldPath: "metadata.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].env[0].value"
           transforms:
           - type: string
@@ -213,13 +208,131 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        #- type: FromCompositeFieldPath
-        #  fromFieldPath: "metadata.name"
-        #  toFieldPath: "spec.forProvider.manifest.metadata.name"
         - type: FromCompositeFieldPath
-          fromFieldPath: "metadata.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      # - name: github TODO
-      # - name: vcluster TODO
-      # - name: gitops TODO
-      # - name: validation webhook TODO
+      - name: ingress-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: networking.k8s.io/v1
+                kind: Ingress
+                metadata:
+                  name: workspace-ui
+                  annotations:
+                    cert-manager.io/cluster-issuer: letsencrypt-prod
+                    kubernetes.io/ingress.class: nginx
+                    nginx.ingress.kubernetes.io/enable-cors: "true"
+                    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+                spec:
+                  rules:
+                  - host: <replaced>
+                    http:
+                      paths:
+                      - backend:
+                          service:
+                            name: workspace-ui
+                            port:
+                              name: http
+                        path: /
+                        pathType: ImplementationSpecific
+                  tls:
+                  - hosts:
+                    - <replaced>
+                    secretName: workspace-ui-tls               
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s.develop.eoepca.org'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s.develop.eoepca.org'
+      - name: source-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: package.r/alphav1
+                kind: Source
+                spec:
+                  access:               
+                    secretName: bucket
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      - name: source-global-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: package.r/alphav1
+                kind: Source
+                metadata:
+                  namespace: workspace
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+      - name: rolebinding-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: RoleBinding                
+                metadata:
+                  name: default-view
+                subjects:
+                - kind: ServiceAccount
+                  name: default
+                  namespace: <replaced>
+                roleRef:
+                  kind: ClusterRole
+                  name: view
+                  apiGroup: rbac.authorization.k8s.io
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
+      # extend for github/gitlab, vcluster, ...
