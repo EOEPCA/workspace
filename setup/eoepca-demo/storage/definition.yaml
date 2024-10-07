@@ -4,9 +4,11 @@ metadata:
   name: xstorages.epca.eo
 spec:
   connectionSecretKeys:
-    - S3_USER_STORAGE_KEY
-    - S3_USER_STORAGE_SECRET
-    - S3_USER_STORAGE_BUCKET
+    - access
+    - secret
+    - bucketname
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
   group: epca.eo
   names:
     kind: XStorage

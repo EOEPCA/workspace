@@ -116,7 +116,7 @@ spec:
             providerConfigRef:
               name: provider-minio
             writeConnectionSecretToRef:
-              name: bucket-credentials
+              name: bucket
         patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
@@ -140,3 +140,19 @@ spec:
             string:
               type: Format
               fmt: '%s-stage'
+        connectionDetails:
+        - name: access
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: AWS_ACCESS_KEY_ID          
+        - name: AWS_ACCESS_KEY_ID
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: AWS_ACCESS_KEY_ID          
+        - name: secret
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY          
+        - name: AWS_SECRET_ACCESS_KEY
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY          
+        - name: bucketname
+          type: FromFieldPath
+          fromFieldPath: spec.claimRef.namespace
