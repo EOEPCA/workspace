@@ -335,4 +335,30 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
-      # extend for github/gitlab, vcluster, ...
+      - name: vcluster
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: epca.eo/alphav1
+                kind: VCluster
+                metadata:
+                  namespace: workspace
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+        transforms: # Apply transforms to the entire step
+        - type: patch-and-transform
+          patch-and-transform:
+            condition:
+              type: string
+              string:
+                equals:
+                  - fromFieldPath: spec.tenancy
+                  - value: vcluster

@@ -24,5 +24,12 @@ spec:
               properties:
                 subscription:
                   type: string
+                tenancy:
+                  type: string
+                  enum:
+                  - namespace
+                  - vcluster
+                  default: namespace
+                  required: true
               required:
-                - subscription
+                - subscription               
