@@ -1,13 +1,14 @@
 # Agenda 20241210
 
 aligned with IAM BB on various authn/authz related topics
-- agreed user<->team association and implemented via keycloak users and groups
-- automated process of keycloak group, membership, openid-client,... creation
-- enabled ownership definition for team during workspace creation
-- secured access to workspace-ui deployments via dedicated apisixroute enforcing team association (ongoing)
+- agreed on user <-> team=project association and implemented via keycloak users and groups
 - protected team-specific HTTP path routes on central workspace-api (ongoing)
 
 note: similar logic to be implemented for data-access and registration components based on HTTP method (ongoing)
+
+- automated process of keycloak group, membership, openid-client,... creation
+- enabled ownership definition for team during workspace creation
+- secured access to workspace-ui deployments via dedicated apisixroute enforcing team association (ongoing)
 
 # Agenda 20241126
 
