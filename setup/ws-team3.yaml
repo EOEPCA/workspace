@@ -5,3 +5,4 @@ metadata:
   namespace: workspace
 spec:
   subscription: gold
+  owner: achtsnits

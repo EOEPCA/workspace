@@ -24,5 +24,8 @@ spec:
               properties:
                 subscription:
                   type: string
+                owner:
+                  type: string
+                  default: ws-user
               required:
                 - subscription

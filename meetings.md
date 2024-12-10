@@ -1,3 +1,30 @@
+# Agenda 20241210
+
+aligned with IAM BB on various authn/authz related topics
+- agreed user<->team association and implemented via keycloak users and groups
+- automated process of keycloak group, membership, openid-client,... creation
+- enabled ownership definition for team during workspace creation
+- secured access to workspace-ui deployments via dedicated apisixroute enforcing team association (ongoing)
+- protected team-specific HTTP path routes on central workspace-api (ongoing)
+
+note: similar logic to be implemented for data-access and registration components based on HTTP method (ongoing)
+
+# Agenda 20241126
+
+- showcased package creation in workspace-ui for sharing subsets of data
+- explained authn/authz roadmap after first alignments with IAM BB
+
+# Agenda 20241029
+
+- closing multi source management (i.e. which buckets are connected to a workspace) -> now possible via K8s (GitOps, new workspace provisioning pipelines), via Workspace storage layer API and visually via UI
+
+- internal discussions on IAM concept (details shared on EOEPCA slack)
+
+> [!Note]
+> Upcoming:
+> - document storage layer API flows to curate and share data, publish openapi spec
+> - visualize details on connected bucket (incl. status)
+
 # Agenda 20241001
 
 - trimmed down workspace-api for v2.0, see Compatibility matrix (https://github.com/EOEPCA/workspace/issues/24)
@@ -16,7 +43,6 @@
 > Upcoming:
 > - link external buckets via Storage Layer API (and subsequently expose capabilities in Workspace UI)
 > - Storage Layer API endpoint documentation
-
 
 # Agenda 20240903
 

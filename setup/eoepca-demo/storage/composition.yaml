@@ -124,16 +124,22 @@ spec:
         connectionDetails:
         - name: access
           type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_ACCESS_KEY_ID          
+          fromConnectionSecretKey: AWS_ACCESS_KEY_ID
         - name: AWS_ACCESS_KEY_ID
           type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_ACCESS_KEY_ID          
+          fromConnectionSecretKey: AWS_ACCESS_KEY_ID
         - name: secret
           type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY          
+          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY
         - name: AWS_SECRET_ACCESS_KEY
           type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY          
+          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY
         - name: bucketname
           type: FromFieldPath
           fromFieldPath: metadata.name
+        - name: AWS_ENDPOINT_URL
+          type: FromValue
+          value: "https://minio.develop.eoepca.org"
+        - name: AWS_REGION
+          type: FromValue
+          value: "eoepca-demo"

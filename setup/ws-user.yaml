@@ -1,0 +1,10 @@
+apiVersion: user.keycloak.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: ws-user
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+  forProvider:
+    name: ws-user
+    realmId: eoepca
