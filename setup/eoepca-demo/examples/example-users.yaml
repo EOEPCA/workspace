@@ -12,10 +12,10 @@ spec:
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
 metadata:
-  name: example-user-1
+  name: example-user-2
 spec:
   providerConfigRef:
     name: provider-keycloak
   forProvider:
-    username: example-user-1
+    username: example-user-2
     realmId: eoepca
