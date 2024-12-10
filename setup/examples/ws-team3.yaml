@@ -1,8 +1,0 @@
-apiVersion: epca.eo/v1beta1
-kind: Workspace
-metadata:
-  name: ws-team3
-  namespace: workspace
-spec:
-  subscription: gold
-  owner: ws-user3a
