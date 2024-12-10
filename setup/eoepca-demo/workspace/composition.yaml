@@ -364,10 +364,10 @@ spec:
         patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.name"
+          toFieldPath: "metadata.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.forProvider.name"
+          toFieldPath: "spec.forProvider.name"
       - name: keycloak-membership
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
