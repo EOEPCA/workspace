@@ -112,7 +112,7 @@ spec:
                 apiVersion: v1
                 kind: PersistentVolumeClaim
                 metadata:
-                  name: bucket # same name as secret
+                  name: rclone # same name as secret
                 spec:
                   accessModes:
                   - ReadOnlyMany
@@ -188,7 +188,7 @@ spec:
                       volumes:
                       - name: mounts
                         persistentVolumeClaim:
-                          claimName: bucket
+                          claimName: rclone
                           readOnly: true
                       - name: secrets
                         secret:
