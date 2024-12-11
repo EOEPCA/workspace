@@ -101,6 +101,31 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      - name: pvc-workspace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: PersistentVolumeClaim
+                metadata:
+                  name: bucket # same name as secret
+                spec:
+                  accessModes:
+                  - ReadOnlyMany
+                  resources:
+                    requests:
+                      storage: 1Mi
+                  storageClassName: csi-rclone
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: deployment-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -135,31 +160,15 @@ spec:
                     spec:
                       containers:
                       - name: workspace-ui
-                        image: ghcr.io/versioneer-tech/package-r:v1.2.5
+                        image: ghcr.io/versioneer-tech/package-r:v2024.12.3
                         ports:
                         - name: http
-                          containerPort: 80
+                          containerPort: 8080
                           protocol: TCP
                         env:
-                        - name: BUCKET_DEFAULT
-                          value: "<replaced>"
-                        - name: BRANDING_NAME
-                          value: "Workspace UI"
-                        - name: AWS_ACCESS_KEY_ID
-                          valueFrom:
-                            secretKeyRef:
-                              name: bucket
-                              key: access
-                        - name: AWS_SECRET_ACCESS_KEY
-                          valueFrom:
-                            secretKeyRef:
-                              name: bucket
-                              key: secret
-                        - name: AWS_REGION
-                          value: eu-central-1
-                        - name: AWS_ENDPOINT_URL
-                          value: https://minio.develop.eoepca.org
-                        - name: PASSWORD
+                        - name: FB_BRANDING_NAME
+                          value: "Workspace-UI"
+                        - name: FB_PASSWORD
                           value: "changeme"
                         resources:
                           limits:
@@ -168,7 +177,22 @@ spec:
                           requests:
                             cpu: 0.1
                             memory: 128Mi
-                        imagePullPolicy: Always                  
+                        imagePullPolicy: Always
+                        volumeMounts:
+                        - mountPath: /mounts
+                          name: mounts
+                        - mountPath: <replaced>
+                          name: secrets
+                        - mountPath: <replaced>
+                          name: secrets
+                      volumes:
+                      - name: mounts
+                        persistentVolumeClaim:
+                          claimName: bucket
+                          readOnly: true
+                      - name: secrets
+                        secret:
+                          secretName: bucket
             providerConfigRef:
               name: provider-kubernetes
         patches:
@@ -177,12 +201,20 @@ spec:
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].env[0].value"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].volumeMounts[1].mountPath"
           transforms:
           - type: string
             string:
               type: Format
-              fmt: '%s-stage'
+              fmt: '/secrets/%s'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].volumeMounts[2].mountPath"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '/secrets/%s-stage'
       - name: service-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -203,7 +235,7 @@ spec:
                   ports:
                     - name: http
                       protocol: TCP
-                      port: 80
+                      port: 8080
                       targetPort: http
             providerConfigRef:
               name: provider-kubernetes
@@ -282,75 +314,6 @@ spec:
             string:
               type: Format
               fmt: '%s.apx.develop.eoepca.org'
-      - name: source-workspace-ui
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: package.r/alphav1
-                kind: Source
-                spec:
-                  access:               
-                    secretName: bucket
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: source-global-workspace-ui
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: package.r/alphav1
-                kind: Source
-                metadata:
-                  namespace: workspace
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.name"
-      - name: rolebinding-workspace-ui
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: rbac.authorization.k8s.io/v1
-                kind: RoleBinding                
-                metadata:
-                  name: default-view
-                subjects:
-                - kind: ServiceAccount
-                  name: default
-                  namespace: <replaced>
-                roleRef:
-                  kind: ClusterRole
-                  name: view
-                  apiGroup: rbac.authorization.k8s.io
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
       - name: keycloak-group
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1

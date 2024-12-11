@@ -143,3 +143,55 @@ spec:
         - name: AWS_REGION
           type: FromValue
           value: "eoepca-demo"
+      - name: externalsecret
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: external-secrets.io/v1beta1
+                kind: ExternalSecret
+                metadata:
+                  name: rclone
+                spec:
+                  refreshInterval: 1h
+                  secretStoreRef:
+                    name: in-cluster-kubernetes
+                    kind: ClusterSecretStore
+                  target:
+                    name: rclone
+                    creationPolicy: Owner
+                    template:
+                      data:
+                        remote: "{{ .AWS_ACCESS_KEY_ID }}"
+                        remotePath: "/"
+                        configData: |
+                          [{{ .AWS_ACCESS_KEY_ID }}]
+                          type = s3
+                          provider = Minio
+                          endpoint = https://minio.develop.eoepca.org
+                          access_key_id = {{ .AWS_ACCESS_KEY_ID }}
+                          secret_access_key = {{ .AWS_SECRET_ACCESS_KEY }}
+                  data:
+                  - secretKey: AWS_SECRET_ACCESS_KEY
+                    remoteRef:
+                      key: <replaced>
+                      property: AWS_SECRET_ACCESS_KEY
+                  - secretKey: AWS_ACCESS_KEY_ID
+                    remoteRef:
+                      key: <replaced>
+                      property: AWS_ACCESS_KEY_ID
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.spec.data[0].remoteRef.key"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.spec.data[1].remoteRef.key"
