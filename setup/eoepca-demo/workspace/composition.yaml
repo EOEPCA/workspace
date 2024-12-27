@@ -61,23 +61,62 @@ spec:
           - type: map
             map: 
               bronze:
-                limits.cpu: 1500m
-                limits.memory: 6Gi
+                #limits.cpu: 1500m
+                #limits.memory: 6Gi
                 pods: "5"
-                requests.cpu: "1"
-                requests.memory: 4Gi
+                #requests.cpu: "1"
+                #requests.memory: 4Gi
               silver:
-                limits.cpu: "3"
-                limits.memory: 12Gi
+                #limits.cpu: "3"
+                #limits.memory: 12Gi
                 pods: "10"
-                requests.cpu: "2"
-                requests.memory: 8Gi
+                #requests.cpu: "2"
+                #requests.memory: 8Gi
               gold:
-                limits.cpu: "6"
-                limits.memory: 20Gi
+                #limits.cpu: "6"
+                #limits.memory: 20Gi
                 pods: "20"
-                requests.cpu: "4"
-                requests.memory: 16Gi
+                #requests.cpu: "4"
+                #requests.memory: 16Gi
+      - name: vcluster
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: helm.crossplane.io/v1beta1
+                kind: Release
+                metadata:
+                  name: vcluster
+                spec:
+                  forProvider:
+                    chart:
+                      name: vcluster
+                      repository: https://charts.loft.sh
+                      version: 0.22.0
+                    namespace: <replaced>
+                    values:
+                      controlPlane:
+                        distro:
+                          k0s:
+                            enabled: true
+                        statefulSet:
+                          persistence:
+                            volumeClaim:
+                              storageClass: managed-nfs-storage
+                  providerConfigRef:
+                    name: provider-helm
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.forProvider.namespace"
       - name: example-id
         base:
           apiVersion: tf.upbound.io/v1beta1
