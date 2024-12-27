@@ -8,7 +8,7 @@ spec:
     kind: XWorkspace
   mode: Pipeline
   pipeline:
-  - step: namespace
+  - step: runtime
     functionRef:
       name: function-patch-and-transform
     input:
@@ -78,6 +78,35 @@ spec:
                 pods: "20"
                 requests.cpu: "4"
                 requests.memory: 16Gi
+      - name: example-id
+        base:
+          apiVersion: tf.upbound.io/v1beta1
+          kind: Workspace
+          metadata: {}
+          spec:
+            providerConfigRef:
+              name: provider-terraform
+            forProvider:
+              source: Inline
+              module: |
+                resource "random_id" "example_id" {
+                  byte_length = 4
+                }
+                output "example_id" {
+                  value       = random_id.example_id.hex
+                  sensitive = false
+                }
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "metadata.name"
+  - step: storage
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
       - name: storage
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -101,31 +130,83 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: pvc-workspace
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: v1
-                kind: PersistentVolumeClaim
-                metadata:
-                  name: rclone # same name as secret
-                spec:
-                  accessModes:
-                  - ReadOnlyMany
-                  resources:
-                    requests:
-                      storage: 1Mi
-                  storageClassName: csi-rclone
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      # - name: pvc-rclone
+      #   base:
+      #     apiVersion: kubernetes.crossplane.io/v1alpha2
+      #     kind: Object
+      #     metadata: {}
+      #     spec:
+      #       forProvider:
+      #         manifest:
+      #           apiVersion: v1
+      #           kind: PersistentVolumeClaim
+      #           metadata:
+      #             name: rclone # same name as secret
+      #           spec:
+      #             accessModes:
+      #             - ReadOnlyMany
+      #             resources:
+      #               requests:
+      #                 storage: 1Mi
+      #             storageClassName: csi-rclone
+      #       providerConfigRef:
+      #         name: provider-kubernetes
+      #   patches:
+      #   - type: FromCompositeFieldPath
+      #     fromFieldPath: "spec.claimRef.name"
+      #     toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      # - name: externalsecret-rclone
+      #   base:
+      #     apiVersion: kubernetes.crossplane.io/v1alpha2
+      #     kind: Object
+      #     metadata: {}
+      #     spec:
+      #       forProvider:
+      #         manifest:
+      #           apiVersion: external-secrets.io/v1beta1
+      #           kind: ExternalSecret
+      #           metadata:
+      #             name: rclone
+      #           spec:
+      #             refreshInterval: 1h
+      #             secretStoreRef:
+      #               name: in-cluster-kubernetes
+      #               kind: ClusterSecretStore
+      #             target:
+      #               name: rclone
+      #               creationPolicy: Owner
+      #               template:
+      #                 data:
+      #                   remote: "{{ .AWS_ACCESS_KEY_ID }}"
+      #                   remotePath: "/"
+      #                   configData: |
+      #                     [{{ .AWS_ACCESS_KEY_ID }}]
+      #                     type = s3
+      #                     provider = Minio
+      #                     endpoint = https://minio.develop.eoepca.org
+      #                     access_key_id = {{ .AWS_ACCESS_KEY_ID }}
+      #                     secret_access_key = {{ .AWS_SECRET_ACCESS_KEY }}
+      #             data:
+      #             - secretKey: AWS_SECRET_ACCESS_KEY
+      #               remoteRef:
+      #                 key: <replaced>
+      #                 property: AWS_SECRET_ACCESS_KEY
+      #             - secretKey: AWS_ACCESS_KEY_ID
+      #               remoteRef:
+      #                 key: <replaced>
+      #                 property: AWS_ACCESS_KEY_ID
+      #       providerConfigRef:
+      #         name: provider-kubernetes
+      #   patches:
+      #   - type: FromCompositeFieldPath
+      #     fromFieldPath: "spec.claimRef.namespace"
+      #     toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      #   - type: FromCompositeFieldPath
+      #     fromFieldPath: "spec.claimRef.namespace"
+      #     toFieldPath: "spec.forProvider.manifest.spec.data[0].remoteRef.key"
+      #   - type: FromCompositeFieldPath
+      #     fromFieldPath: "spec.claimRef.namespace"
+      #     toFieldPath: "spec.forProvider.manifest.spec.data[1].remoteRef.key"
       - name: deployment-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
