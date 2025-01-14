@@ -24,7 +24,8 @@ spec:
               properties:
                 subscription:
                   type: string
+                  default: silver
                 owner:
                   type: string
               required:
-                - subscription
+                - owner

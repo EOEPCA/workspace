@@ -61,21 +61,21 @@ spec:
           - type: map
             map: 
               bronze:
-                #limits.cpu: 1500m
-                #limits.memory: 6Gi
                 pods: "5"
+                #limits.cpu: 1500m
+                #limits.memory: 6Gi                
                 #requests.cpu: "1"
                 #requests.memory: 4Gi
               silver:
-                #limits.cpu: "3"
-                #limits.memory: 12Gi
                 pods: "10"
+                #limits.cpu: "3"
+                #limits.memory: 12Gi                
                 #requests.cpu: "2"
                 #requests.memory: 8Gi
               gold:
-                #limits.cpu: "6"
-                #limits.memory: 20Gi
                 pods: "20"
+                #limits.cpu: "6"
+                #limits.memory: 20Gi                
                 #requests.cpu: "4"
                 #requests.memory: 16Gi
       - name: vcluster
@@ -318,22 +318,6 @@ spec:
                       paths:
                       - /*
                     name: protected
-                    # plugins:
-                    # - config:
-                    #     access_token_in_authorization_header: true
-                    #     client_id: ws-test4
-                    #     client_secret: Qmp5p...
-                    #     discovery: https://iam-auth.apx.develop.eoepca.org/realms/eoepca/.well-known/openid-configuration
-                    #   enable: true
-                    #   name: openid-connect
-                    # - config:
-                    #     client_id: ws-test4
-                    #     client_secret: Qmp5p...
-                    #     discovery: https://iam-auth.apx.develop.eoepca.org/realms/eoepca/.well-known/uma2-configuration
-                    #     lazy_load_paths: true
-                    #     ssl_verify: false
-                    #   enable: true
-                    #   name: authz-keycloak
                     websocket: true
             providerConfigRef:
               name: provider-kubernetes
@@ -452,7 +436,7 @@ spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
-              name: ws-access
+              name: ws_access
               clientIdRef:
                 policy:
                   resolution: Required
@@ -493,33 +477,3 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.roleIdsRefs[0].name"
-      - name: keycloak-clientrolepolicy
-        base:
-          apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
-          kind: ClientRolePolicy
-          spec:
-            providerConfigRef:
-              name: provider-keycloak
-            forProvider:
-              name: 'Role ws_access Policy'
-              type: role
-              decisionStrategy: UNANIMOUS
-              logic: POSITIVE    
-              realmId: eoepca
-              role:
-              - id: <replaced>
-                required: false
-              resourceServerIdRef:
-                name: <replaced>
-                policy:
-                  resolution: Required
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "roleId"
-          toFieldPath: "spec.forProvider.role[0].id"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.resourceServerIdRef.name"        
