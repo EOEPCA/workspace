@@ -1,3 +1,10 @@
+# Agenda 20250115
+
+Demo
+- notebook [Workspace Management demo](https://github.com/EOEPCA/demo/blob/main/demoroot/notebooks/05%20Workspace%20Management.ipynb)
+- options to inspect/manage provisioned workspaces (Kubernetes API, Kubernetes Dashboard, Workspace-API)
+- share data on versioned bucket
+
 # Agenda 20241210
 
 aligned with IAM BB on various authn/authz related topics
