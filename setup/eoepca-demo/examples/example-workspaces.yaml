@@ -1,0 +1,17 @@
+apiVersion: epca.eo/v1beta1
+kind: Workspace
+metadata:
+  name: ws-example-78
+  namespace: workspace
+spec:
+  subscription: gold
+  owner: example-user-1
+---
+apiVersion: epca.eo/v1beta1
+kind: Workspace
+metadata:
+  name: ws-example-79
+  namespace: workspace
+spec:
+  subscription: gold
+  owner: example-user-1
