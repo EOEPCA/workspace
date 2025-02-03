@@ -13,7 +13,7 @@ nav:
     - Design:
       - design/overview.md
       - design/motivation.md
-      - design/more-design.md
+      - design/iam-concept.md
     #- Usage:
     #  - usage/tutorials.md
     #  - usage/howtos.md
