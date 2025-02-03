@@ -328,10 +328,10 @@ spec:
                       config:
                         discovery: "https://iam-auth.apx.develop.eoepca.org/realms/eoepca/.well-known/openid-configuration"
                         bearer_only: false # as we want to redirect to login screen (default: false)
-                        set_access_token_header: true # UI endpoint so don't pass access token (default: true)
-                        access_token_in_authorization_header: true # not necessary here is it just defines if the access token (if passed) should be in x-access-token or authroization header (default: false)
-                        set_id_token_header: true # UI endpoint so pass (default: true)
-                        set_userinfo_header: true # UI endpoint so pass (default: true)
+                        set_access_token_header: true # required for subsequent OPA check (default: true)
+                        access_token_in_authorization_header: true # required for subsequent OPA check (default: false)
+                        set_id_token_header: true # required by UI (default: true)
+                        set_userinfo_header: true # required by UI (default: true)
                         client_id: <replaced>
                         client_secret: ""
                     - name: opa
