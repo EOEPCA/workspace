@@ -1,3 +1,14 @@
+# Agenda 20250218
+
+- demo support for "stable listing of shared item", i.e. creation of a package where file index is separately stored
+
+# Agenda 20250204
+
+- demo IAM integration established for Workspace UI & Storage Layer (in addition to the already existing integration in the Workspace API), see
+https://eoepca.readthedocs.io/projects/workspace/en/latest/design/iam-concept/
+- started to align K8s <-> Keyloak reconciliation mechanism for general operator setup https://github.com/EOEPCA/workspace/issues/44
+
+
 # Agenda 20250115
 
 Demo
