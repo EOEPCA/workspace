@@ -203,12 +203,16 @@ spec:
                     spec:
                       containers:
                       - name: workspace-ui
-                        image: ghcr.io/versioneer-tech/package-r:v2025.2.3
+                        image: ghcr.io/versioneer-tech/package-r:v2025.2.4
                         ports:
                         - name: http
                           containerPort: 8080
                           protocol: TCP
                         env:
+                        - name: WORKSPACE
+                          valueFrom:
+                            fieldRef:
+                              fieldPath: metadata.namespace
                         - name: FB_BRANDING_NAME
                           value: "Workspace-UI"
                         - name: FB_PASSWORD
@@ -260,6 +264,36 @@ spec:
             string:
               type: Format
               fmt: '/secrets/%s-stage'
+      - name: clusterrolebinding-workspace-ui
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: ClusterRoleBinding
+                metadata: {}
+                subjects:
+                  - kind: ServiceAccount
+                    name: default
+                    namespace: ws-example-79
+                roleRef:
+                  kind: ClusterRole
+                  name: ws-keycloak
+                  apiGroup: rbac.authorization.k8s.io
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: 'ws-keycloak:%s'
       - name: service-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
