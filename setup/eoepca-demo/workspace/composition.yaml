@@ -278,7 +278,7 @@ spec:
                 subjects:
                   - kind: ServiceAccount
                     name: default
-                    namespace: ws-example-79
+                    namespace: <replaced>
                 roleRef:
                   kind: ClusterRole
                   name: ws-keycloak
