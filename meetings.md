@@ -1,3 +1,11 @@
+# Agenda 20250304
+
+- the EOEPCA IAM concept made Git (for static setup) resp. Kubernetes (for dynamic use-cases like workspace provisioning) the source of truth for many IAM entities (groups, clients, memberships, roles...), i.e. Keycloak functionality "sits" on top of derived state
+
+- as first step the Workspace-UI got connected with Kubernetes to retrieve groups & memberships as well as to update memberships, still WIP as UI functionality is missing yet but Workspace-UI CLI allows to demonstrate:
+  - Allow workspace owner to add additional users to a teams workspace via API (https://github.com/EOEPCA/workspace/issues/35)
+  - Allow a user in Workspace UI to share data with other explicitly selected platform groups (as stored in Keycloak) (https://github.com/EOEPCA/workspace/issues/36)
+
 # Agenda 20250218
 
 - demo support for "stable listing of shared item", i.e. creation of a package where file index is separately stored

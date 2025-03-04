@@ -294,6 +294,9 @@ spec:
             string:
               type: Format
               fmt: 'ws-keycloak:%s'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
       - name: service-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
