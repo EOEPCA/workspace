@@ -78,7 +78,7 @@ spec:
                 #limits.memory: 20Gi                
                 #requests.cpu: "4"
                 #requests.memory: 16Gi
-      - name: vcluster
+      - name: helm-vcluster
         base:
           apiVersion: helm.crossplane.io/v1beta1
           kind: Release
@@ -100,8 +100,8 @@ spec:
                       volumeClaim:
                         storageClass: managed-nfs-storage
                   ingress:
-                    enabled: true
-                    host: <replaced>
+                    enabled: false
+                    # host: <replaced>
                 sync:
                   toHost:
                     serviceAccounts:
@@ -114,7 +114,10 @@ spec:
                   context: vcluster-context
                   server: <replaced>
                   secret:
-                    name: vcluster-kubeconfig
+                    name: kubeconfig
+                integrations:
+                  metricsServer:
+                    enabled: true
             providerConfigRef:
               name: provider-helm
         patches:
@@ -125,18 +128,18 @@ spec:
           - type: string
             string:
               type: Format
-              fmt: 'vcluster-%s'
+              fmt: 'k8s-%s'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.controlPlane.ingress.host"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'vcluster.%s.apx.develop.eoepca.org'
+        # - type: FromCompositeFieldPath
+        #   fromFieldPath: "spec.claimRef.name"
+        #   toFieldPath: "spec.forProvider.values.controlPlane.ingress.host"
+        #   transforms:
+        #   - type: string
+        #     string:
+        #       type: Format
+        #       fmt: 'k8s-%s.apx.develop.eoepca.org'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.values.exportKubeConfig.server"
@@ -144,7 +147,70 @@ spec:
           - type: string
             string:
               type: Format
-              fmt: 'https://vcluster.%s.apx.develop.eoepca.org'
+              fmt: 'https://k8s-%s.develop.eoepca.org'
+      - name: ingress-vcluster
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: networking.k8s.io/v1
+                kind: Ingress
+                metadata:
+                  name: k8s
+                  annotations:
+                    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+                    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+                    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+                    kubernetes.io/tls-acme: 'true'
+                spec:
+                  rules:
+                    - host: <replaced>
+                      http:
+                        paths:
+                          - path: /
+                            pathType: Prefix
+                            backend:
+                              service:
+                                name: <replaced>
+                                port:
+                                  number: 443
+                  tls:
+                    - hosts:
+                        - <replaced>
+                      secretName: vcluster-tls
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: 'k8s-%s.develop.eoepca.org'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.rules[0].http.paths[0].backend.service.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: 'k8s-%s'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: 'k8s-%s.develop.eoepca.org'
       - name: example-id
         base:
           apiVersion: tf.upbound.io/v1beta1
@@ -268,8 +334,8 @@ spec:
                       - name: secrets
                         secret:
                           secretName: bucket
-                      # nodeSelector:
-                      #   "kubernetes.io/hostname": "192.168.9.105"
+                      nodeSelector:
+                        "kubernetes.io/hostname": "192.168.9.105"
             providerConfigRef:
               name: provider-kubernetes
         patches:
