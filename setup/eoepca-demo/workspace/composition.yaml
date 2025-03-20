@@ -263,6 +263,145 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      - name: role-workspace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: Role
+                metadata:
+                  name: workspace
+                rules:
+                  - apiGroups:
+                    - ""
+                    resources:
+                    - "secrets"
+                    verbs:
+                    - "get"
+                    - "list"
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      - name: rolebinding-workspace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                kind: RoleBinding
+                apiVersion: rbac.authorization.k8s.io/v1
+                metadata:
+                  name: workspace
+                subjects:
+                  - kind: ServiceAccount
+                    name: default
+                    namespace: <replaced>
+                roleRef:
+                  kind: Role
+                  name: workspace
+                  apiGroup: rbac.authorization.k8s.io
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
+      - name: secretstore-workspace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: external-secrets.io/v1beta1
+                kind: SecretStore
+                metadata:
+                  name: workspace
+                  namespace: <replaced>
+                spec:
+                  provider:
+                    kubernetes:
+                      remoteNamespace: <replaced>
+                      server:
+                        caProvider:
+                          type: ConfigMap
+                          name: kube-root-ca.crt
+                          namespace: workspace
+                          key: ca.crt
+                      auth:
+                        serviceAccount:
+                          name: default
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.provider.kubernetes.remoteNamespace"
+      - name: externalsecret-workspace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: external-secrets.io/v1beta1
+                kind: ExternalSecret
+                metadata:
+                  name: workspace
+                spec:
+                  refreshInterval: 10m
+                  secretStoreRef:
+                    name: workspace
+                    kind: SecretStore
+                  target:
+                    name: workspace
+                    creationPolicy: Owner
+                    template:
+                      data:
+                        AWS_ACCESS_KEY_ID: "{{ .AWS_ACCESS_KEY_ID }}"
+                        AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
+                        AWS_ENDPOINT_URL: "https://minio.develop.eoepca.org"
+                        AWS_REGION: "eoepca-demo"
+                        KUBECONFIG: "{{ .KUBECONFIG }}"
+                  data:
+                  - secretKey: AWS_SECRET_ACCESS_KEY
+                    remoteRef:
+                      key: bucket
+                      property: AWS_SECRET_ACCESS_KEY
+                  - secretKey: AWS_ACCESS_KEY_ID
+                    remoteRef:
+                      key: bucket
+                      property: AWS_ACCESS_KEY_ID
+                  - secretKey: KUBECONFIG
+                    remoteRef:
+                      key: kubeconfig
+                      property: config
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.target.template.data['bucket']"
       - name: deployment-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -335,7 +474,7 @@ spec:
                         secret:
                           secretName: bucket
                       nodeSelector:
-                        "kubernetes.io/hostname": "192.168.9.105"
+                        "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
               name: provider-kubernetes
         patches:
