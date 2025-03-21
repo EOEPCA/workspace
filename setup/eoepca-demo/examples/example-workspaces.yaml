@@ -1,7 +1,7 @@
 apiVersion: epca.eo/v1beta1
 kind: Workspace
 metadata:
-  name: ws-example-78
+  name: ws-example-team1
   namespace: workspace
 spec:
   subscription: gold
@@ -10,8 +10,8 @@ spec:
 apiVersion: epca.eo/v1beta1
 kind: Workspace
 metadata:
-  name: ws-example-79
+  name: ws-example-team2
   namespace: workspace
 spec:
-  subscription: gold
+  subscription: bronze
   owner: example-user-1
