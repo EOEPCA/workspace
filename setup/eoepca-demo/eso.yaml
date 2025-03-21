@@ -18182,22 +18182,3 @@ webhooks:
   sideEffects: None
   timeoutSeconds: 5
   failurePolicy: Fail
----
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: in-cluster-kubernetes
-spec:
-  provider:
-    kubernetes:
-      remoteNamespace: workspace
-      server:
-        caProvider:
-          type: ConfigMap
-          name: kube-root-ca.crt
-          namespace: workspace
-          key: ca.crt
-      auth:
-        serviceAccount:
-          name: external-secrets
-          namespace: workspace

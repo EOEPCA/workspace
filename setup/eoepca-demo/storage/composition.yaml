@@ -3,7 +3,6 @@ kind: Composition
 metadata:
   name: storage
 spec:
-  writeConnectionSecretsToNamespace: workspace
   compositeTypeRef:
     apiVersion: epca.eo/v1beta1
     kind: XStorage
@@ -102,14 +101,12 @@ spec:
             providerConfigRef:
               name: provider-minio
             writeConnectionSecretToRef:
-              namespace: workspace
+              name: <replaced>
+              namespace: <replaced>
         patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.policies[0]"
@@ -121,102 +118,14 @@ spec:
             string:
               type: Format
               fmt: '%s-stage'
-        connectionDetails:
-        - name: access
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_ACCESS_KEY_ID
-        - name: AWS_ACCESS_KEY_ID
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_ACCESS_KEY_ID
-        - name: secret
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY
-        - name: AWS_SECRET_ACCESS_KEY
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: AWS_SECRET_ACCESS_KEY
-        - name: bucketname
-          type: FromFieldPath
-          fromFieldPath: metadata.name
-        - name: AWS_ENDPOINT_URL
-          type: FromValue
-          value: "https://minio.develop.eoepca.org"
-        - name: AWS_REGION
-          type: FromValue
-          value: "eoepca-demo"
-      - name: secret-rclone
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: external-secrets.io/v1beta1
-                kind: ExternalSecret
-                metadata:
-                  name: rclone
-                spec:
-                  refreshInterval: 1h
-                  secretStoreRef:
-                    name: in-cluster-kubernetes
-                    kind: ClusterSecretStore
-                  target:
-                    name: rclone # same name as pvc
-                    creationPolicy: Owner
-                    template:
-                      data:
-                        remote: "{{ .AWS_ACCESS_KEY_ID }}"
-                        remotePath: "/"
-                        configData: |
-                          [{{ .AWS_ACCESS_KEY_ID }}]
-                          type = s3
-                          provider = Minio
-                          endpoint = https://minio.develop.eoepca.org
-                          access_key_id = {{ .AWS_ACCESS_KEY_ID }}
-                          secret_access_key = {{ .AWS_SECRET_ACCESS_KEY }}
-                  data:
-                  - secretKey: AWS_SECRET_ACCESS_KEY
-                    remoteRef:
-                      key: <replaced>
-                      property: AWS_SECRET_ACCESS_KEY
-                  - secretKey: AWS_ACCESS_KEY_ID
-                    remoteRef:
-                      key: <replaced>
-                      property: AWS_ACCESS_KEY_ID
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: 'bucket-%s'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.manifest.spec.data[0].remoteRef.key"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.manifest.spec.data[1].remoteRef.key"
-      - name: pvc-rclone
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: v1
-                kind: PersistentVolumeClaim
-                metadata:
-                  name: rclone # same name as secret
-                spec:
-                  accessModes:
-                  - ReadOnlyMany
-                  resources:
-                    requests:
-                      storage: 1Mi
-                  storageClassName: csi-rclone
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"

@@ -3,14 +3,7 @@ kind: CompositeResourceDefinition
 metadata:
   name: xstorages.epca.eo
 spec:
-  connectionSecretKeys:
-    - access
-    - secret
-    - bucketname
-    - AWS_ACCESS_KEY_ID
-    - AWS_SECRET_ACCESS_KEY
-    - AWS_ENDPOINT_URL
-    - AWS_REGION
+  connectionSecretKeys: []
   group: epca.eo
   names:
     kind: XStorage
