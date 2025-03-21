@@ -474,7 +474,6 @@ spec:
             string:
               type: Format
               fmt: 'bucket-%s'
-
       - name: pvc-rclone
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -570,9 +569,9 @@ spec:
                           readOnly: true
                       - name: secrets
                         secret:
-                          secretName: bucket
-                      nodeSelector:
-                        "kubernetes.io/hostname": "192.168.9.31"
+                          secretName: workspace
+                      # nodeSelector:
+                      #  "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
               name: provider-kubernetes
         patches:
