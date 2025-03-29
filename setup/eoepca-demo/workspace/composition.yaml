@@ -584,8 +584,8 @@ spec:
                       - name: secrets
                         secret:
                           secretName: workspace
-                      nodeSelector:
-                       "kubernetes.io/hostname": "192.168.9.31"
+                      # nodeSelector:
+                      #  "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
               name: provider-kubernetes
         patches:

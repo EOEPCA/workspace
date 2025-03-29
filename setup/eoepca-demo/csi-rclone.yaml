@@ -1,84 +1,28 @@
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: csi-rclone-controller
   namespace: workspace
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    {}
 ---
-# Source: csi-rclone/templates/csi-nodeplugin-rbac.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: csi-rclone-nodeplugin
   namespace: workspace
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    {}
 ---
-# Source: csi-rclone/templates/csi-rclone-storageclass.yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: csi-rclone
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 provisioner: csi-rclone
 volumeBindingMode: Immediate
 reclaimPolicy: Delete
-# ---
-# # Source: csi-rclone/templates/csi-rclone-storageclass.yaml
-# apiVersion: storage.k8s.io/v1
-# kind: StorageClass
-# metadata:
-#   name: csi-rclone-secret-annotation
-#   labels:
-#     helm.sh/chart: csi-rclone-0.3.5
-#     app.kubernetes.io/name: csi-rclone
-#     app.kubernetes.io/instance: csi-rclone
-#     app.kubernetes.io/version: "0.1.7"
-#     app.kubernetes.io/managed-by: Helm
-# provisioner: csi-rclone
-# volumeBindingMode: Immediate
-# reclaimPolicy: Delete
-# parameters:
-#   # CreateVolumeRequest.secrets or DeleteVolumeRequest.secrets
-#   # If creating a PersistentVolume by hand then these are not needed, see below
-#   csi.storage.k8s.io/provisioner-secret-name: ${pvc.annotations['csi-rclone.dev/secretName']}
-#   csi.storage.k8s.io/provisioner-secret-namespace: ${pvc.namespace}
-#   # Populates NodePublishVolumeRequest.secrets
-#   # If creating a PersistentVolume by hand then set spec.csi.nodePublishSecretRef.name and spec.csi.NodePublishSecretRef.namespace
-#   csi.storage.k8s.io/node-publish-secret-name: ${pvc.annotations['csi-rclone.dev/secretName']}
-#   csi.storage.k8s.io/node-publish-secret-namespace: ${pvc.namespace}
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: csi-rclone-external-controller
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 rules:
 - apiGroups:
   - ""
@@ -98,7 +42,7 @@ rules:
   verbs:
   - "get"
   - "list"
-  - "create" # TODO: check if necessary
+  - "create" 
 - apiGroups:
   - ""
   resources:
@@ -154,20 +98,11 @@ rules:
   verbs:
   - create
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-rclone-external-provisioner-runner
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 rules:
-  # The following rule should be uncommented for plugins that require secrets
-  # for provisioning.
   - apiGroups: 
     - ""
     resources:
@@ -242,10 +177,6 @@ rules:
     - "get"
     - "list"
     - "watch"
-  # Access to volumeattachments is only needed when the CSI driver
-  # has the PUBLISH_UNPUBLISH_VOLUME controller capability.
-  # In that case, external-provisioner will watch volumeattachments
-  # to determine when it is safe to delete a volume.
   - apiGroups: 
     - "storage.k8s.io"
     resources: 
@@ -255,17 +186,10 @@ rules:
     - "list"
     - "watch"
 ---
-# Source: csi-rclone/templates/csi-nodeplugin-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: csi-rclone-nodeplugin
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 rules:
 - apiGroups:
   - ""
@@ -337,17 +261,10 @@ rules:
   - update
   - patch
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: csi-rclone-attacher-role
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -357,17 +274,10 @@ subjects:
   name: 'csi-rclone-controller'
   namespace: workspace
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-rclone-provisioner-role
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 subjects:
   - kind: ServiceAccount
     name: 'csi-rclone-controller'
@@ -377,17 +287,10 @@ roleRef:
   name: 'csi-rclone-external-provisioner-runner'
   apiGroup: rbac.authorization.k8s.io
 ---
-# Source: csi-rclone/templates/csi-nodeplugin-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: csi-rclone-nodeplugin
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -397,17 +300,12 @@ subjects:
   name: 'csi-rclone-nodeplugin'
   namespace: 'workspace'
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
-# Provisioner must be able to work with endpoints in current namespace
-# if (and only if) leadership election is enabled
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-rclone-external-provisioner-cfg
   namespace: workspace
 rules:
-# Only one of the following rules for endpoints or leases is required based on
-# what is set for `--leader-election-type`. Endpoints are deprecated in favor of Leases.
 - apiGroups: 
   - ""
   resources: 
@@ -430,8 +328,6 @@ rules:
   - "delete"
   - "update"
   - "create"
-# Permissions for CSIStorageCapacity are only needed enabling the publishing
-# of storage capacity information.
 - apiGroups: 
   - "storage.k8s.io"
   resources: 
@@ -444,10 +340,6 @@ rules:
   - "update"
   - "patch"
   - "delete"
-# The GET permissions below are needed for walking up the ownership chain
-# for CSIStorageCapacity. They are sufficient for deployment via
-# StatefulSet (only needs to get Pod) and Deployment (needs to get
-# Pod and then ReplicaSet to find the Deployment).
 - apiGroups: 
   - ""
   resources: 
@@ -455,7 +347,6 @@ rules:
   verbs: 
   - "get"
 ---
-# Source: csi-rclone/templates/csi-controller-rbac.yaml
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -470,30 +361,19 @@ roleRef:
   name: csi-rclone-external-provisioner-cfg
   apiGroup: rbac.authorization.k8s.io
 ---
-# Source: csi-rclone/templates/csi-nodeplugin-rclone.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: csi-rclone-nodeplugin
   namespace: workspace
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
       app: csi-nodeplugin-rclone
-      app.kubernetes.io/name: csi-rclone
-      app.kubernetes.io/instance: csi-rclone
   template:
     metadata:
       labels:
         app: csi-nodeplugin-rclone
-        app.kubernetes.io/name: csi-rclone
-        app.kubernetes.io/instance: csi-rclone
     spec:
       serviceAccountName: csi-rclone-nodeplugin
       dnsPolicy: ClusterFirstWithHostNet
@@ -510,7 +390,7 @@ spec:
               fieldPath: spec.nodeName
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: "cluster.local"
-        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.12.0
+        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.13.0
         imagePullPolicy: IfNotPresent
         lifecycle:
           preStop:
@@ -519,8 +399,7 @@ spec:
               - /bin/sh
               - -c
               - rm -rf /registration/csi-rclone /registration/csi-rclone-reg.sock
-        resources:
-            {}
+        resources: {}
         volumeMounts:
         - mountPath: /plugin
           name: plugin-dir
@@ -528,7 +407,7 @@ spec:
           name: registration-dir
       - name: liveness-probe
         imagePullPolicy: Always
-        image: registry.k8s.io/sig-storage/livenessprobe:v2.11.0
+        image: registry.k8s.io/sig-storage/livenessprobe:v2.15.0
         args:
         - --csi-address=/plugin/csi.sock
         volumeMounts:
@@ -537,6 +416,7 @@ spec:
       - name: rclone
         args:
         - run
+        - node
         - --nodeid=$(NODE_ID)
         - --endpoint=$(CSI_ENDPOINT)
         env:
@@ -552,18 +432,9 @@ spec:
           value: "csi-rclone"
         - name: LOG_LEVEL
           value: "NOTICE"
-        image: renku/csi-rclone:v0.3.5
+        image: ghcr.io/versioneer-tech/csi-rclone:v2025.3.1
         imagePullPolicy: IfNotPresent
-        # TODO: check if necessary
-        lifecycle:
-          postStart:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - mount -t fuse.rclone | while read -r mount; do umount $(echo $mount | awk {print $3}) ; done
-        resources:
-            {}
+        resources: {}
         securityContext:
           allowPrivilegeEscalation: true
           capabilities:
@@ -602,18 +473,11 @@ spec:
           type: DirectoryOrCreate
         name: registration-dir
 ---
-# Source: csi-rclone/templates/csi-controller-rclone.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: csi-rclone-controller
   namespace: workspace
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
   selector:
@@ -632,7 +496,6 @@ spec:
         - --v=5
         - --csi-address=$(ADDRESS)
         - --leader-election
-
         env:
         - name: ADDRESS
           value: "/csi/csi.sock"
@@ -648,7 +511,7 @@ spec:
         args:
         - --csi-address=$(ADDRESS)
         - --capacity-ownerref-level=0
-        - "--extra-create-metadata" # do not remove this, it is required for correct functioning
+        - "--extra-create-metadata" 
         env:
         - name: ADDRESS
           value: "/csi/csi.sock"
@@ -668,6 +531,7 @@ spec:
       - name: rclone
         args:
         - run
+        - controller
         - --nodeid=$(NODE_ID)
         - --endpoint=$(CSI_ENDPOINT)
         env:
@@ -681,10 +545,9 @@ spec:
           value: "unix://plugin/csi.sock"
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: "cluster.local"
-        image: renku/csi-rclone:v0.3.5
+        image: ghcr.io/versioneer-tech/csi-rclone:v2025.3.1
         imagePullPolicy: IfNotPresent
-        resources:
-            {}
+        resources: {}
         ports:
         - containerPort: 9808
           name: healthz
@@ -702,7 +565,7 @@ spec:
           name: socket-dir
       - name: liveness-probe
         imagePullPolicy: Always
-        image: registry.k8s.io/sig-storage/livenessprobe:v2.11.0
+        image: registry.k8s.io/sig-storage/livenessprobe:v2.15.0
         args:
         - --csi-address=/csi/csi.sock
         volumeMounts:
@@ -711,23 +574,14 @@ spec:
       volumes:
       - emptyDir: {}
         name: socket-dir
-  updateStrategy: {}
 ---
-# Source: csi-rclone/templates/csi-driver.yaml
 apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
   name: csi-rclone-driver
-  labels:
-    helm.sh/chart: csi-rclone-0.3.5
-    app.kubernetes.io/name: csi-rclone
-    app.kubernetes.io/instance: csi-rclone
-    app.kubernetes.io/version: "0.1.7"
-    app.kubernetes.io/managed-by: Helm
 spec:
   attachRequired: true
-  podInfoOnMount: false  # are we sure about this?
+  podInfoOnMount: false  
   volumeLifecycleModes:
     - Persistent
     - Ephemeral
-
