@@ -63,19 +63,19 @@ spec:
               bronze:
                 pods: "5"
                 #limits.cpu: 1500m
-                #limits.memory: 6Gi                
+                #limits.memory: 6Gi
                 #requests.cpu: "1"
                 #requests.memory: 4Gi
               silver:
                 pods: "10"
                 #limits.cpu: "3"
-                #limits.memory: 12Gi                
+                #limits.memory: 12Gi
                 #requests.cpu: "2"
                 #requests.memory: 8Gi
               gold:
                 pods: "20"
                 #limits.cpu: "6"
-                #limits.memory: 20Gi                
+                #limits.memory: 20Gi
                 #requests.cpu: "4"
                 #requests.memory: 16Gi
       - name: helm-vcluster
@@ -99,6 +99,8 @@ spec:
                     persistence:
                       volumeClaim:
                         storageClass: managed-nfs-storage
+                    highAvailability:
+                      replicas: <replaced>
                   ingress:
                     enabled: false
                 sync:
@@ -137,6 +139,18 @@ spec:
             string:
               type: Format
               fmt: 'https://k8s-%s.develop.eoepca.org'
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.vcluster"
+          toFieldPath: "spec.forProvider.values.controlPlane.statefulSet.highAvailability"
+          transforms:
+          - type: map
+            map: 
+              active:
+                replicas: 1
+              suspended:
+                replicas: 0
+              disabled:
+                replicas: 0
       - name: ingress-vcluster
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -244,8 +258,8 @@ spec:
                 spec:
                   location: EU
                   acl: private
-                  writeConnectionSecretToRef:
-                    name: bucket
+                  # writeConnectionSecretToRef:
+                  #   name: bucket
             providerConfigRef:
               name: provider-kubernetes
         patches:
@@ -570,8 +584,8 @@ spec:
                       - name: secrets
                         secret:
                           secretName: workspace
-                      # nodeSelector:
-                      #  "kubernetes.io/hostname": "192.168.9.31"
+                      nodeSelector:
+                       "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
               name: provider-kubernetes
         patches:

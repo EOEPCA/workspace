@@ -3,7 +3,7 @@ kind: CompositeResourceDefinition
 metadata:
   name: xstorages.epca.eo
 spec:
-  connectionSecretKeys: []
+  #connectionSecretKeys: []
   group: epca.eo
   names:
     kind: XStorage

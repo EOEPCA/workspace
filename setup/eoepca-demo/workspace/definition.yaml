@@ -3,7 +3,7 @@ kind: CompositeResourceDefinition
 metadata:
   name: xworkspaces.epca.eo
 spec:
-  connectionSecretKeys: []
+  #connectionSecretKeys: []
   group: epca.eo
   names:
     kind: XWorkspace
@@ -24,8 +24,19 @@ spec:
               properties:
                 subscription:
                   type: string
+                  enum:
+                    - gold
+                    - silver
+                    - bronze
                   default: silver
                 owner:
                   type: string
+                vcluster:
+                  type: string
+                  enum:
+                    - active
+                    - suspended
+                    - disabled
+                  default: active
               required:
                 - owner
