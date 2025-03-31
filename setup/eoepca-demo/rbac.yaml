@@ -4,6 +4,13 @@ metadata:
   name: ws-keycloak
 rules:
   - apiGroups:
+    - "epca.eo"
+    resources:
+    - "workspaces"
+    verbs:
+    - "patch"
+    - "get" 
+  - apiGroups:
     - "group.keycloak.crossplane.io"
     resources:
     - "memberships"
@@ -15,4 +22,4 @@ rules:
     resources:
     - "groups"
     verbs:
-    - "list"
+    - "list" 

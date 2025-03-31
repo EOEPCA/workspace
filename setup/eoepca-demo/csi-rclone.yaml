@@ -370,10 +370,14 @@ spec:
   selector:
     matchLabels:
       app: csi-nodeplugin-rclone
+      app.kubernetes.io/instance: csi-rclone
+      app.kubernetes.io/name: csi-rclone
   template:
     metadata:
       labels:
         app: csi-nodeplugin-rclone
+        app.kubernetes.io/instance: csi-rclone
+        app.kubernetes.io/name: csi-rclone
     spec:
       serviceAccountName: csi-rclone-nodeplugin
       dnsPolicy: ClusterFirstWithHostNet
