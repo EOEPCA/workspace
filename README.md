@@ -19,14 +19,14 @@ The component responsible for resource provisioning are Workspaces pipelines, wh
 ### Core Implementation Features
 
 1. **Crossplane Providers**: The declarative nature of Crossplane allows operators to adapt and configure pipelines with various providers. In the EOEPCA Demo Blueprint, the following providers are employed:
-   - [Provider-MinIO](https://github.com/vshn/provider-minio) ([Apache 2 License](https://github.com/vshn/provider-minio/blob/main/LICENSE)): config [here](./setup/eoepca-demo/crossplane-provider-minio.yaml)
-   - [Provider-Kubernetes](https://github.com/crossplane-contrib/provider-kubernetes) ([Apache 2 License](https://github.com/crossplane-contrib/provider-kubernetes/blob/main/LICENSE)): config [here](./setup/eoepca-demo/crossplane-provider-kubernetes.yaml)
-   - [Provider-Helm](https://github.com/crossplane-contrib/provider-helm) ([Apache 2 License](https://github.com/crossplane-contrib/provider-helm/blob/main/LICENSE)): config [here](./setup/eoepca-demo/crossplane-provider-helm.yaml)
-   - [Provider-Keycloak](https://github.com/crossplane-contrib/provider-keycloak) ([Apache 2 License](https://github.com/crossplane-contrib/provider-keycloak/blob/main/LICENSE)): config [here](./setup/eoepca-demo/crossplane-provider-keycloak.yaml)
+   - [Provider-MinIO](https://github.com/vshn/provider-minio) ([Apache 2 License](https://github.com/vshn/provider-minio/blob/main/LICENSE)): config [here](./setup/pipelines/crossplane-provider-minio.yaml)
+   - [Provider-Kubernetes](https://github.com/crossplane-contrib/provider-kubernetes) ([Apache 2 License](https://github.com/crossplane-contrib/provider-kubernetes/blob/main/LICENSE)): config [here](./setup/common/crossplane-provider-kubernetes.yaml)
+   - [Provider-Helm](https://github.com/crossplane-contrib/provider-helm) ([Apache 2 License](https://github.com/crossplane-contrib/provider-helm/blob/main/LICENSE)): config [here](./setup/pipelines/crossplane-provider-helm.yaml)
+   - [Provider-Keycloak](https://github.com/crossplane-contrib/provider-keycloak) ([Apache 2 License](https://github.com/crossplane-contrib/provider-keycloak/blob/main/LICENSE)): config [here](./setup/pipelines/crossplane-provider-keycloak.yaml)
 
-2. **External Secrets Operator**: The system uses the [External Secrets Operator](https://external-secrets.io) to securely handle sensitive data within the Kubernetes ecosystem, with setup [here](./setup/eoepca-demo/eso.yaml)
+2. **External Secrets Operator**: The system uses the [External Secrets Operator](https://external-secrets.io) to securely handle sensitive data within the Kubernetes ecosystem, with setup [here](./setup/common/eso.yaml)
 
-3. **CSI Providers**: For platform-level storage operations, [CSI-Rclone](https://github.com/SwissDataScienceCenter/csi-rclone) ([Apache 2 License](https://github.com/SwissDataScienceCenter/csi-rclone/blob/master/LICENSE)) is the default driver, with setup [here](./setup/eoepca-demo/csi-rclone.yaml). It facilitates browsing of mounted storage in the Workspace UI to generate pre-signed URLs for data sharing. Alternatives such as [S3FS-Fuse](https://github.com/s3fs-fuse/s3fs-fuse) or [AWS mountpoint-s3](https://github.com/awslabs/mountpoint-s3) mount-based drivers can be substituted, but these CSI providers are not intended for end-user data access.
+3. **CSI Providers**: To enable browsing of mounted storage in the Workspace UI (for generating pre-signed URLs for data sharing), the standard mechanism of Kubernetes Persistent Volumes via CSI is used. We are utilizing [RClone](https://github.com/rclone/rclone), but alternatives such as [S3FS-Fuse](https://github.com/s3fs-fuse/s3fs-fuse) or [AWS mountpoint-s3](https://github.com/awslabs/mountpoint-s3) can be substituted as mount-based drivers.
 
 This implementation is inherently Kubernetes-native, emphasizing modularity, scalability, and the flexibility to address diverse platform and user needs.
 
@@ -34,6 +34,5 @@ This implementation is inherently Kubernetes-native, emphasizing modularity, sca
 
 Pipeline blueprints showcase the integration of these features and their application in provisioning resources across various infrastructure setups:
 
-- [EOEPCA Demo Blueprint](https://github.com/EOEPCA/workspace/tree/main/setup/eoepca-demo): Demonstrates the implementation of the Workspace BB in a practical setting using in-cluster MinIO buckets.
-- **EOX-AWS Blueprint** (Coming Soon!): A planned pipeline leveraging AWS infrastructure.  
+- [EOEPCA Demo Blueprint](https://github.com/EOEPCA/workspace/tree/main/setup/pipelines): Demonstrates the implementation of the Workspace BB in a practical setting using in-cluster MinIO buckets.
 - **DLR-Terrabyte Blueprint** (Coming Soon!): A forthcoming pipeline customized for DLR-Terrabyte-specific requirements.  

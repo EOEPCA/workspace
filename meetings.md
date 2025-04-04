@@ -1,3 +1,15 @@
+# Agenda 20250401
+
+- support(reenable) both API as well as browser-based UI access to workspace-api endpoint
+- demonstrate usage of vcluster for workloads like mlflow or vs-code-server
+- vcluster hibernation mode (https://github.com/EOEPCA/workspace/issues/31)
+- UI support for memember management (https://github.com/EOEPCA/workspace/issues/35)
+- separate meeting to align workspace and perhaps vcluster integration with other BBs
+
+# Agenda 20250318
+
+- dynamic retrieval of vcluster KUBECONFIG via workspace-api endpoint (https://github.com/EOEPCA/workspace/issues/41)
+
 # Agenda 20250304
 
 - the EOEPCA IAM concept made Git (for static setup) resp. Kubernetes (for dynamic use-cases like workspace provisioning) the source of truth for many IAM entities (groups, clients, memberships, roles...), i.e. Keycloak functionality "sits" on top of derived state

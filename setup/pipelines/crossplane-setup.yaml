@@ -30,13 +30,6 @@ spec:
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
-  name: provider-keycloak
-spec:
-  package: xpkg.upbound.io/crossplane-contrib/provider-keycloak:v1.9.2
----
-apiVersion: pkg.crossplane.io/v1
-kind: Provider
-metadata:
   name: provider-minio
 spec:
   package: ghcr.io/vshn/provider-minio/provider:v0.3.0

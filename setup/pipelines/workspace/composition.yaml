@@ -107,10 +107,16 @@ spec:
                   toHost:
                     serviceAccounts:
                       enabled: true
+                    persistentVolumeClaims:
+                      enabled: true
+                    persistentVolumes:
+                      enabled: true
                   fromHost:
                     nodes:
                       enabled: true
                       clearImageStatus: true
+                    storageClasses:
+                      enabled: true
                 exportKubeConfig:
                   context: vcluster-context
                   server: <replaced>
