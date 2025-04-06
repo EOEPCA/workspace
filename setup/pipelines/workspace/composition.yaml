@@ -724,6 +724,7 @@ spec:
                       hosts:
                       - <replaced>
                       paths:
+                      - /static*
                       - /share/public-*
                       - /api/public/dl/public-*
                       - /api/public/share/public-*
