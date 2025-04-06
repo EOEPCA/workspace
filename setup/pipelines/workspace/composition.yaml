@@ -724,8 +724,9 @@ spec:
                       hosts:
                       - <replaced>
                       paths:
-                      - /share/*
-                      - /api/public*
+                      - /share/public-*
+                      - /api/public/dl/public-*
+                      - /api/public/share/public-*
                     name: public
                   - backends:
                     - serviceName: workspace-ui
