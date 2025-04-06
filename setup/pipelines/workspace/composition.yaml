@@ -519,6 +519,31 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      - name: pvc-workspace
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: PersistentVolumeClaim
+                metadata:
+                  name: workspace
+                spec:
+                  accessModes:
+                  - ReadWriteMany
+                  resources:
+                    requests:
+                      storage: 10Gi
+                  storageClassName: managed-nfs-storage
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: deployment-workspace-ui
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -553,7 +578,7 @@ spec:
                     spec:
                       containers:
                       - name: workspace-ui
-                        image: ghcr.io/versioneer-tech/package-r:v2025.3.1
+                        image: ghcr.io/versioneer-tech/package-r:v2025.4.1
                         ports:
                         - name: http
                           containerPort: 8080
@@ -565,8 +590,6 @@ spec:
                               fieldPath: metadata.namespace
                         - name: FB_BRANDING_NAME
                           value: "Workspace-UI"
-                        - name: FB_PASSWORD
-                          value: "changeme"
                         resources:
                           limits:
                             cpu: 1
@@ -582,6 +605,8 @@ spec:
                           name: secrets
                         - mountPath: <replaced>
                           name: secrets
+                        - mountPath: /workspace/packages
+                          name: packages
                       volumes:
                       - name: mounts
                         persistentVolumeClaim:
@@ -590,6 +615,9 @@ spec:
                       - name: secrets
                         secret:
                           secretName: workspace
+                      - name: packages
+                        persistentVolumeClaim:
+                          claimName: workspace
                       # nodeSelector:
                       #  "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
@@ -793,6 +821,31 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.owner"
           toFieldPath: "spec.forProvider.members[0]"
+      - name: keycloak-mapper
+        base:
+          apiVersion: openidgroup.keycloak.crossplane.io/v1alpha1
+          kind: GroupMembershipProtocolMapper
+          spec:
+            providerConfigRef:
+              name: provider-keycloak
+            forProvider:
+              claimName: groups
+              clientIdSelector:
+                matchLabels:
+                  crossplane.io/claim-name: <replaced>
+              addToAccessToken: false
+              addToIdToken: true
+              addToUserinfo: false
+              fullPath: false
+              name: group-membership-mapper
+              realmId: eoepca
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "metadata.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.clientIdSelector.matchLabels['crossplane.io/claim-name']"
       - name: keycloak-client
         base:
           apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
