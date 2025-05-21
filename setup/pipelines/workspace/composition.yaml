@@ -8,6 +8,28 @@ spec:
     kind: XWorkspace
   mode: Pipeline
   pipeline:
+  - step: environment
+    functionRef:
+      name: function-environment-configs
+    input:
+      apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+      kind: Input
+      spec:
+        environmentConfigs:
+        - type: Reference
+          ref:
+            name: workspace
+  - step: init
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      environment:
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.claimRef.name
+          toFieldPath: name
   - step: runtime
     functionRef:
       name: function-patch-and-transform
@@ -766,7 +788,7 @@ spec:
                     - name: opa
                       enable: true
                       config:
-                        host: http://iam-opal-opal-client:8181
+                        host: http://iam-opal-opal-client.iam:8181
                         policy: eoepca/workspace/wsui
             providerConfigRef:
               name: provider-kubernetes
@@ -774,22 +796,24 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: domain
+            string:
+              fmt: "%s.apx2.%s"
           toFieldPath: "spec.forProvider.manifest.spec.http[0].match.hosts[0]"
-          transforms:
-          - type: string
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: domain
             string:
-              type: Format
-              fmt: '%s.apx.develop.eoepca.org'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+              fmt: "%s.apx.%s"
           toFieldPath: "spec.forProvider.manifest.spec.http[1].match.hosts[0]"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s.apx.develop.eoepca.org'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.http[1].plugins[0].config.client_id"
