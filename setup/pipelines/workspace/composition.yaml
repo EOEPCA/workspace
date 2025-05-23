@@ -48,13 +48,14 @@ spec:
                 apiVersion: v1
                 kind: Namespace
                 metadata:
+                  name: <name>
                   labels:
                     workspace: "true"
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.name"
       - name: resourcequota
         base:
@@ -67,14 +68,15 @@ spec:
                 apiVersion: v1
                 kind: ResourceQuota
                 metadata:
-                  name: default
+                  name: workspace
+                  namespace: <name>
                 spec:
                   hard: {}
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.subscription"
@@ -293,7 +295,8 @@ spec:
                 apiVersion: epca.eo/v1beta1
                 kind: Storage
                 metadata: 
-                  name: default            
+                  name: workspace
+                  namespace: <name>
                 spec:
                   location: EU
                   acl: private
@@ -302,8 +305,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: role-workspace
         base:
@@ -317,6 +320,7 @@ spec:
                 kind: Role
                 metadata:
                   name: workspace
+                  namespace: <name>
                 rules:
                   - apiGroups:
                     - ""
@@ -328,8 +332,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: rolebinding-workspace
         base:
@@ -343,10 +347,11 @@ spec:
                 apiVersion: rbac.authorization.k8s.io/v1
                 metadata:
                   name: workspace
+                  namespace: <name>
                 subjects:
                   - kind: ServiceAccount
                     name: default
-                    namespace: <replaced>
+                    namespace: <name>
                 roleRef:
                   kind: Role
                   name: workspace
@@ -354,11 +359,11 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
       - name: secretstore-workspace
         base:
@@ -372,11 +377,11 @@ spec:
                 kind: SecretStore
                 metadata:
                   name: workspace
-                  namespace: <replaced>
+                  namespace: <name>
                 spec:
                   provider:
                     kubernetes:
-                      remoteNamespace: <replaced>
+                      remoteNamespace: <name>
                       server:
                         caProvider:
                           type: ConfigMap
@@ -389,11 +394,11 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.spec.provider.kubernetes.remoteNamespace"
       - name: externalsecret-workspace
         base:
@@ -407,6 +412,7 @@ spec:
                 kind: ExternalSecret
                 metadata:
                   name: workspace
+                  namespace: <name>
                 spec:
                   refreshInterval: 10m
                   secretStoreRef:
@@ -438,8 +444,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -477,6 +483,7 @@ spec:
                 kind: ExternalSecret
                 metadata:
                   name: rclone
+                  namespace: <name>
                 spec:
                   refreshInterval: 10m
                   secretStoreRef:
@@ -508,8 +515,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -539,6 +546,7 @@ spec:
                 kind: PersistentVolumeClaim
                 metadata:
                   name: rclone # same name as secret
+                  namespace: <name>
                 spec:
                   accessModes:
                   - ReadOnlyMany
@@ -549,8 +557,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: pvc-workspace
         base:
@@ -564,6 +572,7 @@ spec:
                 kind: PersistentVolumeClaim
                 metadata:
                   name: workspace
+                  namespace: <name>
                 spec:
                   accessModes:
                   - ReadWriteMany
@@ -574,10 +583,10 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: deployment-workspace-ui
+      - name: deployment-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -588,10 +597,11 @@ spec:
                 apiVersion: apps/v1
                 kind: Deployment
                 metadata:
-                  name: workspace-ui
+                  name: workspace
+                  namespace: <name>
                 labels:
-                  app.kubernetes.io/instance: workspace-ui
-                  app.kubernetes.io/name: workspace-ui
+                  app.kubernetes.io/instance: workspace
+                  app.kubernetes.io/name: workspace
                 spec:
                   strategy:
                     rollingUpdate:
@@ -601,16 +611,16 @@ spec:
                   revisionHistoryLimit: 2
                   selector:
                     matchLabels:
-                      app.kubernetes.io/instance: workspace-ui
-                      app.kubernetes.io/name: workspace-ui
+                      app.kubernetes.io/instance: workspace
+                      app.kubernetes.io/name: workspace
                   template:
                     metadata:
                       labels:
-                        app.kubernetes.io/instance: workspace-ui
-                        app.kubernetes.io/name: workspace-ui
+                        app.kubernetes.io/instance: workspace
+                        app.kubernetes.io/name: workspace
                     spec:
                       containers:
-                      - name: workspace-ui
+                      - name: workspace
                         image: ghcr.io/versioneer-tech/package-r:v2025.4.1
                         ports:
                         - name: http
@@ -656,8 +666,8 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -675,7 +685,7 @@ spec:
             string:
               type: Format
               fmt: '/secrets/%s-stage'
-      - name: clusterrolebinding-workspace-ui
+      - name: clusterrolebinding-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -689,7 +699,7 @@ spec:
                 subjects:
                   - kind: ServiceAccount
                     name: default
-                    namespace: <replaced>
+                    namespace: <name>
                 roleRef:
                   kind: ClusterRole
                   name: ws-keycloak
@@ -705,10 +715,10 @@ spec:
             string:
               type: Format
               fmt: 'ws-keycloak:%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.subjects[0].namespace"
-      - name: service-workspace-ui
+      - name: service-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -719,12 +729,13 @@ spec:
                 apiVersion: v1
                 kind: Service
                 metadata:
-                  name: workspace-ui
+                  name: workspace
+                  namespace: <name>
                 spec:
                   type: ClusterIP
                   selector:
-                    app.kubernetes.io/instance: workspace-ui
-                    app.kubernetes.io/name: workspace-ui
+                    app.kubernetes.io/instance: workspace
+                    app.kubernetes.io/name: workspace
                   ports:
                     - name: http
                       protocol: TCP
@@ -733,10 +744,10 @@ spec:
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: ingress-workspace-ui
+      - name: ingress-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -747,12 +758,12 @@ spec:
                 apiVersion: apisix.apache.org/v2
                 kind: ApisixRoute
                 metadata:
-                  name: workspace-ui
+                  name: workspace
                   namespace: <name>
                 spec:
                   http:
                   - backends:
-                    - serviceName: workspace-ui
+                    - serviceName: workspace
                       servicePort: 8080
                     match:
                       hosts:
@@ -764,7 +775,7 @@ spec:
                       - /api/public/share/public-*
                     name: public
                   - backends:
-                    - serviceName: workspace-ui
+                    - serviceName: workspace
                       servicePort: 8080
                     match:
                       hosts:
@@ -831,48 +842,45 @@ spec:
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
           kind: Group
+          metadata: {}
           spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
-              name: <replaced>
+              name: <name>
               realmId: eoepca
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
       - name: keycloak-membership
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
           kind: Memberships
+          metadata: {}
           spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
               groupIdRef:
-                name: <replaced>
+                name: <name>
                 policy:
                   resolution: Required
               members:
-              - <replaced>
+              - <name>
               realmId: eoepca
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.groupIdRef.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.owner"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.members[0]"
       - name: keycloak-mapper
         base:
           apiVersion: openidgroup.keycloak.crossplane.io/v1alpha1
           kind: GroupMembershipProtocolMapper
+          metadata: {}
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -880,7 +888,7 @@ spec:
               claimName: groups
               clientIdSelector:
                 matchLabels:
-                  crossplane.io/claim-name: <replaced>
+                  crossplane.io/claim-name: <name>
               addToAccessToken: false
               addToIdToken: true
               addToUserinfo: false
@@ -888,20 +896,22 @@ spec:
               name: group-membership-mapper
               realmId: eoepca
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.clientIdSelector.matchLabels['crossplane.io/claim-name']"
       - name: keycloak-client
         base:
           apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
           kind: Client
+          metadata: {}
           spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
+              name: <name>
+              clientId: <name>
+              rootUrl: <replaced>
+              adminUrl: <replaced>
               accessType: PUBLIC
               standardFlowEnabled: true
               implicitFlowEnabled: true
@@ -914,11 +924,8 @@ spec:
                 - '/*'
               realmId: eoepca
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -943,21 +950,20 @@ spec:
         base:
           apiVersion: role.keycloak.crossplane.io/v1alpha1
           kind: Role
+          metadata: {}
           spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
               name: ws_access
               clientIdRef:
+                name: <name>
                 policy:
                   resolution: Required
               realmId: eoepca
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.clientIdRef.name"
         - type: ToEnvironmentFieldPath
           fromFieldPath: status.atProvider.id
@@ -966,25 +972,28 @@ spec:
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
           kind: Roles
+          metadata: {}
           spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
+              name: <name>
               realmId: "eoepca"
               groupIdRef:
+                name: <name>
                 policy:
                   resolution: "Required"
               roleIdsRefs:
-                - name: <replaced>
+                - name: <name>
                   policy:
                     resolution: "Required"
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.groupIdRef.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.roleIdsRefs[0].name"
