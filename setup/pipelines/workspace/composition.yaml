@@ -164,22 +164,26 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
+            string:
+              fmt: "https://k8s-%s%s%s"
           toFieldPath: "spec.forProvider.values.controlPlane.proxy.extraSANs[0]"
-          transforms:
-          - type: string
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
             string:
-              type: Format
-              fmt: 'k8s-%s.develop.eoepca.org'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+              fmt: "https://k8s-%s%s%s"
           toFieldPath: "spec.forProvider.values.exportKubeConfig.server"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'https://k8s-%s.develop.eoepca.org'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.vcluster"
           toFieldPath: "spec.forProvider.values.controlPlane.statefulSet.highAvailability"
@@ -767,7 +771,7 @@ spec:
                       servicePort: 8080
                     match:
                       hosts:
-                      - <name>.apx.<domain>
+                      - <name><separator><domain>
                       paths:
                       - /static*
                       - /share/public-*
@@ -779,7 +783,7 @@ spec:
                       servicePort: 8080
                     match:
                       hosts:
-                      - <name>.apx.<domain>
+                      - <name><separator><domain>
                       paths:
                       - /*
                     name: protected
@@ -925,8 +929,8 @@ spec:
             forProvider:
               name: <name>
               clientId: <name>
-              rootUrl: <replaced>
-              adminUrl: <replaced>
+              rootUrl: https://<name><separator><domain>
+              adminUrl: https://<name><separator><domain>
               accessType: PUBLIC
               standardFlowEnabled: true
               implicitFlowEnabled: true
@@ -945,8 +949,8 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.clientId"
         - type: CombineFromEnvironment
           combine:
