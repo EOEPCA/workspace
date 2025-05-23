@@ -86,22 +86,22 @@ spec:
             map: 
               bronze:
                 pods: "5"
-                #limits.cpu: 1500m
-                #limits.memory: 6Gi
-                #requests.cpu: "1"
-                #requests.memory: 4Gi
+                limits.cpu: 1500m
+                limits.memory: 6Gi
+                requests.cpu: "1"
+                requests.memory: 4Gi
               silver:
                 pods: "10"
-                #limits.cpu: "3"
-                #limits.memory: 12Gi
-                #requests.cpu: "2"
-                #requests.memory: 8Gi
+                limits.cpu: "3"
+                limits.memory: 12Gi
+                requests.cpu: "2"
+                requests.memory: 8Gi
               gold:
                 pods: "20"
-                #limits.cpu: "6"
-                #limits.memory: 20Gi
-                #requests.cpu: "4"
-                #requests.memory: 16Gi
+                limits.cpu: "6"
+                limits.memory: 20Gi
+                requests.cpu: "4"
+                requests.memory: 16Gi
       - name: helm-vcluster
         base:
           apiVersion: helm.crossplane.io/v1beta1
@@ -129,7 +129,7 @@ spec:
                     enabled: false
                   proxy:
                     extraSANs:
-                      - k8s-<name><separator><domain>
+                      - <name><vcluster.separator><domain>
                 sync:
                   toHost:
                     serviceAccounts:
@@ -146,7 +146,7 @@ spec:
                       enabled: true
                 exportKubeConfig:
                   context: vcluster-context
-                  server: https://k8s-<name><separator><domain>
+                  server: https://<name><vcluster.separator><domain>
                 integrations:
                   metricsServer:
                     enabled: true
@@ -160,7 +160,7 @@ spec:
           - type: string
             string:
               type: Format
-              fmt: 'k8s-%s'
+              fmt: 'vcluster-%s'
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.namespace"
@@ -169,20 +169,20 @@ spec:
             strategy: string
             variables:
             - fromFieldPath: name
-            - fromFieldPath: separator
+            - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "k8s-%s%s%s"
+              fmt: "%s%s%s"
           toFieldPath: "spec.forProvider.values.controlPlane.proxy.extraSANs[0]"
         - type: CombineFromEnvironment
           combine:
             strategy: string
             variables:
             - fromFieldPath: name
-            - fromFieldPath: separator
+            - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "https://k8s-%s%s%s"
+              fmt: "https://%s%s%s"
           toFieldPath: "spec.forProvider.values.exportKubeConfig.server"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.vcluster"
@@ -216,19 +216,19 @@ spec:
                     kubernetes.io/tls-acme: 'true'
                 spec:
                   rules:
-                    - host: k8s-<name><separator><domain>
+                    - host: <name><vcluster.separator><domain>
                       http:
                         paths:
                           - path: /
                             pathType: Prefix
                             backend:
                               service:
-                                name: k8s-<name>
+                                name: vcluster-<name>
                                 port:
                                   number: 443
                   tls:
                     - hosts:
-                        - k8s-<name><separator><domain>
+                        - <name><vcluster.separator><domain>
                       secretName: vcluster-tls
             providerConfigRef:
               name: provider-kubernetes
@@ -241,10 +241,10 @@ spec:
             strategy: string
             variables:
             - fromFieldPath: name
-            - fromFieldPath: separator
+            - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "k8s-%s%s%s"
+              fmt: "%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
@@ -253,7 +253,7 @@ spec:
           - type: string
             string:
               type: Format
-              fmt: 'k8s-%s'
+              fmt: 'vcluster-%s'
         - type: CombineFromEnvironment
           combine:
             strategy: string
@@ -262,7 +262,7 @@ spec:
             - fromFieldPath: separator
             - fromFieldPath: domain
             string:
-              fmt: "k8s-%s%s%s"
+              fmt: "%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
       - name: example-id
         base:
@@ -436,6 +436,7 @@ spec:
                         AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
                         AWS_ENDPOINT_URL: <storage.endpoint>
                         AWS_REGION: <storage.region>
+                        PROVIDER: <storage.provider>
                         KUBECONFIG: "{{ .KUBECONFIG }}"
                   data:
                   - secretKey: AWS_SECRET_ACCESS_KEY
@@ -448,7 +449,7 @@ spec:
                       property: AWS_ACCESS_KEY_ID
                   - secretKey: KUBECONFIG
                     remoteRef:
-                      key: vc-k8s-<name>
+                      key: vc-vcluster-<name>
                       property: config
             providerConfigRef:
               name: provider-kubernetes
@@ -458,10 +459,13 @@ spec:
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "storage.endpoint"
-          toFieldPath: "spec.forProvider.manifest.spec.target.data['AWS_ENDPOINT_URL']"
+          toFieldPath: "spec.forProvider.manifest.spec.target.template.data['AWS_ENDPOINT_URL']"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "storage.region"
-          toFieldPath: "spec.forProvider.manifest.spec.target.data['AWS_REGION']"
+          toFieldPath: "spec.forProvider.manifest.spec.target.template.data['AWS_REGION']"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "storage.provider"
+          toFieldPath: "spec.forProvider.manifest.spec.target.template.data['PROVIDER']"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.spec.data[0].remoteRef.key"
@@ -485,7 +489,7 @@ spec:
           - type: string
             string:
               type: Format
-              fmt: 'vc-k8s-%s'
+              fmt: 'vc-vcluster-%s'
       - name: externalsecret-rclone
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -514,41 +518,38 @@ spec:
                         configData: |
                           [{{ .AWS_ACCESS_KEY_ID }}]
                           type = s3
-                          provider = Minio
-                          endpoint = https://minio.develop.eoepca.org
+                          provider = {{ .PROVIDER }}
+                          endpoint = {{ .AWS_ENDPOINT_URL }}
+                          region = {{ .AWS_REGION }}
                           access_key_id = {{ .AWS_ACCESS_KEY_ID }}
                           secret_access_key = {{ .AWS_SECRET_ACCESS_KEY }}
                   data:
-                  - secretKey: AWS_SECRET_ACCESS_KEY
+                  - secretKey: PROVIDER
                     remoteRef:
-                      key: <replaced>
-                      property: AWS_SECRET_ACCESS_KEY
+                      key: workspace
+                      property: PROVIDER
+                  - secretKey: AWS_ENDPOINT_URL
+                    remoteRef:
+                      key: workspace
+                      property: AWS_ENDPOINT_URL
+                  - secretKey: AWS_REGION
+                    remoteRef:
+                      key: workspace
+                      property: AWS_REGION
                   - secretKey: AWS_ACCESS_KEY_ID
                     remoteRef:
-                      key: <replaced>
+                      key: workspace
                       property: AWS_ACCESS_KEY_ID
+                  - secretKey: AWS_SECRET_ACCESS_KEY
+                    remoteRef:
+                      key: workspace
+                      property: AWS_SECRET_ACCESS_KEY
             providerConfigRef:
               name: provider-kubernetes
         patches:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.data[0].remoteRef.key"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'bucket-%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.data[1].remoteRef.key"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'bucket-%s'
       - name: pvc-rclone
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
