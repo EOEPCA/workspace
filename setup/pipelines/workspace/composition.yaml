@@ -842,7 +842,8 @@ spec:
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
           kind: Group
-          metadata: {}
+          metadata:
+            name: <name>
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -852,12 +853,16 @@ spec:
         patches:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
+          toFieldPath: "metadata.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
       - name: keycloak-membership
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
           kind: Memberships
-          metadata: {}
+          metadata:
+            name: <name>
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -872,15 +877,19 @@ spec:
         patches:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.groupIdRef.name"
+          toFieldPath: "metadata.name"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.groupIdRef.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.owner"
           toFieldPath: "spec.forProvider.members[0]"
       - name: keycloak-mapper
         base:
           apiVersion: openidgroup.keycloak.crossplane.io/v1alpha1
           kind: GroupMembershipProtocolMapper
-          metadata: {}
+          metadata:
+            name: <name>
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -898,12 +907,16 @@ spec:
         patches:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
+          toFieldPath: "metadata.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.clientIdSelector.matchLabels['crossplane.io/claim-name']"
       - name: keycloak-client
         base:
           apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
           kind: Client
-          metadata: {}
+          metadata:
+            name: <name>
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -924,6 +937,9 @@ spec:
                 - '/*'
               realmId: eoepca
         patches:
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "metadata.name"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
@@ -972,7 +988,8 @@ spec:
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
           kind: Roles
-          metadata: {}
+          metadata:
+            name: <name>
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -988,6 +1005,9 @@ spec:
                   policy:
                     resolution: "Required"
         patches:
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "metadata.name"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
