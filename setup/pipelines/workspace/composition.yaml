@@ -747,7 +747,7 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: ingress-workspace
+      - name: apisixroute-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -813,18 +813,20 @@ spec:
             strategy: string
             variables:
             - fromFieldPath: name
+            - fromFieldPath: separator
             - fromFieldPath: domain
             string:
-              fmt: "%s.apx.%s"
+              fmt: "%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.http[0].match.hosts[0]"
         - type: CombineFromEnvironment
           combine:
             strategy: string
             variables:
             - fromFieldPath: name
+            - fromFieldPath: separator
             - fromFieldPath: domain
             string:
-              fmt: "%s.apx.%s"
+              fmt: "%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.http[1].match.hosts[0]"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
@@ -946,27 +948,32 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.clientId"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
+            string:
+              fmt: "https://%s%s%s"
           toFieldPath: "spec.forProvider.rootUrl"
-          transforms:
-          - type: string
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
             string:
-              type: Format
-              fmt: 'https://%s.apx.develop.eoepca.org'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+              fmt: "https://%s%s%s"
           toFieldPath: "spec.forProvider.adminUrl"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'https://%s.apx.develop.eoepca.org'
       - name: keycloak-role
         base:
           apiVersion: role.keycloak.crossplane.io/v1alpha1
           kind: Role
-          metadata: {}
+          metadata:
+            name: <name>
           spec:
             providerConfigRef:
               name: provider-keycloak
@@ -978,6 +985,9 @@ spec:
                   resolution: Required
               realmId: eoepca
         patches:
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "metadata.name"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.clientIdRef.name"
@@ -994,7 +1004,6 @@ spec:
             providerConfigRef:
               name: provider-keycloak
             forProvider:
-              name: <name>
               realmId: "eoepca"
               groupIdRef:
                 name: <name>
@@ -1008,9 +1017,6 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "metadata.name"
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.name"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.groupIdRef.name"
