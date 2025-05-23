@@ -129,7 +129,7 @@ spec:
                     enabled: false
                   proxy:
                     extraSANs:
-                      - <replaced>
+                      - k8s-<name><separator><domain>
                 sync:
                   toHost:
                     serviceAccounts:
@@ -146,7 +146,7 @@ spec:
                       enabled: true
                 exportKubeConfig:
                   context: vcluster-context
-                  server: <replaced>
+                  server: https://k8s-<name><separator><domain>
                 integrations:
                   metricsServer:
                     enabled: true
@@ -172,7 +172,7 @@ spec:
             - fromFieldPath: separator
             - fromFieldPath: domain
             string:
-              fmt: "https://k8s-%s%s%s"
+              fmt: "k8s-%s%s%s"
           toFieldPath: "spec.forProvider.values.controlPlane.proxy.extraSANs[0]"
         - type: CombineFromEnvironment
           combine:
@@ -208,6 +208,7 @@ spec:
                 kind: Ingress
                 metadata:
                   name: k8s
+                  namespace: <name>
                   annotations:
                     nginx.ingress.kubernetes.io/ssl-redirect: "true"
                     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
@@ -215,34 +216,44 @@ spec:
                     kubernetes.io/tls-acme: 'true'
                 spec:
                   rules:
-                    - host: <replaced>
+                    - host: k8s-<name><separator><domain>
                       http:
                         paths:
                           - path: /
                             pathType: Prefix
                             backend:
                               service:
-                                name: <replaced>
+                                name: k8s-<name>
                                 port:
                                   number: 443
                   tls:
                     - hosts:
-                        - <replaced>
+                        - k8s-<name><separator><domain>
                       secretName: vcluster-tls
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
-          transforms:
-          - type: string
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
             string:
-              type: Format
-              fmt: 'k8s-%s.develop.eoepca.org'
+              fmt: "k8s-%s%s%s"
+          toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            string:
+              fmt: "k8s-%s"
+          toFieldPath: "spec.forProvider.manifest.spec.rules[0].http.paths[0].backend.service.name"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.rules[0].http.paths[0].backend.service.name"
@@ -251,14 +262,16 @@ spec:
             string:
               type: Format
               fmt: 'k8s-%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
-          transforms:
-          - type: string
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
             string:
-              type: Format
-              fmt: 'k8s-%s.develop.eoepca.org'
+              fmt: "k8s-%s%s%s"
+          toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
       - name: example-id
         base:
           apiVersion: tf.upbound.io/v1beta1
