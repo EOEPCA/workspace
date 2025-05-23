@@ -246,16 +246,8 @@ spec:
             string:
               fmt: "k8s-%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
-        - type: CombineFromEnvironment
-          combine:
-            strategy: string
-            variables:
-            - fromFieldPath: name
-            string:
-              fmt: "k8s-%s"
-          toFieldPath: "spec.forProvider.manifest.spec.rules[0].http.paths[0].backend.service.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.spec.rules[0].http.paths[0].backend.service.name"
           transforms:
           - type: string
@@ -442,21 +434,21 @@ spec:
                       data:
                         AWS_ACCESS_KEY_ID: "{{ .AWS_ACCESS_KEY_ID }}"
                         AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
-                        AWS_ENDPOINT_URL: "https://minio.develop.eoepca.org"
-                        AWS_REGION: "eoepca-demo"
+                        AWS_ENDPOINT_URL: <storage.endpoint>
+                        AWS_REGION: <storage.region>
                         KUBECONFIG: "{{ .KUBECONFIG }}"
                   data:
                   - secretKey: AWS_SECRET_ACCESS_KEY
                     remoteRef:
-                      key: <replaced>
+                      key: bucket-<name>
                       property: AWS_SECRET_ACCESS_KEY
                   - secretKey: AWS_ACCESS_KEY_ID
                     remoteRef:
-                      key: <replaced>
+                      key: bucket-<name>
                       property: AWS_ACCESS_KEY_ID
                   - secretKey: KUBECONFIG
                     remoteRef:
-                      key: <replaced>
+                      key: vc-k8s-<name>
                       property: config
             providerConfigRef:
               name: provider-kubernetes
@@ -464,16 +456,22 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "storage.endpoint"
+          toFieldPath: "spec.forProvider.manifest.spec.target.data['AWS_ENDPOINT_URL']"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "storage.region"
+          toFieldPath: "spec.forProvider.manifest.spec.target.data['AWS_REGION']"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.spec.data[0].remoteRef.key"
           transforms:
           - type: string
             string:
               type: Format
               fmt: 'bucket-%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.spec.data[1].remoteRef.key"
           transforms:
           - type: string
