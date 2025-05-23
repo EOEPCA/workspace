@@ -748,6 +748,7 @@ spec:
                 kind: ApisixRoute
                 metadata:
                   name: workspace-ui
+                  namespace: <name>
                 spec:
                   http:
                   - backends:
@@ -755,7 +756,7 @@ spec:
                       servicePort: 8080
                     match:
                       hosts:
-                      - <replaced>
+                      - <name>.apx.<domain>
                       paths:
                       - /static*
                       - /share/public-*
@@ -767,7 +768,7 @@ spec:
                       servicePort: 8080
                     match:
                       hosts:
-                      - <replaced>
+                      - <name>.apx.<domain>
                       paths:
                       - /*
                     name: protected
@@ -776,25 +777,25 @@ spec:
                     - name: openid-connect
                       enable: true
                       config:
-                        discovery: "https://iam-auth.apx.develop.eoepca.org/realms/eoepca/.well-known/openid-configuration"
+                        discovery: <iam.discovery>
                         use_jwks: true
                         bearer_only: false # as we want to redirect to login screen (default: false)
                         set_access_token_header: true # required for subsequent OPA check (default: true)
                         access_token_in_authorization_header: true # required for subsequent OPA check (default: false)
                         set_id_token_header: true # required by UI (default: true)
                         set_userinfo_header: true # required by UI (default: true)
-                        client_id: <replaced>
+                        client_id: <name>
                         client_secret: ""
                     - name: opa
                       enable: true
                       config:
-                        host: http://iam-opal-opal-client.iam:8181
-                        policy: eoepca/workspace/wsui
+                        host: <opa.host>
+                        policy: <opa.policy>
             providerConfigRef:
               name: provider-kubernetes
         patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
         - type: CombineFromEnvironment
           combine:
@@ -803,7 +804,7 @@ spec:
             - fromFieldPath: name
             - fromFieldPath: domain
             string:
-              fmt: "%s.apx2.%s"
+              fmt: "%s.apx.%s"
           toFieldPath: "spec.forProvider.manifest.spec.http[0].match.hosts[0]"
         - type: CombineFromEnvironment
           combine:
@@ -814,9 +815,18 @@ spec:
             string:
               fmt: "%s.apx.%s"
           toFieldPath: "spec.forProvider.manifest.spec.http[1].match.hosts[0]"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.spec.http[1].plugins[0].config.client_id"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "iam.discovery"
+          toFieldPath: "spec.forProvider.manifest.spec.http[1].plugins[0].config.discovery"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "opa.host"
+          toFieldPath: "spec.forProvider.manifest.spec.http[1].plugins[1].config.host"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "opa.policy"
+          toFieldPath: "spec.forProvider.manifest.spec.http[1].plugins[1].config.policy"
       - name: keycloak-group
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
