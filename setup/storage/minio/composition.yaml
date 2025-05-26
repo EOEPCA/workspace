@@ -71,7 +71,7 @@ spec:
                 fromFieldPath: "spec.claimRef.namespace"
                 toFieldPath: "metadata.name"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.bucketNames"
+                fromFieldPath: "spec.buckets"
                 toFieldPath: "spec.forProvider.policies"
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.claimRef.namespace"
