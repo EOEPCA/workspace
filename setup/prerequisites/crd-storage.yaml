@@ -22,10 +22,11 @@ spec:
             spec:
               type: object
               properties:
+                bucketNames:
+                  type: array
+                  items:
+                    type: string
+                  default: []
                 location:
                   type: string
-                acl:
-                  type: string
-              required:
-                - location
-                - acl
+                  default: ""

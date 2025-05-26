@@ -8,7 +8,7 @@ spec:
     kind: XWorkspace
   mode: Pipeline
   pipeline:
-  - step: environment
+  - step: prepare-environment
     functionRef:
       name: function-environment-configs
     input:
@@ -19,7 +19,7 @@ spec:
         - type: Reference
           ref:
             name: workspace
-  - step: init
+  - step: setup-environment
     functionRef:
       name: function-patch-and-transform
     input:
@@ -30,7 +30,48 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.claimRef.name
           toFieldPath: name
-  - step: runtime
+  - step: setup-storage
+    functionRef:
+      name: function-patch-and-transform
+    input:
+      apiVersion: pt.fn.crossplane.io/v1beta1
+      kind: Resources
+      resources:
+      - name: storage
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: epca.eo/v1beta1
+                kind: Storage
+                metadata: 
+                  name: workspace
+                  namespace: <name>
+                spec:
+                  bucketNames:
+                  - <name>
+                  - <name>-stage
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.manifest.spec.bucketNames[0]"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.manifest.spec.bucketNames[1]"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: '%s-stage'
+  - step: setup-kubernetes
     functionRef:
       name: function-patch-and-transform
     input:
@@ -286,37 +327,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "metadata.name"
-  - step: storage
-    functionRef:
-      name: function-patch-and-transform
-    input:
-      apiVersion: pt.fn.crossplane.io/v1beta1
-      kind: Resources
-      resources:
-      - name: storage
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: epca.eo/v1beta1
-                kind: Storage
-                metadata: 
-                  name: workspace
-                  namespace: <name>
-                spec:
-                  location: EU
-                  acl: private
-                  # writeConnectionSecretToRef:
-                  #   name: bucket
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: role-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2

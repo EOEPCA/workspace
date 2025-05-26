@@ -8,124 +8,77 @@ spec:
     kind: XStorage
   mode: Pipeline
   pipeline:
-  - step: bucket
-    functionRef:
-      name: function-patch-and-transform
-    input:
-      apiVersion: pt.fn.crossplane.io/v1beta1
-      kind: Resources
-      resources:
-      - name: bucket
-        base:
-          apiVersion: minio.crossplane.io/v1
-          kind: Bucket
-          metadata: {}
-          spec:
-            forProvider:
-              region: eu-central-1
-            providerConfigRef:
-              name: provider-minio
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "metadata.name"
-      - name: bucket-stage
-        base:
-          apiVersion: minio.crossplane.io/v1
-          kind: Bucket
-          metadata: {}
-          spec:
-            forProvider:
-              region: eu-central-1
-            providerConfigRef:
-              name: provider-minio
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "metadata.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-stage'
-      - name: policy
-        base:
-          apiVersion: minio.crossplane.io/v1
-          kind: Policy
-          metadata: {}
-          spec:
-            forProvider: {}
-            providerConfigRef:
-              name: provider-minio
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.allowBucket"
-      - name: policy-stage
-        base:
-          apiVersion: minio.crossplane.io/v1
-          kind: Policy
-          metadata: {}
-          spec:
-            forProvider: {}
-            providerConfigRef:
-              name: provider-minio
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "metadata.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-stage'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.allowBucket"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-stage'
-      - name: user
-        base:
-          apiVersion: minio.crossplane.io/v1
-          kind: User
-          metadata: {}
-          spec:
-            forProvider:
-              policies: []
-            providerConfigRef:
-              name: provider-minio
-            writeConnectionSecretToRef:
-              name: <replaced>
-              namespace: <replaced>
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "metadata.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.policies[0]"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.policies[1]"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-stage'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'bucket-%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+    - step: setup-buckets-and-policies
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- range $i, $bucket := $xr.spec.bucketNames }}
+            ---
+            apiVersion: minio.crossplane.io/v1
+            kind: Bucket
+            metadata:
+              name: {{ $bucket }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: bucket-{{ $i }}
+            spec:
+              forProvider:
+                region: {{ $xr.spec.location | default "" }}
+              providerConfigRef:
+                name: provider-minio
+            ---
+            apiVersion: minio.crossplane.io/v1
+            kind: Policy
+            metadata:
+              name: {{ $bucket }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: policy-{{ $i }}
+            spec:
+              forProvider:
+                allowBucket: {{ $bucket }}
+              providerConfigRef:
+                name: provider-minio
+            {{- end }}
+    - step: setup-user
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: user
+            base:
+              apiVersion: minio.crossplane.io/v1
+              kind: User
+              metadata: {}
+              spec:
+                forProvider:
+                  policies: []
+                providerConfigRef:
+                  name: provider-minio
+                writeConnectionSecretToRef:
+                  name: placeholder
+                  namespace: placeholder
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.bucketNames"
+                toFieldPath: "spec.forProvider.policies"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: 'bucket-%s'
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
