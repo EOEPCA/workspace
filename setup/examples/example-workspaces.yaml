@@ -18,4 +18,4 @@ spec:
   members:
     - example-user-2
   extraBuckets:
-    - stage
+    - ws-example-team-2-stage

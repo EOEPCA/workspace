@@ -22,11 +22,8 @@ spec:
             spec:
               type: object
               properties:
-                bucketNames:
+                buckets:
                   type: array
                   items:
                     type: string
                   default: []
-                location:
-                  type: string
-                  default: ""

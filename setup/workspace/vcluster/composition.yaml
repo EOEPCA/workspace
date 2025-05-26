@@ -1040,10 +1040,10 @@ spec:
                   name: workspace
                   namespace: {{ .observed.composite.resource.spec.claimRef.name }}
                 spec:
-                  bucketNames:
+                  buckets:
                     - {{ .observed.composite.resource.spec.claimRef.name }}
                     {{- if .observed.composite.resource.spec.extraBuckets }}
                     {{- range .observed.composite.resource.spec.extraBuckets }}
-                    - {{ $.observed.composite.resource.spec.claimRef.name }}-{{ . }}
+                    - {{ . }}
                     {{- end }}
                     {{- end }}
