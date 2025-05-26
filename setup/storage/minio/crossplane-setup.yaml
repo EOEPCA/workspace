@@ -1,0 +1,6 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-minio
+spec:
+  package: ghcr.io/vshn/provider-minio/provider:v0.3.0
