@@ -1,6 +1,24 @@
 apiVersion: epca.eo/v1beta1
 kind: Workspace
 metadata:
+  name: ws-alice
+  namespace: workspace
+spec:
+  subscription: gold
+  owner: alice
+---
+apiVersion: epca.eo/v1beta1
+kind: Workspace
+metadata:
+  name: ws-bob
+  namespace: workspace
+spec:
+  subscription: gold
+  owner: bob
+---
+apiVersion: epca.eo/v1beta1
+kind: Workspace
+metadata:
   name: ws-eric
   namespace: workspace
 spec:
