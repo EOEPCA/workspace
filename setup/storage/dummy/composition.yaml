@@ -37,7 +37,7 @@ spec:
               name: provider-kubernetes
         patches:
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+          fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.manifest.metadata.name"
           transforms:
           - type: string
@@ -45,5 +45,5 @@ spec:
               type: Format
               fmt: 'bucket-%s'
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+          fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
