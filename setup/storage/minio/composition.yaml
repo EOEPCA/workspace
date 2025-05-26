@@ -26,6 +26,7 @@ spec:
               name: {{ $bucket }}
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: bucket-{{ $i }}
+                gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
                 region: {{ $xr.spec.location | default "" }}
@@ -38,6 +39,7 @@ spec:
               name: {{ $bucket }}
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: policy-{{ $i }}
+                gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
                 allowBucket: {{ $bucket }}

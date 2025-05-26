@@ -15,3 +15,7 @@ metadata:
 spec:
   subscription: bronze
   owner: example-user-1
+  members:
+    - example-user-2
+  extraBuckets:
+    - stage

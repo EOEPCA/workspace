@@ -31,12 +31,22 @@ spec:
                   default: silver
                 owner:
                   type: string
+                members:
+                  type: array
+                  items:
+                    type: string
+                  default: []
                 vcluster:
                   type: string
                   enum:
                     - active
                     - suspended
                     - disabled
-                  default: active
+                  default: active                
+                extraBuckets:
+                  type: array
+                  items:
+                    type: string
+                  default: []
               required:
                 - owner

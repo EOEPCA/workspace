@@ -30,47 +30,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.claimRef.name
           toFieldPath: name
-  - step: setup-storage
-    functionRef:
-      name: function-patch-and-transform
-    input:
-      apiVersion: pt.fn.crossplane.io/v1beta1
-      kind: Resources
-      resources:
-      - name: storage
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: epca.eo/v1beta1
-                kind: Storage
-                metadata: 
-                  name: workspace
-                  namespace: <name>
-                spec:
-                  bucketNames:
-                  - <name>
-                  - <name>-stage
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.spec.bucketNames[0]"
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.spec.bucketNames[1]"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '%s-stage'
   - step: setup-kubernetes
     functionRef:
       name: function-patch-and-transform
@@ -885,33 +844,6 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.name"
-      - name: keycloak-membership
-        base:
-          apiVersion: group.keycloak.crossplane.io/v1alpha1
-          kind: Memberships
-          metadata:
-            name: <name>
-          spec:
-            providerConfigRef:
-              name: provider-keycloak
-            forProvider:
-              groupIdRef:
-                name: <name>
-                policy:
-                  resolution: Required
-              members:
-              - <name>
-              realmId: eoepca
-        patches:
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "metadata.name"
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.groupIdRef.name"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.owner"
-          toFieldPath: "spec.forProvider.members[0]"
       - name: keycloak-mapper
         base:
           apiVersion: openidgroup.keycloak.crossplane.io/v1alpha1
@@ -1049,3 +981,69 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.roleIdsRefs[0].name"
+  - step: setup-keycloak-members
+    functionRef:
+      name: function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          ---
+          apiVersion: group.keycloak.crossplane.io/v1alpha1
+          kind: Memberships
+          metadata:
+            name: {{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+          spec:
+            providerConfigRef:
+              name: provider-keycloak
+            forProvider:
+              groupIdRef:
+                name: {{ .observed.composite.resource.spec.claimRef.name }}
+                policy:
+                  resolution: Required
+              realmId: eoepca
+              members:
+                - {{ .observed.composite.resource.spec.owner }}
+                {{- range .observed.composite.resource.spec.members }}
+                - {{ . }}
+                {{- end }}
+  - step: setup-storage
+    functionRef:
+      name: function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: workspace-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: storage-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+          spec:
+            providerConfigRef:
+              name: provider-kubernetes
+            forProvider:
+              manifest:
+                apiVersion: epca.eo/v1beta1
+                kind: Storage
+                metadata:
+                  name: workspace
+                  namespace: {{ .observed.composite.resource.spec.claimRef.name }}
+                spec:
+                  bucketNames:
+                    - {{ .observed.composite.resource.spec.claimRef.name }}
+                    {{- if .observed.composite.resource.spec.extraBuckets }}
+                    {{- range .observed.composite.resource.spec.extraBuckets }}
+                    - {{ $.observed.composite.resource.spec.claimRef.name }}-{{ . }}
+                    {{- end }}
+                    {{- end }}
