@@ -38,7 +38,7 @@ spec:
         patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
           transforms:
           - type: string
             string:
