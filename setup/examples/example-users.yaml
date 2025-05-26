@@ -24,8 +24,8 @@ apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
 metadata:
   name: example-admin
-  annotations:
-    crossplane.io/external-name: "11b75ef2-b964-48b1-8a43-6e3c8bdd4f33" 
+  # annotations:
+  #   crossplane.io/external-name: "11b75ef2-b964-48b1-8a43-6e3c8bdd4f33" 
 spec:
   providerConfigRef:
     name: provider-keycloak
