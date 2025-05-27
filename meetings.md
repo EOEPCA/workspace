@@ -1,3 +1,18 @@
+# Agenda 20250513 & 20250527
+
+- modularize workspace pipelines (=Crossplane compositions) for flexible setup  
+  - avoid installing unnecessary providers, e.g. only install MinIO provider when MinIO is in use  
+  - support minimal setups like Crossplane&Keycloak-only without storage&workspace components
+
+- introduce environment abstraction using Crossplane's `EnvironmentConfig` CRD
+  - simplify bridging differences between test/prod instances (e.g. Urls)
+
+- enable deployments on multiple clusters without code duplication  
+  - EOEPCA demo cluster: with MinIO and vCluster
+  - Terrabyte setup: with Quobyte and vCluster
+
+for corresponding links see https://github.com/EOEPCA/workspace/issues/55#issuecomment-2911260992
+
 # Agenda 20250401
 
 - support(reenable) both API as well as browser-based UI access to workspace-api endpoint
