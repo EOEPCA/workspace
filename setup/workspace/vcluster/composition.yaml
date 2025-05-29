@@ -1058,12 +1058,19 @@ spec:
                     - name: {{ $bucket }}
                       accessReadWrite:
                         - {{ $.observed.composite.resource.spec.claimRef.name }}
-                      {{- range $g := $.observed.composite.resource.spec.grants }}
-                        {{- if eq $g.bucket $bucket }}
-                      accessReadOnly:
-                        {{- range $grantee := $g.grantees }}
-                        - {{ $grantee }}
+                      {{- $accessors := list }}
+                      {{- range $.observed.composite.resource.spec.grants }}
+                        {{- if eq .bucket $bucket }}
+                          {{- range .grantees }}
+                            {{- $accessors = append $accessors . }}
+                          {{- end }}
                         {{- end }}
+                      {{- end }}
+                      {{- if $accessors }}
+                      accessReadOnly:
+                        {{- range $grantee := $accessors }}
+                        - {{ $grantee }}
                         {{- end }}
                       {{- end }}
                   {{- end }}
+

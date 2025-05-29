@@ -25,7 +25,7 @@ spec:
   subscription: gold
   owner: eric
   extraBuckets:
-    - eric-shared
+    - ws-eric-shared
   grants:
     - bucket: ws-eric
       grantees:
@@ -56,3 +56,7 @@ spec:
     - example-user-2
   extraBuckets:
     - ws-example-team-2-stage
+  grants:
+    - bucket: ws-example-team-2-stage
+      grantees:
+      - ws-example-team-1
