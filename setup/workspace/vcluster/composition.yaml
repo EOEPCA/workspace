@@ -1053,19 +1053,17 @@ spec:
                         {{- end }}
                         {{- end }}
                       {{- end }}
-                    {{- if .observed.composite.resource.spec.extraBuckets }}
-                    {{- range .observed.composite.resource.spec.extraBuckets }}
-                    - name: {{ . }}
+                  {{- range .observed.composite.resource.spec.extraBuckets }}
+                  {{- $bucket := . }}
+                    - name: {{ $bucket }}
                       accessReadWrite:
                         - {{ $.observed.composite.resource.spec.claimRef.name }}
-                      {{- $grants := $.observed.composite.resource.spec.grants }}
-                      {{- range $g := $grants }}
-                        {{- if eq $g.bucket . }}
+                      {{- range $g := $.observed.composite.resource.spec.grants }}
+                        {{- if eq $g.bucket $bucket }}
                       accessReadOnly:
                         {{- range $grantee := $g.grantees }}
                         - {{ $grantee }}
                         {{- end }}
                         {{- end }}
                       {{- end }}
-                    {{- end }}
-                    {{- end }}
+                  {{- end }}

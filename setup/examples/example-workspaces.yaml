@@ -29,7 +29,7 @@ spec:
   grants:
     - bucket: eric-shared
       grantees:
-      - alice
+      - ws-alice
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace

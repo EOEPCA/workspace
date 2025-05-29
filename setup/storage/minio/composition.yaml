@@ -8,7 +8,7 @@ spec:
     kind: XStorage
   mode: Pipeline
   pipeline:
-    - step: setup-storage
+    - step: setup-minio
       functionRef:
         name: function-go-templating
       input:
@@ -17,9 +17,7 @@ spec:
         source: Inline
         inline:
           template: |
-            {{- $xr := .observed.composite.resource }}
-            {{- if $xr.metadata.namespace }}
-            {{- range $i, $bucket := $xr.spec.buckets }}
+            {{- range $i, $bucket := .observed.composite.resource.spec.buckets }}
             ---
             apiVersion: minio.crossplane.io/v1
             kind: Bucket
@@ -29,8 +27,6 @@ spec:
                 gotemplating.fn.crossplane.io/composition-resource-name: bucket-{{ $i }}
                 gotemplating.fn.crossplane.io/ready: "True"
             spec:
-              forProvider:
-                region: ""
               providerConfigRef:
                 name: provider-minio
             {{- range $j, $rw := $bucket.accessReadWrite }}
@@ -111,25 +107,24 @@ spec:
             apiVersion: minio.crossplane.io/v1
             kind: User
             metadata:
-              name: {{ $xr.metadata.namespace }}
+              name: {{ .observed.composite.resource.spec.claimRef.namespace }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: user-{{ $xr.metadata.namespace }}
+                gotemplating.fn.crossplane.io/composition-resource-name: user-{{ .observed.composite.resource.spec.claimRef.namespace }}
                 gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
-                userName: {{ $xr.metadata.namespace }}
+                userName: {{ .observed.composite.resource.spec.claimRef.namespace }}
                 policies:
-                {{- range $i, $bucket := $xr.spec.buckets }}
-                  {{- if has $xr.metadata.namespace $bucket.accessReadWrite }}
-                  - {{ $xr.metadata.namespace }}.readwrite.{{ $bucket.name }}
+                {{- range $i, $bucket := .observed.composite.resource.spec.buckets }}
+                  {{- if has $.observed.composite.resource.spec.claimRef.namespace $bucket.accessReadWrite }}
+                  - {{ $.observed.composite.resource.spec.claimRef.namespace }}.readwrite.{{ $bucket.name }}
                   {{- end }}
-                  {{- if has $xr.metadata.namespace $bucket.accessReadOnly }}
-                  - {{ $xr.metadata.namespace }}.readonly.{{ $bucket.name }}
+                  {{- if has $.observed.composite.resource.spec.claimRef.namespace $bucket.accessReadOnly }}
+                  - {{ $.observed.composite.resource.spec.claimRef.namespace }}.readonly.{{ $bucket.name }}
                   {{- end }}
                 {{- end }}
               providerConfigRef:
                 name: provider-minio
               writeConnectionSecretToRef:
-                name: bucket-{{ $xr.metadata.namespace }}
-                namespace: {{ $xr.metadata.namespace }}
-            {{- end }}
+                name: bucket-{{ .observed.composite.resource.spec.claimRef.namespace }}
+                namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
