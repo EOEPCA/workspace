@@ -18,6 +18,7 @@ spec:
         inline:
           template: |
             {{- range $i, $bucket := .observed.composite.resource.spec.buckets }}
+              {{- if eq $bucket.owner $.observed.composite.resource.spec.claimRef.namespace }}
             ---
             apiVersion: minio.crossplane.io/v1
             kind: Bucket
@@ -29,14 +30,43 @@ spec:
             spec:
               providerConfigRef:
                 name: provider-minio
-            {{- range $j, $rw := $bucket.accessReadWrite }}
+              {{- end }}
+              {{- if $bucket.owner }}
+            ---
+            apiVersion: minio.crossplane.io/v1
+            kind: Policy
+            metadata:
+              name: {{ $bucket.owner }}.owner.{{ $bucket.name }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: policy-{{ $bucket.owner }}.owner.{{ $bucket.name }}
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              forProvider:
+                rawPolicy: |
+                  {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [ "s3:*" ],
+                        "Resource": [
+                          "arn:aws:s3:::{{ $bucket.name }}",
+                          "arn:aws:s3:::{{ $bucket.name }}/*"
+                        ]
+                      }
+                    ]
+                  }
+              providerConfigRef:
+                name: provider-minio
+              {{- end }}
+              {{- range $j, $rw := $bucket.accessReadWrite }}
             ---
             apiVersion: minio.crossplane.io/v1
             kind: Policy
             metadata:
               name: {{ $rw }}.readwrite.{{ $bucket.name }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: policy-rw-{{ $i }}-{{ $j }}
+                gotemplating.fn.crossplane.io/composition-resource-name: policy-{{ $rw }}.readwrite.{{ $bucket.name }}
                 gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
@@ -62,15 +92,15 @@ spec:
                   }
               providerConfigRef:
                 name: provider-minio
-            {{- end }}
-            {{- range $j, $ro := $bucket.accessReadOnly }}
+              {{- end }}
+              {{- range $j, $ro := $bucket.accessReadOnly }}
             ---
             apiVersion: minio.crossplane.io/v1
             kind: Policy
             metadata:
               name: {{ $ro }}.readonly.{{ $bucket.name }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: policy-ro-{{ $i }}-{{ $j }}
+                gotemplating.fn.crossplane.io/composition-resource-name: policy-{{ $ro }}.readonly.{{ $bucket.name }}
                 gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
@@ -101,7 +131,7 @@ spec:
                   }
               providerConfigRef:
                 name: provider-minio
-            {{- end }}
+              {{- end }}
             {{- end }}
             ---
             apiVersion: minio.crossplane.io/v1
@@ -121,6 +151,9 @@ spec:
                   {{- end }}
                   {{- if has $.observed.composite.resource.spec.claimRef.namespace $bucket.accessReadOnly }}
                   - {{ $.observed.composite.resource.spec.claimRef.namespace }}.readonly.{{ $bucket.name }}
+                  {{- end }}
+                  {{- if eq $bucket.owner $.observed.composite.resource.spec.claimRef.namespace }}
+                  - {{ $bucket.owner }}.owner.{{ $bucket.name }}
                   {{- end }}
                 {{- end }}
               providerConfigRef:

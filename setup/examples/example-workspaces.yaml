@@ -6,6 +6,8 @@ metadata:
 spec:
   subscription: gold
   owner: alice
+  linkedBuckets:
+    - ws-eric-shared
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
@@ -56,6 +58,8 @@ spec:
     - example-user-2
   extraBuckets:
     - ws-example-team-2-stage
+  linkedBuckets:
+    - ws-example-team-1
   grants:
     - bucket: ws-example-team-2-stage
       grantees:

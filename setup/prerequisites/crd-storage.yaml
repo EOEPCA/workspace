@@ -28,6 +28,8 @@ spec:
                     properties:
                       name:
                         type: string
+                      owner:
+                        type: string
                       accessReadWrite:
                         type: array
                         items:

@@ -52,6 +52,11 @@ spec:
                   items:
                     type: string
                   default: []
+                linkedBuckets:
+                  type: array
+                  items:
+                    type: string
+                  default: []
                 grants:
                   type: array
                   items:
