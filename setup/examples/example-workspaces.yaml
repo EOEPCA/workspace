@@ -27,9 +27,13 @@ spec:
   extraBuckets:
     - eric-shared
   grants:
-    - bucket: eric-shared
+    - bucket: ws-eric
       grantees:
       - ws-alice
+    - bucket: ws-eric-shared
+      grantees:
+      - ws-alice
+      - ws-bob
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
