@@ -14,7 +14,7 @@ metadata:
   namespace: workspace
 spec:
   subscription: gold
-  owner: bob
+  owner: bob  
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
@@ -24,6 +24,12 @@ metadata:
 spec:
   subscription: gold
   owner: eric
+  extraBuckets:
+    - eric-shared
+  grants:
+    - bucket: eric-shared
+      grantees:
+      - alice
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace

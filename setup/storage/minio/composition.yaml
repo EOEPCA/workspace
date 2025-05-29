@@ -8,7 +8,7 @@ spec:
     kind: XStorage
   mode: Pipeline
   pipeline:
-    - step: setup-buckets-and-policies
+    - step: setup-storage
       functionRef:
         name: function-go-templating
       input:
@@ -18,6 +18,7 @@ spec:
         inline:
           template: |
             {{- $xr := .observed.composite.resource }}
+            {{- if $xr.metadata.namespace }}
             {{- range $i, $bucket := $xr.spec.buckets }}
             ---
             apiVersion: minio.crossplane.io/v1
@@ -37,7 +38,7 @@ spec:
             apiVersion: minio.crossplane.io/v1
             kind: Policy
             metadata:
-              name: {{ $bucket.name }}.readwrite.{{ $rw }}
+              name: {{ $rw }}.readwrite.{{ $bucket.name }}
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: policy-rw-{{ $i }}-{{ $j }}
                 gotemplating.fn.crossplane.io/ready: "True"
@@ -71,7 +72,7 @@ spec:
             apiVersion: minio.crossplane.io/v1
             kind: Policy
             metadata:
-              name: {{ $bucket.name }}.readonly.{{ $ro }}
+              name: {{ $ro }}.readonly.{{ $bucket.name }}
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: policy-ro-{{ $i }}-{{ $j }}
                 gotemplating.fn.crossplane.io/ready: "True"
@@ -106,30 +107,29 @@ spec:
                 name: provider-minio
             {{- end }}
             {{- end }}
-            {{- range $user := (uniq (concat (pluck "accessReadWrite" $xr.spec.buckets) (pluck "accessReadOnly" $xr.spec.buckets))) }}
             ---
             apiVersion: minio.crossplane.io/v1
             kind: User
             metadata:
-              name: {{ $user }}
+              name: {{ $xr.metadata.namespace }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: user-{{ $user }}
+                gotemplating.fn.crossplane.io/composition-resource-name: user-{{ $xr.metadata.namespace }}
                 gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
-                userName: {{ $user }}
+                userName: {{ $xr.metadata.namespace }}
                 policies:
                 {{- range $i, $bucket := $xr.spec.buckets }}
-                  {{- if has $user $bucket.accessReadWrite }}
-                  - {{ $bucket.name }}.readwrite.{{ $user }}
+                  {{- if has $xr.metadata.namespace $bucket.accessReadWrite }}
+                  - {{ $xr.metadata.namespace }}.readwrite.{{ $bucket.name }}
                   {{- end }}
-                  {{- if has $user $bucket.accessReadOnly }}
-                  - {{ $bucket.name }}.readonly.{{ $user }}
+                  {{- if has $xr.metadata.namespace $bucket.accessReadOnly }}
+                  - {{ $xr.metadata.namespace }}.readonly.{{ $bucket.name }}
                   {{- end }}
                 {{- end }}
               providerConfigRef:
                 name: provider-minio
               writeConnectionSecretToRef:
-                name: bucket-{{ $user }}
-                namespace: {{ $user }}
+                name: bucket-{{ $xr.metadata.namespace }}
+                namespace: {{ $xr.metadata.namespace }}
             {{- end }}
