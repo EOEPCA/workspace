@@ -17,9 +17,13 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
+          required:
+            - spec
           properties:
             spec:
               type: object
+              required:
+                - owner
               properties:
                 subscription:
                   type: string
@@ -52,6 +56,9 @@ spec:
                   type: array
                   items:
                     type: object
+                    required:
+                      - bucket
+                      - grantees
                     properties:
                       bucket:
                         type: string
@@ -59,12 +66,7 @@ spec:
                         type: array
                         items:
                           type: string
-                    required:
-                      - bucket
-                      - grantees
                   default: []
             status:
               type: object
-              properties:
-              required:
-                - owner
+              properties: {}
