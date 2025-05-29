@@ -3,7 +3,6 @@ kind: CompositeResourceDefinition
 metadata:
   name: xstorages.epca.eo
 spec:
-  #connectionSecretKeys: []
   group: epca.eo
   names:
     kind: XStorage
@@ -25,5 +24,16 @@ spec:
                 buckets:
                   type: array
                   items:
-                    type: string
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      accessReadWrite:
+                        type: array
+                        items:
+                          type: string
+                      accessReadOnly:
+                        type: array
+                        items:
+                          type: string
                   default: []

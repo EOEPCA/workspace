@@ -1041,9 +1041,31 @@ spec:
                   namespace: {{ .observed.composite.resource.spec.claimRef.name }}
                 spec:
                   buckets:
-                    - {{ .observed.composite.resource.spec.claimRef.name }}
+                    - name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      accessReadWrite:
+                        - {{ .observed.composite.resource.spec.claimRef.name }}
+                      {{- $grants := .observed.composite.resource.spec.grants }}
+                      {{- range $g := $grants }}
+                        {{- if eq $g.bucket $.observed.composite.resource.spec.claimRef.name }}
+                      accessReadOnly:
+                        {{- range $grantee := $g.grantees }}
+                        - {{ $grantee }}
+                        {{- end }}
+                        {{- end }}
+                      {{- end }}
                     {{- if .observed.composite.resource.spec.extraBuckets }}
                     {{- range .observed.composite.resource.spec.extraBuckets }}
-                    - {{ . }}
+                    - name: {{ . }}
+                      accessReadWrite:
+                        - {{ $.observed.composite.resource.spec.claimRef.name }}
+                      {{- $grants := $.observed.composite.resource.spec.grants }}
+                      {{- range $g := $grants }}
+                        {{- if eq $g.bucket . }}
+                      accessReadOnly:
+                        {{- range $grantee := $g.grantees }}
+                        - {{ $grantee }}
+                        {{- end }}
+                        {{- end }}
+                      {{- end }}
                     {{- end }}
                     {{- end }}

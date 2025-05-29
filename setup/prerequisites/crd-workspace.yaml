@@ -3,7 +3,6 @@ kind: CompositeResourceDefinition
 metadata:
   name: xworkspaces.epca.eo
 spec:
-  #connectionSecretKeys: []
   group: epca.eo
   names:
     kind: XWorkspace
@@ -28,7 +27,8 @@ spec:
                     - gold
                     - silver
                     - bronze
-                  default: silver
+                    - trial
+                  default: trial
                 owner:
                   type: string
                 members:
@@ -42,11 +42,29 @@ spec:
                     - active
                     - suspended
                     - disabled
-                  default: active                
+                  default: disabled
                 extraBuckets:
                   type: array
                   items:
                     type: string
                   default: []
+                grants:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      bucket:
+                        type: string
+                      grantees:
+                        type: array
+                        items:
+                          type: string
+                    required:
+                      - bucket
+                      - grantees
+                  default: []
+            status:
+              type: object
+              properties:
               required:
                 - owner

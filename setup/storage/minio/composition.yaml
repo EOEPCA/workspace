@@ -23,7 +23,7 @@ spec:
             apiVersion: minio.crossplane.io/v1
             kind: Bucket
             metadata:
-              name: {{ $bucket }}
+              name: {{ $bucket.name }}
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: bucket-{{ $i }}
                 gotemplating.fn.crossplane.io/ready: "True"
@@ -32,55 +32,104 @@ spec:
                 region: ""
               providerConfigRef:
                 name: provider-minio
+            {{- range $j, $rw := $bucket.accessReadWrite }}
             ---
             apiVersion: minio.crossplane.io/v1
             kind: Policy
             metadata:
-              name: {{ $bucket }}
+              name: {{ $bucket.name }}.readwrite.{{ $rw }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: policy-{{ $i }}
+                gotemplating.fn.crossplane.io/composition-resource-name: policy-rw-{{ $i }}-{{ $j }}
                 gotemplating.fn.crossplane.io/ready: "True"
             spec:
               forProvider:
-                allowBucket: {{ $bucket }}
+                rawPolicy: |
+                  {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetBucketLocation",
+                          "s3:ListBucket",
+                          "s3:GetObject",
+                          "s3:PutObject",
+                          "s3:DeleteObject"
+                        ],
+                        "Resource": [
+                          "arn:aws:s3:::{{ $bucket.name }}",
+                          "arn:aws:s3:::{{ $bucket.name }}/*"
+                        ]
+                      }
+                    ]
+                  }
               providerConfigRef:
                 name: provider-minio
             {{- end }}
-    - step: setup-user
-      functionRef:
-        name: function-patch-and-transform
-      input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        kind: Resources
-        resources:
-          - name: user
-            base:
-              apiVersion: minio.crossplane.io/v1
-              kind: User
-              metadata: {}
-              spec:
-                forProvider:
-                  policies: []
-                providerConfigRef:
-                  name: provider-minio
-                writeConnectionSecretToRef:
-                  name: placeholder
-                  namespace: placeholder
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "metadata.name"
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.buckets"
-                toFieldPath: "spec.forProvider.policies"
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: 'bucket-%s'
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+            {{- range $j, $ro := $bucket.accessReadOnly }}
+            ---
+            apiVersion: minio.crossplane.io/v1
+            kind: Policy
+            metadata:
+              name: {{ $bucket.name }}.readonly.{{ $ro }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: policy-ro-{{ $i }}-{{ $j }}
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              forProvider:
+                rawPolicy: |
+                  {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetBucketLocation",
+                          "s3:ListBucket"
+                        ],
+                        "Resource": [
+                          "arn:aws:s3:::{{ $bucket.name }}"
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetObject"
+                        ],
+                        "Resource": [
+                          "arn:aws:s3:::{{ $bucket.name }}/*"
+                        ]
+                      }
+                    ]
+                  }
+              providerConfigRef:
+                name: provider-minio
+            {{- end }}
+            {{- end }}
+            {{- range $user := (uniq (concat (pluck "accessReadWrite" $xr.spec.buckets) (pluck "accessReadOnly" $xr.spec.buckets))) }}
+            ---
+            apiVersion: minio.crossplane.io/v1
+            kind: User
+            metadata:
+              name: {{ $user }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: user-{{ $user }}
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              forProvider:
+                userName: {{ $user }}
+                policies:
+                {{- range $i, $bucket := $xr.spec.buckets }}
+                  {{- if has $user $bucket.accessReadWrite }}
+                  - {{ $bucket.name }}.readwrite.{{ $user }}
+                  {{- end }}
+                  {{- if has $user $bucket.accessReadOnly }}
+                  - {{ $bucket.name }}.readonly.{{ $user }}
+                  {{- end }}
+                {{- end }}
+              providerConfigRef:
+                name: provider-minio
+              writeConnectionSecretToRef:
+                name: bucket-{{ $user }}
+                namespace: {{ $user }}
+            {{- end }}
