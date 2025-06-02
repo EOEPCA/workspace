@@ -46,7 +46,7 @@ spec:
                     - active
                     - suspended
                     - disabled
-                  default: disabled
+                  default: active
                 extraBuckets:
                   type: array
                   items:
