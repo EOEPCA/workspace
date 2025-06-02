@@ -1,6 +1,39 @@
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
 metadata:
+  name: alice
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+  forProvider:
+    username: alice
+    realmId: eoepca
+---
+apiVersion: user.keycloak.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: bob
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+  forProvider:
+    username: bob
+    realmId: eoepca
+---
+apiVersion: user.keycloak.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: eric
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+  forProvider:
+    username: eric
+    realmId: eoepca
+---
+apiVersion: user.keycloak.crossplane.io/v1alpha1
+kind: User
+metadata:
   name: example-user-1
 spec:
   providerConfigRef:
