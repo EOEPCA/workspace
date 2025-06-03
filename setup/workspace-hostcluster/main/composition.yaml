@@ -102,190 +102,6 @@ spec:
                 # limits.memory: 20Gi
                 # requests.cpu: "4"
                 # requests.memory: 16Gi
-      - name: helm-vcluster
-        base:
-          apiVersion: helm.crossplane.io/v1beta1
-          kind: Release
-          metadata: {}
-          spec:
-            forProvider:
-              chart:
-                name: vcluster
-                repository: https://charts.loft.sh
-                version: 0.23.2
-              namespace: <replaced>
-              values:
-                controlPlane:
-                  distro:
-                    k0s:
-                      enabled: true
-                  statefulSet:
-                    persistence:
-                      volumeClaim:
-                        storageClass: managed-nfs-storage
-                    highAvailability:
-                      replicas: <replaced>
-                  ingress:
-                    enabled: false
-                  proxy:
-                    extraSANs:
-                      - <name><vcluster.separator><domain>
-                sync:
-                  toHost:
-                    serviceAccounts:
-                      enabled: true
-                    persistentVolumeClaims:
-                      enabled: true
-                    persistentVolumes:
-                      enabled: true
-                  fromHost:
-                    nodes:
-                      enabled: true
-                      clearImageStatus: true
-                    storageClasses:
-                      enabled: true
-                exportKubeConfig:
-                  context: vcluster-context
-                  server: https://<name><vcluster.separator><domain>
-                integrations:
-                  metricsServer:
-                    enabled: true
-            providerConfigRef:
-              name: provider-helm
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'vcluster-%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.namespace"
-        - type: CombineFromEnvironment
-          combine:
-            strategy: string
-            variables:
-            - fromFieldPath: name
-            - fromFieldPath: vcluster.separator
-            - fromFieldPath: domain
-            string:
-              fmt: "%s%s%s"
-          toFieldPath: "spec.forProvider.values.controlPlane.proxy.extraSANs[0]"
-        - type: CombineFromEnvironment
-          combine:
-            strategy: string
-            variables:
-            - fromFieldPath: name
-            - fromFieldPath: vcluster.separator
-            - fromFieldPath: domain
-            string:
-              fmt: "https://%s%s%s"
-          toFieldPath: "spec.forProvider.values.exportKubeConfig.server"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.vcluster"
-          toFieldPath: "spec.forProvider.values.controlPlane.statefulSet.highAvailability"
-          transforms:
-          - type: map
-            map: 
-              active:
-                replicas: 1
-              suspended:
-                replicas: 0
-              disabled:
-                replicas: 0
-      - name: ingress-vcluster
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: networking.k8s.io/v1
-                kind: Ingress
-                metadata:
-                  name: vcluster
-                  namespace: <name>
-                  annotations:
-                    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-                    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-                    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-                    kubernetes.io/tls-acme: 'true'
-                spec:
-                  rules:
-                    - host: <name><vcluster.separator><domain>
-                      http:
-                        paths:
-                          - path: /
-                            pathType: Prefix
-                            backend:
-                              service:
-                                name: vcluster-<name>
-                                port:
-                                  number: 443
-                  tls:
-                    - hosts:
-                        - <name><vcluster.separator><domain>
-                      secretName: vcluster-tls
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: CombineFromEnvironment
-          combine:
-            strategy: string
-            variables:
-            - fromFieldPath: name
-            - fromFieldPath: vcluster.separator
-            - fromFieldPath: domain
-            string:
-              fmt: "%s%s%s"
-          toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.spec.rules[0].http.paths[0].backend.service.name"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'vcluster-%s'
-        - type: CombineFromEnvironment
-          combine:
-            strategy: string
-            variables:
-            - fromFieldPath: name
-            - fromFieldPath: vcluster.separator
-            - fromFieldPath: domain
-            string:
-              fmt: "%s%s%s"
-          toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
-      - name: example-id
-        base:
-          apiVersion: tf.upbound.io/v1beta1
-          kind: Workspace
-          metadata: {}
-          spec:
-            providerConfigRef:
-              name: provider-terraform
-            forProvider:
-              source: Inline
-              module: |
-                resource "random_id" "example_id" {
-                  byte_length = 4
-                }
-                output "example_id" {
-                  value       = random_id.example_id.hex
-                  sensitive = false
-                }
-        patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.name"
       - name: role-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -406,7 +222,7 @@ spec:
                         AWS_ENDPOINT_URL: <storage.endpoint>
                         AWS_REGION: <storage.region>
                         PROVIDER: <storage.provider>
-                        KUBECONFIG: "{{ .KUBECONFIG }}"
+                        KUBECONFIG: ""
                   data:
                   - secretKey: AWS_SECRET_ACCESS_KEY
                     remoteRef:
@@ -416,10 +232,6 @@ spec:
                     remoteRef:
                       key: bucket-<name>
                       property: AWS_ACCESS_KEY_ID
-                  - secretKey: KUBECONFIG
-                    remoteRef:
-                      key: vc-vcluster-<name>
-                      property: config
             providerConfigRef:
               name: provider-kubernetes
         patches:
@@ -451,14 +263,6 @@ spec:
             string:
               type: Format
               fmt: 'bucket-%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.data[2].remoteRef.key"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: 'vc-vcluster-%s'
       - name: externalsecret-rclone
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2

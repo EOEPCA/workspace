@@ -1,30 +1,4 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: ws-keycloak
-rules:
-  - apiGroups:
-    - "epca.eo"
-    resources:
-    - "workspaces"
-    verbs:
-    - "patch"
-    - "get" 
-  - apiGroups:
-    - "group.keycloak.crossplane.io"
-    resources:
-    - "memberships"
-    verbs:
-    - "patch"
-    - "get" 
-  - apiGroups:
-    - "group.keycloak.crossplane.io"
-    resources:
-    - "groups"
-    verbs:
-    - "list" 
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: provider-helm-cluster-admin
