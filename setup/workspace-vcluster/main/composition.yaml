@@ -606,7 +606,7 @@ spec:
                     spec:
                       containers:
                       - name: workspace
-                        image: ghcr.io/versioneer-tech/package-r:v2025.4.1
+                        image: ghcr.io/versioneer-tech/package-r:v2025.6.2
                         ports:
                         - name: http
                           containerPort: 8080
@@ -616,8 +616,34 @@ spec:
                           valueFrom:
                             fieldRef:
                               fieldPath: metadata.namespace
+                        - name: FB_ROOT
+                          value: "/workspace"
                         - name: FB_BRANDING_NAME
                           value: "Workspace-UI"
+                        - name: FB_AUTH_HEADER
+                          value: "Accept" # any existing header works here as protected via OPA
+                        - name: FB_AUTH_MAPPER
+                          value: "reader-share"
+                        - name: AWS_ACCESS_KEY_ID
+                          valueFrom:
+                            secretKeyRef:
+                              name: workspace
+                              key: AWS_ACCESS_KEY_ID
+                        - name: AWS_SECRET_ACCESS_KEY
+                          valueFrom:
+                            secretKeyRef:
+                              name: workspace
+                              key: AWS_SECRET_ACCESS_KEY
+                        - name: AWS_REGION
+                          valueFrom:
+                            secretKeyRef:
+                              name: workspace
+                              key: AWS_REGION
+                        - name: AWS_ENDPOINT_URL
+                          valueFrom:
+                            secretKeyRef:
+                              name: workspace
+                              key: AWS_ENDPOINT_URL
                         resources:
                           limits:
                             cpu: 1
@@ -627,25 +653,12 @@ spec:
                             memory: 128Mi
                         imagePullPolicy: Always
                         volumeMounts:
-                        - mountPath: /mounts
-                          name: mounts
-                        - mountPath: <replaced>
-                          name: secrets
-                        - mountPath: <replaced>
-                          name: secrets
-                        - mountPath: /workspace/packages
-                          name: packages
+                        - name: bucket
+                          mountPath: /workspace
                       volumes:
-                      - name: mounts
+                      - name: bucket
                         persistentVolumeClaim:
                           claimName: rclone
-                          readOnly: true
-                      - name: secrets
-                        secret:
-                          secretName: workspace
-                      - name: packages
-                        persistentVolumeClaim:
-                          claimName: workspace
                       # nodeSelector:
                       #  "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
@@ -654,22 +667,6 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].volumeMounts[1].mountPath"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '/secrets/%s'
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].volumeMounts[2].mountPath"
-          transforms:
-          - type: string
-            string:
-              type: Format
-              fmt: '/secrets/%s-stage'
       - name: clusterrolebinding-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
