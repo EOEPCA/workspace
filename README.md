@@ -54,7 +54,7 @@ The [`common`](/setup/common) component is **always required**. It installs the 
 
 2) Optional: Additional Functionality for Storage and Compute Workspaces
 
-If the functionality fTo enable extended features, the [`prerequisites`](/setup/prerequisites) module must  be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case. Example Deployments: 
+To enable extended features, the [`prerequisites`](/setup/prerequisites) module must  be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case. Example Deployments: 
 
 - [EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
 
