@@ -616,6 +616,8 @@ spec:
                           containerPort: 8080
                           protocol: TCP
                         env:
+                        - name: FB_AUTH_MAPPER
+                          value: "<workspace.auth.mapper>"
                         - name: WORKSPACE
                           valueFrom:
                             fieldRef:
@@ -626,8 +628,6 @@ spec:
                           value: "Workspace-UI"
                         - name: FB_AUTH_HEADER
                           value: "Accept" # any existing header works here as protected via OPA
-                        - name: FB_AUTH_MAPPER
-                          value: "reader-share"
                         - name: AWS_ACCESS_KEY_ID
                           valueFrom:
                             secretKeyRef:
@@ -671,6 +671,9 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "workspace.auth.mapper"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].env[0].value"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "workspace.pvcs[0]"
           toFieldPath: "spec.forProvider.manifest.spec.template.spec.volumes[0].persistentVolumeClaim.claimName"
