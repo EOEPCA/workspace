@@ -34,20 +34,16 @@ This implementation is inherently Kubernetes-native, emphasizing modularity, sca
 
 Pipeline blueprints illustrate how core features are integrated and applied to provision resources across different infrastructure setups.
 
----
-### Required Base Setup
+1) Required Base Setup
 
-The [`common`](/main/setup/common) component is **always required**. It installs the Keycloak Provider on top of Crossplane and provides the foundational functionality.
+The [`common`](/setup/common) component is **always required**. It installs the Keycloak Provider on top of Crossplane and provides the foundational functionality.
 
----
 
-### Optional: Additional Functionality for Storage and Compute Workspaces
+2) Optional: Additional Functionality for Storage and Compute Workspaces
 
 To enable extended features, the [`prerequisites`](/setup/prerequisites) module must always be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case:
 
----
-
-[EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
+- [EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
 
 **Uses:**
 
@@ -64,9 +60,7 @@ To enable extended features, the [`prerequisites`](/setup/prerequisites) module 
 > - Ensure correct component order using `argocd.argoproj.io/sync-wave` annotations.  
 > - Disable pruning and auto-syncing, as Crossplane's provider model does not integrate seamlessly with ArgoCD in fully automated replacement/deletion scenarios.
 
----
-
-#### Terrabyte Blueprint
+- Terrabyte Blueprint
 
 **Uses:**
 
