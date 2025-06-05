@@ -349,7 +349,7 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: pvc-workspace
+      - name: pvc-dummy
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -360,7 +360,7 @@ spec:
                 apiVersion: v1
                 kind: PersistentVolumeClaim
                 metadata:
-                  name: workspace
+                  name: dummy
                   namespace: <name>
                 spec:
                   accessModes:
@@ -457,12 +457,12 @@ spec:
                             memory: 128Mi
                         imagePullPolicy: Always
                         volumeMounts:
-                        - name: bucket
+                        - name: workspace
                           mountPath: /workspace
                       volumes:
-                      - name: bucket
+                      - name: workspace
                         persistentVolumeClaim:
-                          claimName: rclone
+                          claimName: <workspace.pvcs[0]>
                       # nodeSelector:
                       #  "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
@@ -471,6 +471,9 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "workspace.pvcs[0]"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.volumes[0].persistentVolumeClaim.claimName"
       - name: service-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2

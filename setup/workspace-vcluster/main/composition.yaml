@@ -129,7 +129,7 @@ spec:
                     enabled: false
                   proxy:
                     extraSANs:
-                      - <name><vcluster.separator><domain>
+                      - <vcluster.prefix><name><vcluster.separator><domain>
                 sync:
                   toHost:
                     serviceAccounts:
@@ -146,7 +146,7 @@ spec:
                       enabled: true
                 exportKubeConfig:
                   context: vcluster-context
-                  server: https://<name><vcluster.separator><domain>
+                  server: https://<vcluster.prefix><name><vcluster.separator><domain>
                 integrations:
                   metricsServer:
                     enabled: true
@@ -168,21 +168,23 @@ spec:
           combine:
             strategy: string
             variables:
+            - fromFieldPath: vcluster.prefix
             - fromFieldPath: name
             - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "%s%s%s"
+              fmt: "%s%s%s%s"
           toFieldPath: "spec.forProvider.values.controlPlane.proxy.extraSANs[0]"
         - type: CombineFromEnvironment
           combine:
             strategy: string
             variables:
+            - fromFieldPath: vcluster.prefix
             - fromFieldPath: name
             - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "https://%s%s%s"
+              fmt: "https://%s%s%s%s"
           toFieldPath: "spec.forProvider.values.exportKubeConfig.server"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.vcluster"
@@ -216,7 +218,7 @@ spec:
                     kubernetes.io/tls-acme: 'true'
                 spec:
                   rules:
-                    - host: <name><vcluster.separator><domain>
+                    - host: <vcluster.prefix><name><vcluster.separator><domain>
                       http:
                         paths:
                           - path: /
@@ -228,7 +230,7 @@ spec:
                                   number: 443
                   tls:
                     - hosts:
-                        - <name><vcluster.separator><domain>
+                        - <vcluster.prefix><name><vcluster.separator><domain>
                       secretName: vcluster-tls
             providerConfigRef:
               name: provider-kubernetes
@@ -240,11 +242,12 @@ spec:
           combine:
             strategy: string
             variables:
+            - fromFieldPath: vcluster.prefix
             - fromFieldPath: name
             - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "%s%s%s"
+              fmt: "%s%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.rules[0].host"
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
@@ -258,11 +261,12 @@ spec:
           combine:
             strategy: string
             variables:
+            - fromFieldPath: vcluster.prefix
             - fromFieldPath: name
             - fromFieldPath: vcluster.separator
             - fromFieldPath: domain
             string:
-              fmt: "%s%s%s"
+              fmt: "%s%s%s%s"
           toFieldPath: "spec.forProvider.manifest.spec.tls[0].hosts[0]"
       - name: example-id
         base:
@@ -545,7 +549,7 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: pvc-workspace
+      - name: pvc-dummy
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -556,7 +560,7 @@ spec:
                 apiVersion: v1
                 kind: PersistentVolumeClaim
                 metadata:
-                  name: workspace
+                  name: dummy
                   namespace: <name>
                 spec:
                   accessModes:
@@ -653,12 +657,12 @@ spec:
                             memory: 128Mi
                         imagePullPolicy: Always
                         volumeMounts:
-                        - name: bucket
+                        - name: workspace
                           mountPath: /workspace
                       volumes:
-                      - name: bucket
+                      - name: workspace
                         persistentVolumeClaim:
-                          claimName: rclone
+                          claimName: <workspace.pvcs[0]>
                       # nodeSelector:
                       #  "kubernetes.io/hostname": "192.168.9.31"
             providerConfigRef:
@@ -667,6 +671,9 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "workspace.pvcs[0]"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.volumes[0].persistentVolumeClaim.claimName"
       - name: service-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
