@@ -45,31 +45,31 @@ To enable extended features, the [`prerequisites`](/setup/prerequisites) module 
 
 - [EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
 
-**Uses:**
+   Uses:
 
-- In-cluster **MinIO** buckets  
-- **vCluster** for isolated environments
+   - In-cluster MinIO buckets  
+   - vCluster for isolated environments
 
-**Required Modules:**
+   Required Modules:
 
-- [`storage-minio`](/setup/minio)
-- [`workspace-vcluster`](/setup/workspace-vcluster/)
+   - [`storage-minio`](/setup/minio)
+   - [`workspace-vcluster`](/setup/workspace-vcluster/)
 
-> 💡 **Note:** This setup uses **ArgoCD** for rollout.  
-> - You can explore the ArgoCD Application Manifests via the link above.  
-> - Ensure correct component order using `argocd.argoproj.io/sync-wave` annotations.  
-> - Disable pruning and auto-syncing, as Crossplane's provider model does not integrate seamlessly with ArgoCD in fully automated replacement/deletion scenarios.
+   > 💡 *Note:* This setup uses ArgoCD for rollout.  
+   > - You can explore the ArgoCD Application Manifests via the link above.  
+   > - Ensure correct component order using `argocd.argoproj.io/sync-wave` annotations.  
+   > - Disable pruning and auto-syncing, as Crossplane's provider model does not integrate seamlessly with ArgoCD in fully automated replacement/deletion scenarios.
 
 - Terrabyte Blueprint
 
-**Uses:**
+   Uses:
 
-- **Quobyte** storage via regular Kubernetes PersistentVolumes and StorageClass, so only dummy Storage implementation is needed.
-- Workloads installed directly into a dedicated namespace on the host cluster.
+   - Quobyte** storage via regular Kubernetes PersistentVolumes and StorageClass, so only dummy Storage implementation is needed.
+   - Workloads installed directly into a dedicated namespace on the host cluster.
 
-**Required Modules:**
+   Required Modules:
 
-- [`storage-dummy`](/setup/dummy)
-- [`workspace-hostcluster`](/setup/workspace-hostcluster/)
+   - [`storage-dummy`](/setup/dummy)
+   - [`workspace-hostcluster`](/setup/workspace-hostcluster/)
 
-> 💡 **Note:** This setup uses ArgoCD for rollout as well.
+   > 💡 *Note:* This setup uses ArgoCD for rollout as well.
