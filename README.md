@@ -32,16 +32,29 @@ This implementation is inherently Kubernetes-native, emphasizing modularity, sca
 
 ### Setup & Pipeline Blueprints Overview
 
-Pipeline blueprints illustrate how core features are integrated and applied to provision resources across different infrastructure setups.
+Pipeline blueprints illustrate how core features are integrated and applied to provision resources across various infrastructure setups.
 
+All referenced components are layered hierarchically:
+- `common`
+- `prerequisites` (depends on `common`)
+- `storage` and `workspace` (depend on `prerequisites`)
+
+Each component consists of two distinct phases: `init` and`main`. These phases must be executed in order, i.e. `init` must complete successfully before `main` begins.
+
+The required execution order can be enforced either through scripting or by using features of the chosen GitOps tooling:
+
+- Argo CD: Requires explicit ordering using the `sync-wave` annotation.
+- Flux CD: Doesn't fail but requires multiple reconciliation cycles, which increases provisioning time.
+
+> 💡 Ensure that your tooling or automation logic reflects these dependencies and phase requirements to avoid partial or failed deployments!
+ 
 1) Required Base Setup
 
 The [`common`](/setup/common) component is **always required**. It installs the Keycloak Provider on top of Crossplane and provides the foundational functionality.
 
-
 2) Optional: Additional Functionality for Storage and Compute Workspaces
 
-To enable extended features, the [`prerequisites`](/setup/prerequisites) module must always be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case. Example Deployments: 
+If the functionality fTo enable extended features, the [`prerequisites`](/setup/prerequisites) module must  be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case. Example Deployments: 
 
 - [EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
 
