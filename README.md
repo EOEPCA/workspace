@@ -41,7 +41,7 @@ The [`common`](/setup/common) component is **always required**. It installs the 
 
 2) Optional: Additional Functionality for Storage and Compute Workspaces
 
-To enable extended features, the [`prerequisites`](/setup/prerequisites) module must always be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case:
+To enable extended features, the [`prerequisites`](/setup/prerequisites) module must always be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case. Example Deployments: 
 
 - [EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
 
@@ -52,7 +52,7 @@ To enable extended features, the [`prerequisites`](/setup/prerequisites) module 
 
    Required Modules:
 
-   - [`storage-minio`](/setup/minio)
+   - [`storage-minio`](/setup/storage-minio)
    - [`workspace-vcluster`](/setup/workspace-vcluster/)
 
    > 💡 *Note:* This setup uses ArgoCD for rollout.  
@@ -60,7 +60,7 @@ To enable extended features, the [`prerequisites`](/setup/prerequisites) module 
    > - Ensure correct component order using `argocd.argoproj.io/sync-wave` annotations.  
    > - Disable pruning and auto-syncing, as Crossplane's provider model does not integrate seamlessly with ArgoCD in fully automated replacement/deletion scenarios.
 
-- Terrabyte Blueprint
+- Terrabyte Platform (DLR)
 
    Uses:
 
@@ -69,7 +69,7 @@ To enable extended features, the [`prerequisites`](/setup/prerequisites) module 
 
    Required Modules:
 
-   - [`storage-dummy`](/setup/dummy)
+   - [`storage-dummy`](/setup/storage-dummy)
    - [`workspace-hostcluster`](/setup/workspace-hostcluster/)
 
    > 💡 *Note:* This setup uses ArgoCD for rollout as well.
