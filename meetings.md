@@ -1,7 +1,7 @@
 # Agenda 20250610
 
 - Crunchy Data Postgres Operator as infra component (not directly workspace related but generally applicable))
-  - Goal: individual BB should not bundle Postgres themselves but may request a database from platoform so they also get scoped user and can bootstrap schema and initial data → Crunchy Data Postgres Operator provides these capabilities  
+  - Goal: individual BB should not bundle Postgres themselves but "request" a database from platform, so they also get scoped user and can bootstrap schema and initial data → Crunchy Data Postgres Operator provides these capabilities  
   - Status: such setup existed purely for eoapi, but now we also want to open up the database for resource management and, in future, other BBs (IAM with Keycloak, …)  see https://github.com/EOEPCA/roadmap/issues/415#issuecomment-2948746291
     > this setup not only created database `eoapi` and scoped access credentials but also makes the corresponding DB access credentials available as a k8s Secret—no need to pass credentials around!  
 
