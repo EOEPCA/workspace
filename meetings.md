@@ -5,10 +5,10 @@
   - Status: such setup existed purely for eoapi, but now we also want to open up the database for resource management and, in future, other BBs (IAM with Keycloak, …)  see https://github.com/EOEPCA/roadmap/issues/415#issuecomment-2948746291
     > this setup not only created database `eoapi` and scoped access credentials but also makes the corresponding DB access credentials available as a k8s Secret—no need to pass credentials around!  
 
-    -> Crunchy Data Postgres Operator becomes an infrastructure component relevant for many BBs, with desired state fully trackable via GitOps; established on eoepca-demo with  
+    -> Crunchy Data Postgres Operator becomes an infrastructure component relevant for many BBs, with desired state fully trackable via GitOps, established on eoepca-demo with  
     https://github.com/EOEPCA/eoepca-plus/blob/4ece2c408a70c6bcf3a226f082267a5621b85805/argocd/infra/pgo/parts/postgrescluster.yaml#L39  
 
-  - Open Callenge: credentials are created in the `infra` namespace but must be accessible to namespaces like `data-access` (eoapi) and `rm` (pycsw/pygeoapi/…), proposal to make the External Secrets Operator (already used in workspace pipelines for similar reasons) an infra component, tracked in https://github.com/EOEPCA/roadmap/issues/415#issuecomment-2894332551 TBC
+  - Open Challenge: credentials are created in the `infra` namespace but must be accessible to namespaces like `data-access` (eoapi) and `rm` (pycsw/pygeoapi/…), proposal to make the External Secrets Operator (already used in workspace pipelines for similar reasons) an infra component, tracked in https://github.com/EOEPCA/roadmap/issues/415#issuecomment-2894332551 TBC
 
 - Modularized workspace pipelines (blueprints as Crossplane compositions) are referenced, not copied  
   - Goal: all variants must be consumable externally allowing to just point to these blueprints – two complementary concepts used: EnvironmentConfig and physical separation within different folder structures (see https://github.com/EOEPCA/workspace/issues/55)  
