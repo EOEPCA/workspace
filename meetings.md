@@ -1,3 +1,54 @@
+# Agenda 20250610
+
+- Crunchy Data Postgres Operator as infra component (not directly workspace related but generally applicable))
+  - Goal: individual BB should not bundle Postgres themselves but may request a database from platoform so they also get scoped user and can bootstrap schema and initial data → Crunchy Data Postgres Operator provides these capabilities  
+  - Status: such setup existed purely for eoapi, but now we also want to open up the database for resource management and, in future, other BBs (IAM with Keycloak, …)  see https://github.com/EOEPCA/roadmap/issues/415#issuecomment-2948746291
+    > this setup not only created database `eoapi` and scoped access credentials but also makes the corresponding DB access credentials available as a k8s Secret—no need to pass credentials around!  
+
+    -> Crunchy Data Postgres Operator becomes an infrastructure component relevant for many BBs, with desired state fully trackable via GitOps; established on eoepca-demo with  
+    https://github.com/EOEPCA/eoepca-plus/blob/4ece2c408a70c6bcf3a226f082267a5621b85805/argocd/infra/pgo/parts/postgrescluster.yaml#L39  
+
+  - Open Callenge: credentials are created in the `infra` namespace but must be accessible to namespaces like `data-access` (eoapi) and `rm` (pycsw/pygeoapi/…), proposal to make the External Secrets Operator (already used in workspace pipelines for similar reasons) an infra component, tracked in https://github.com/EOEPCA/roadmap/issues/415#issuecomment-2894332551 TBC
+
+- Modularized workspace pipelines (blueprints as Crossplane compositions) are referenced, not copied  
+  - Goal: all variants must be consumable externally allowing to just point to these blueprints – two complementary concepts used: EnvironmentConfig and physical separation within different folder structures (see https://github.com/EOEPCA/workspace/issues/55)  
+  - Status: applied on `eoepca-demo`  (MinIO, vCluster – see https://github.com/EOEPCA/workspace/issues/54#issuecomment-2909051138) and on `terrabyte-test` / `terrabyte-prod` clusters (also via ArgoCD using Quobyte and k8s namespace, but no vcluster currently), using tag `v2025.06.05`  
+  - Next: Richard’s scripted deployments provided additional findings and feedback (https://github.com/EOEPCA/workspace/issues/52#issuecomment-2949261918), adaptions to be made until final Q2 2025 release (may include breaking changes)
+
+    > development dependency on final DNS naming for correct eoepca-demo deployment (ApiSix <-> nginx migration by Richard with IAM team)
+
+- Extended `Workspace` object as the canonical source of truth:  
+  - track members in addition to owner and propagate from there
+    > this addresses an identified permission flaw in the previous version’s member management (https://github.com/EOEPCA/workspace/issues/53)
+  - additional buckets (only one created by default)  
+  - buckets where workspace members also have access  
+  - grants given to other users  
+
+  ```yaml
+  spec:
+    owner: alice                  
+    subscription: silver          
+    vcluster: active              
+
+    members:                      
+      - carol
+
+    extraBuckets:                 
+      - ws-alice-results
+
+    linkedBuckets:                
+      - ws-eric-shared
+
+    grants:                       
+      - bucket: ws-alice-results
+        grantees:
+          - bob
+          - eric
+  ```
+  -> to be finalized and documented  
+
+- On terrabyte we already mount an existing PVC via Quobyte storageClass (i.e., not relying on a created volume during provisioning pipeline), this can be generalized in https://github.com/EOEPCA/workspace/issues/52 so Workspace can be used against NFS and any other PVC (but for sure no presigned URLs then, so you always proxy through)  
+
 # Agenda 20250513 & 20250527
 
 - modularize workspace pipelines (=Crossplane compositions) for flexible setup  
