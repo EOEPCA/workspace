@@ -8,6 +8,10 @@ spec:
   forProvider:
     username: alice
     realmId: eoepca
+    email: alice@eoepca.org
+    emailVerified: true
+    firstName: Alice
+    lastName: EOEPCA
 ---
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
@@ -19,6 +23,10 @@ spec:
   forProvider:
     username: bob
     realmId: eoepca
+    email: bob@eoepca.org
+    emailVerified: true
+    firstName: Bob
+    lastName: EOEPCA
 ---
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
@@ -30,6 +38,10 @@ spec:
   forProvider:
     username: eric
     realmId: eoepca
+    email: eric@eoepca.org
+    emailVerified: true
+    firstName: Eric
+    lastName: EOEPCA
 ---
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
@@ -41,6 +53,10 @@ spec:
   forProvider:
     username: example-user-1
     realmId: eoepca
+    email: example-user-1@eoepca.org
+    emailVerified: true
+    firstName: Example-user-1
+    lastName: EOEPCA
 ---
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
@@ -52,6 +68,10 @@ spec:
   forProvider:
     username: example-user-2
     realmId: eoepca
+    email: example-user-2@eoepca.org
+    emailVerified: true
+    firstName: Example-user-2
+    lastName: EOEPCA
 ---
 apiVersion: user.keycloak.crossplane.io/v1alpha1
 kind: User
@@ -65,3 +85,7 @@ spec:
   forProvider:
     username: example-admin
     realmId: eoepca
+    email: example-admin@eoepca.org
+    emailVerified: true
+    firstName: Example-admin
+    lastName: EOEPCA
