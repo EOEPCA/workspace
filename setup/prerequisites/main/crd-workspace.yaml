@@ -40,6 +40,8 @@ spec:
                   items:
                     type: string
                   default: []
+                defaultBucket:
+                  type: string
                 vcluster:
                   type: string
                   enum:

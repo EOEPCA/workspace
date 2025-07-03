@@ -1074,7 +1074,7 @@ spec:
                       {{- $grants := .observed.composite.resource.spec.grants }}
                       {{- range $g := $grants }}
                       {{- if eq $g.bucket $.observed.composite.resource.spec.claimRef.name }}
-                      accessReadOnly:
+                      accessReadWrite:
                         {{- range $grantee := $g.grantees }}
                         - {{ $grantee }}
                         {{- end }}
@@ -1093,7 +1093,7 @@ spec:
                       {{- end }}
                       {{- end }}
                       {{- if $accessors }}
-                      accessReadOnly:
+                      accessReadWrite:
                         {{- range $grantee := $accessors }}
                         - {{ $grantee }}
                         {{- end }}
@@ -1101,7 +1101,7 @@ spec:
                     {{- end }}
                     {{- range .observed.composite.resource.spec.linkedBuckets }}
                     - name: {{ . }}
-                      accessReadOnly:
+                      accessReadWrite:
                         - {{ $.observed.composite.resource.spec.claimRef.name }}
                     {{- end }}
   - step: setup-datatooling
@@ -1335,14 +1335,14 @@ spec:
                     #!/bin/bash
                     set -x
                     cd /workspace
-                    #code-server --install-extension ms-python.python
-                    #code-server --install-extension redhat.vscode-yaml
+                    code-server --install-extension ms-python.python
+                    code-server --install-extension redhat.vscode-yaml
                     ln -s /workspace/.local/share/code-server/extensions /workspace/extensions
                     mkdir -p /workspace/User/
                     echo '{"workbench.colorTheme": "Visual Studio Dark"}' > /workspace/User/settings.json
                     python -m venv .venv && source .venv/bin/activate
-                    #python -m pip install --no-cache-dir rasterio click pystac loguru pyproj shapely scikit-image pystac rio_stac ipykernel stactools[validate]
-                    #python -m ipykernel install --user --name default --display-name "Python Default"
+                    python -m pip install --no-cache-dir rasterio click pystac loguru pyproj shapely scikit-image pystac rio_stac ipykernel stactools[validate] planetary_computer pystac_client          
+                    python -m ipykernel install --user --name default --display-name "Python Default"
           ---
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object

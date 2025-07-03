@@ -6,8 +6,9 @@ metadata:
 spec:
   subscription: gold
   owner: alice
+  defaultBucket: ws-alice
   linkedBuckets:
-    - ws-eric-shared
+    - ws-eric-shared # no access granted yet from ws-eric
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
@@ -16,7 +17,12 @@ metadata:
   namespace: workspace
 spec:
   subscription: gold
-  owner: bob  
+  owner: bob
+  defaultBucket: ws-bob
+  members:
+    - example-user-1
+  linkedBuckets:
+    - ws-eric-shared # access granted from ws-eric 
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
@@ -26,41 +32,13 @@ metadata:
 spec:
   subscription: gold
   owner: eric
+  defaultBucket: ws-eric
+  members:
+    - example-user-1
+    - example-user-2
   extraBuckets:
     - ws-eric-shared
   grants:
-    - bucket: ws-eric
-      grantees:
-      - ws-alice
     - bucket: ws-eric-shared
-      grantees:
-      - ws-alice
+      grantees:  
       - ws-bob
----
-apiVersion: epca.eo/v1beta1
-kind: Workspace
-metadata:
-  name: ws-example-team-1
-  namespace: workspace
-spec:
-  subscription: gold
-  owner: example-user-1
----
-apiVersion: epca.eo/v1beta1
-kind: Workspace
-metadata:
-  name: ws-example-team-2
-  namespace: workspace
-spec:
-  subscription: bronze
-  owner: example-user-1
-  members:
-    - example-user-2
-  extraBuckets:
-    - ws-example-team-2-stage
-  linkedBuckets:
-    - ws-example-team-1
-  grants:
-    - bucket: ws-example-team-2-stage
-      grantees:
-      - ws-example-team-1
