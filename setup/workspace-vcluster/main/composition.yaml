@@ -1185,6 +1185,8 @@ spec:
                       initContainers:
                         - name: init-file-on-volume
                           image: codercom/code-server:4.101.2-ubuntu
+                          securityContext:
+                            runAsUser: 0
                           command: ["bash", "/opt/init/.init.sh"]
                           volumeMounts:
                             - name: workspace-volume
@@ -1196,7 +1198,6 @@ spec:
                         - name: code-server
                           image: codercom/code-server:4.101.2-ubuntu
                           securityContext:
-                            runAsUser: 0
                             privileged: true
                           command: ["/bin/bash", "-c"]
                           args:
