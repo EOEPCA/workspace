@@ -120,6 +120,9 @@ spec:
                     k0s:
                       enabled: true
                   statefulSet:
+                    persistence:
+                      volumeClaim:
+                        storageClass: <storageClassName>
                     highAvailability:
                       replicas: <replaced>
                   ingress:
@@ -166,6 +169,9 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.namespace"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "storageClassName"
+          toFieldPath: "spec.forProvider.values.controlPlane.statefulSet.persistence.volumeClaim.storageClass"
         - type: CombineFromEnvironment
           combine:
             strategy: string
@@ -1347,7 +1353,7 @@ spec:
                     mkdir -p /workspace/User/
                     echo '{"workbench.colorTheme": "Visual Studio Dark"}' > /workspace/User/settings.json
                     python -m venv .venv && source .venv/bin/activate
-                    python -m pip install --no-cache-dir rasterio click pystac loguru pyproj shapely scikit-image pystac rio_stac ipykernel stactools[validate] planetary_computer pystac_client          
+                    python -m pip install --no-cache-dir ipykernel
                     python -m ipykernel install --user --name default --display-name "Python Default"
           ---
           apiVersion: kubernetes.crossplane.io/v1alpha2
