@@ -627,6 +627,10 @@ spec:
                             secretKeyRef:
                               name: workspace
                               key: AWS_ENDPOINT_URL
+                        - name: FB_CATALOG_BASE_URL
+                          value: "/workspace"
+                        - name: FB_CATALOG_PREVIEW_URL
+                          value: "https://eoapi.apx.develop.eoepca.org/browser/external/"
                         resources:
                           limits:
                             cpu: 1
@@ -711,7 +715,11 @@ spec:
                       - /share/public-*
                       - /api/public/dl/public-*
                       - /api/public/share/public-*
+                      - /api/public/catalog*
                     name: public
+                    plugins:
+                    - name: cors
+                      enable: true
                   - backends:
                     - serviceName: workspace
                       servicePort: 8080
@@ -740,6 +748,8 @@ spec:
                       config:
                         host: <opa.host>
                         policy: <opa.policy>
+                    - name: cors
+                      enable: true
             providerConfigRef:
               name: provider-kubernetes
         patches:
