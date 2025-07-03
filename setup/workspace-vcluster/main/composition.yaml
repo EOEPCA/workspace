@@ -1184,9 +1184,7 @@ spec:
                     spec:
                       initContainers:
                         - name: init-file-on-volume
-                          image: codercom/code-server:4.101.2-ubuntu
-                          securityContext:
-                            runAsUser: 0
+                          image: eoxhub/code-server:0.1
                           command: ["bash", "/opt/init/.init.sh"]
                           volumeMounts:
                             - name: workspace-volume
@@ -1196,7 +1194,7 @@ spec:
                               subPath: init
                       containers:
                         - name: code-server
-                          image: codercom/code-server:4.101.2-ubuntu
+                          image: eoxhub/code-server:0.1
                           securityContext:
                             privileged: true
                           command: ["/bin/bash", "-c"]
@@ -1347,21 +1345,9 @@ spec:
                 data:
                   init: |
                     #!/bin/bash
-                    set -eux
-                    chmod 0777 /workspace
-                    cd /workspace
-                    apt-get update && \
-                    apt-get install -y --no-install-recommends \
-                        python3 \
-                        python3-venv \
-                        python3-pip \
-                        python-is-python3 \
-                        build-essential \
-                        awscli \
-                        rclone \
-                    && apt-get clean && rm -rf /var/lib/apt/lists/*
-                    code-server --install-extension ms-python.python
-                    code-server --install-extension redhat.vscode-yaml
+                    python -m venv .venv && source .venv/bin/activate
+                    python -m pip install --no-cache-dir ipykernel
+                    python -m ipykernel install --user --name default --display-name "Python Default"                    
           ---
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
