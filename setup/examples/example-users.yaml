@@ -89,3 +89,21 @@ spec:
     emailVerified: true
     firstName: Example-admin
     lastName: EOEPCA
+---
+apiVersion: user.keycloak.crossplane.io/v1alpha1
+kind: Roles
+metadata:
+  name: example-admin-stac-editor
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+  forProvider:
+    userIdRef:
+      name: example-admin
+      policy:
+        resolution: Required
+    realmId: eoepca
+    roleIdsRefs:
+    - name: stac-editor 
+      policy:
+        resolution: Required
