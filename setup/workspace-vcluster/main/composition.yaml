@@ -1183,6 +1183,14 @@ spec:
                         app.kubernetes.io/name: code-server
                     spec:
                       initContainers:
+                        - name: fix-permissions
+                          image: busybox:latest
+                          command: ["sh", "-c", "chmod 0777 /workspace"]
+                          securityContext:
+                            runAsUser: 0
+                          volumeMounts:
+                            - name: workspace-volume
+                              mountPath: /workspace
                         - name: init-file-on-volume
                           image: eoepca/pde-code-server:1.0.0
                           command: ["bash", "/opt/init/.init.sh"]
