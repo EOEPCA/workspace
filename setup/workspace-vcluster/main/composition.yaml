@@ -1183,6 +1183,14 @@ spec:
                         app.kubernetes.io/name: code-server
                     spec:
                       initContainers:
+                        - name: fix-permissions
+                          image: busybox
+                          command: ["sh", "-c", "chown -R 1000:1000 /workspace"]
+                          volumeMounts:
+                            - name: workspace-volume
+                              mountPath: /workspace
+                          securityContext:
+                            runAsUser: 0
                         - name: init-file-on-volume
                           image: eoxhub/code-server:0.1
                           command: ["bash", "/opt/init/.init.sh"]
