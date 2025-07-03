@@ -77,12 +77,12 @@ To enable extended features, the [`prerequisites`](/setup/prerequisites) module 
 
    Uses:
 
-   - Quobyte** storage via regular Kubernetes PersistentVolumes and StorageClass, so only dummy Storage implementation is needed.
-   - Workloads installed directly into a dedicated namespace on the host cluster.
+   - Cinder (OpenStack) and Quobyte storage via regular Kubernetes PersistentVolumes and StorageClass, so only dummy Storage implementation is needed.
+   - vCluster for isolated environments
 
    Required Modules:
 
    - [`storage-dummy`](/setup/storage-dummy)
-   - [`workspace-hostcluster`](/setup/workspace-hostcluster/)
+   - [`workspace-vcluster`](/setup/workspace-vcluster/)
 
    > 💡 *Note:* This setup uses ArgoCD for rollout as well.

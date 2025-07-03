@@ -144,6 +144,11 @@ spec:
                       clearImageStatus: true
                     storageClasses:
                       enabled: true
+                    secrets:
+                      enabled: true
+                      mappings:
+                        byName:
+                          "": "default/*"
                 exportKubeConfig:
                   context: vcluster-context
                   server: https://<vcluster.prefix><name><vcluster.separator><domain>
@@ -549,32 +554,6 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "name"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-      - name: pvc-dummy
-        base:
-          apiVersion: kubernetes.crossplane.io/v1alpha2
-          kind: Object
-          metadata: {}
-          spec:
-            forProvider:
-              manifest:
-                apiVersion: v1
-                kind: PersistentVolumeClaim
-                metadata:
-                  name: dummy
-                  namespace: <name>
-                spec:
-                  accessModes:
-                  - ReadWriteMany
-                  resources:
-                    requests:
-                      storage: 10Gi
-                  storageClassName: managed-nfs-storage
-            providerConfigRef:
-              name: provider-kubernetes
-        patches:
-        - type: FromEnvironmentFieldPath
-          fromFieldPath: "name"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
       - name: deployment-workspace
         base:
           apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -610,7 +589,7 @@ spec:
                     spec:
                       containers:
                       - name: workspace
-                        image: ghcr.io/versioneer-tech/package-r:v2025.6.2
+                        image: ghcr.io/versioneer-tech/package-r:v2025.7.1-rc4
                         ports:
                         - name: http
                           containerPort: 8080
@@ -799,6 +778,81 @@ spec:
         - type: FromEnvironmentFieldPath
           fromFieldPath: "opa.policy"
           toFieldPath: "spec.forProvider.manifest.spec.http[1].plugins[1].config.policy"
+      - name: apisixroute-code-server
+        base:
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata: {}
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: apisix.apache.org/v2
+                kind: ApisixRoute
+                metadata:
+                  name: code-server
+                  namespace: <name>
+                spec:
+                  http:
+                  - name: code-server-route
+                    backends:
+                    - serviceName: code-server-x-default-x-vcluster-<name>
+                      servicePort: 8080
+                    match:
+                      hosts:
+                      - code-server-<name><separator><domain>
+                      paths:
+                      - /
+                      - /*
+                    websocket: true
+                    # plugins:
+                    # - name: openid-connect
+                    #   enable: true
+                    #   config:
+                    #     discovery: <iam.discovery>
+                    #     use_jwks: true
+                    #     bearer_only: false # as we want to redirect to login screen (default: false)
+                    #     set_access_token_header: false
+                    #     access_token_in_authorization_header: false
+                    #     set_id_token_header: false
+                    #     set_userinfo_header: false
+                    #     client_id: <name>
+                    #     client_secret: ""
+            providerConfigRef:
+              name: provider-kubernetes
+        patches:
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"        
+        - type: CombineFromEnvironment
+          combine:
+            strategy: string
+            variables:
+            - fromFieldPath: name
+            - fromFieldPath: separator
+            - fromFieldPath: domain
+            string:
+              fmt: "code-server-%s%s%s"
+          toFieldPath: "spec.forProvider.manifest.spec.http[0].match.hosts[0]"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.manifest.spec.http[0].plugins[0].config.client_id"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "name"
+          toFieldPath: "spec.forProvider.manifest.spec.http[0].backends[0].serviceName"
+          transforms:
+          - type: string
+            string:
+              type: Format
+              fmt: 'code-server-x-default-x-vcluster-%s'
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "iam.discovery"
+          toFieldPath: "spec.forProvider.manifest.spec.http[0].plugins[0].config.discovery"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "opa.host"
+          toFieldPath: "spec.forProvider.manifest.spec.http[0].plugins[1].config.host"
+        - type: FromEnvironmentFieldPath
+          fromFieldPath: "opa.policy"
+          toFieldPath: "spec.forProvider.manifest.spec.http[0].plugins[1].config.policy"
       - name: keycloak-group
         base:
           apiVersion: group.keycloak.crossplane.io/v1alpha1
@@ -1050,3 +1104,296 @@ spec:
                       accessReadOnly:
                         - {{ $.observed.composite.resource.spec.claimRef.name }}
                     {{- end }}
+  - step: setup-datatooling
+    functionRef:
+      name: function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: providerconfig-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: providerconfig-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+          spec:
+            providerConfigRef:
+              name: provider-kubernetes
+            forProvider:
+              manifest:
+                apiVersion: kubernetes.crossplane.io/v1alpha1
+                kind: ProviderConfig
+                metadata:
+                  name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+                spec:
+                  credentials:
+                    source: Secret
+                    secretRef:
+                      namespace: {{ .observed.composite.resource.spec.claimRef.name }}
+                      name: vc-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+                      key: config
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: code-server-deployment-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: code-server-deployment-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+          spec:
+            providerConfigRef:
+              name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            forProvider:
+              manifest:
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: code-server
+                  namespace: default
+                  labels:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                spec:
+                  replicas: 1
+                  selector:
+                    matchLabels:
+                      app.kubernetes.io/instance: code-server
+                      app.kubernetes.io/name: code-server
+                  template:
+                    metadata:
+                      labels:
+                        app.kubernetes.io/instance: code-server
+                        app.kubernetes.io/name: code-server
+                    spec:
+                      initContainers:
+                        - name: init-file-on-volume
+                          image: eoepca/pde-code-server:1.0.0
+                          command: ["bash", "/opt/init/.init.sh"]
+                          volumeMounts:
+                            - name: workspace-volume
+                              mountPath: /workspace
+                            - name: init
+                              mountPath: /opt/init/.init.sh
+                              subPath: init
+                      containers:
+                        - name: code-server
+                          image: eoepca/pde-code-server:1.0.0
+                          securityContext:
+                            privileged: true
+                          command: ["/bin/bash", "-c"]
+                          args:
+                            - code-server --auth none --bind-addr 0.0.0.0:8080 --user-data-dir /workspace /workspace
+                          ports:
+                            - containerPort: 8080
+                              name: web
+                          volumeMounts:
+                            - name: workspace-volume
+                              mountPath: /workspace
+                            - name: bash-login
+                              mountPath: /workspace/.bash_login
+                              subPath: bash-login
+                            - name: bash-rc
+                              mountPath: /workspace/.bashrc
+                              subPath: bash-rc
+                          env:
+                            - name: XDG_CONFIG_HOME
+                              value: /workspace/.local
+                            - name: XDG_DATA_HOME
+                              value: /workspace/.local/share/
+                            - name: XDG_RUNTIME_DIR
+                              value: /workspace/.local
+                            - name: AWS_ENDPOINT_URL
+                              valueFrom:
+                                secretKeyRef:
+                                  name: workspace
+                                  key: AWS_ENDPOINT_URL
+                            - name: AWS_REGION
+                              valueFrom:
+                                secretKeyRef:
+                                  name: workspace
+                                  key: AWS_REGION
+                            - name: AWS_ACCESS_KEY_ID
+                              valueFrom:
+                                secretKeyRef:
+                                  name: workspace
+                                  key: AWS_ACCESS_KEY_ID
+                            - name: AWS_SECRET_ACCESS_KEY
+                              valueFrom:
+                                secretKeyRef:
+                                  name: workspace
+                                  key: AWS_SECRET_ACCESS_KEY
+                      volumes:
+                        - name: workspace-volume
+                          persistentVolumeClaim:
+                            claimName: code-server-pvc
+                        - name: init
+                          configMap:
+                            name: init
+                            defaultMode: 420
+                        - name: bash-login
+                          configMap:
+                            name: bash-login
+                            defaultMode: 420
+                        - name: bash-rc
+                          configMap:
+                            name: bash-rc
+                            defaultMode: 420
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: code-server-pvc-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: code-server-pvc-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+            labels:
+              app.kubernetes.io/instance: code-server
+              app.kubernetes.io/name: code-server
+          spec:
+            providerConfigRef:
+              name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: PersistentVolumeClaim
+                metadata:
+                  name: code-server-pvc
+                  namespace: default
+                  labels:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 20Gi
+                  storageClassName: managed-nfs-storage
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: code-server-service-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: code-server-service-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+            labels:
+              app.kubernetes.io/instance: code-server
+              app.kubernetes.io/name: code-server
+          spec:
+            providerConfigRef:
+              name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: Service
+                metadata:
+                  name: code-server
+                  namespace: default
+                  labels:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                spec:
+                  selector:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                  ports:
+                    - name: web
+                      port: 8080
+                      targetPort: 8080
+                  type: ClusterIP
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: code-server-init-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: code-server-init-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+            labels:
+              app.kubernetes.io/instance: code-server
+              app.kubernetes.io/name: code-server
+          spec:
+            providerConfigRef:
+              name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: init
+                  namespace: default
+                  labels:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                data:
+                  init: |
+                    #!/bin/bash
+                    set -x
+                    cd /workspace
+                    #code-server --install-extension ms-python.python
+                    #code-server --install-extension redhat.vscode-yaml
+                    ln -s /workspace/.local/share/code-server/extensions /workspace/extensions
+                    mkdir -p /workspace/User/
+                    echo '{"workbench.colorTheme": "Visual Studio Dark"}' > /workspace/User/settings.json
+                    python -m venv .venv && source .venv/bin/activate
+                    #python -m pip install --no-cache-dir rasterio click pystac loguru pyproj shapely scikit-image pystac rio_stac ipykernel stactools[validate]
+                    #python -m ipykernel install --user --name default --display-name "Python Default"
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: code-server-bash-rc-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: code-server-bash-rc-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+            labels:
+              app.kubernetes.io/instance: code-server
+              app.kubernetes.io/name: code-server
+          spec:
+            providerConfigRef:
+              name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: bash-rc
+                  namespace: default
+                  labels:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                data:
+                  bash-rc: |
+                    source /workspace/.venv/bin/activate
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: code-server-bash-login-{{ .observed.composite.resource.spec.claimRef.name }}
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: code-server-bash-login-{{ .observed.composite.resource.spec.claimRef.name }}
+              gotemplating.fn.crossplane.io/ready: "True"
+            labels:
+              app.kubernetes.io/instance: code-server
+              app.kubernetes.io/name: code-server
+          spec:
+            providerConfigRef:
+              name: provider-vcluster-{{ .observed.composite.resource.spec.claimRef.name }}
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: bash-login
+                  namespace: default
+                  labels:
+                    app.kubernetes.io/instance: code-server
+                    app.kubernetes.io/name: code-server
+                data:
+                  bash-login: |
+                    source /workspace/.bashrc
