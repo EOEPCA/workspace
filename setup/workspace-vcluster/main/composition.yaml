@@ -120,9 +120,6 @@ spec:
                     k0s:
                       enabled: true
                   statefulSet:
-                    persistence:
-                      volumeClaim:
-                        storageClass: managed-nfs-storage
                     highAvailability:
                       replicas: <replaced>
                   ingress:
@@ -1282,7 +1279,6 @@ spec:
                   resources:
                     requests:
                       storage: 20Gi
-                  storageClassName: managed-nfs-storage
           ---
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
