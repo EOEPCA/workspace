@@ -7,8 +7,6 @@ spec:
   subscription: gold
   owner: alice
   defaultBucket: ws-alice
-  linkedBuckets:
-    - ws-eric-shared # no access granted yet from ws-eric
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
@@ -22,7 +20,7 @@ spec:
   members:
     - example-user-1
   linkedBuckets:
-    - ws-eric-shared # access granted from ws-eric 
+    - ws-eric-shared
 ---
 apiVersion: epca.eo/v1beta1
 kind: Workspace
