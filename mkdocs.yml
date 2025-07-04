@@ -14,6 +14,7 @@ nav:
       - design/overview.md
       - design/motivation.md
       - design/iam-concept.md
+      - design/vcluster.md
     #- Usage:
     #  - usage/tutorials.md
     #  - usage/howtos.md
