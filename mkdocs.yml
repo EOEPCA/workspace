@@ -21,7 +21,8 @@ nav:
     #- Administration:
     #  - admin/configuration.md
     #  - admin/maintenance.md
-    #- API:
+    - API:
+      - api/workspace.md
     #  - api/endpoint-specification.md
     #  - api/usage.md
 
