@@ -1204,7 +1204,13 @@ spec:
                         - name: code-server
                           image: eoxhub/code-server:0.1
                           securityContext:
-                            privileged: true
+                            runAsUser: 1000
+                            runAsGroup: 1000
+                            fsGroup: 1000
+                            allowPrivilegeEscalation: false
+                            capabilities:
+                              drop:
+                                - ALL
                           command: ["/bin/bash", "-c"]
                           args:
                             - code-server --auth none --bind-addr 0.0.0.0:8080 --user-data-dir /workspace /workspace
@@ -1220,6 +1226,9 @@ spec:
                             - name: bash-rc
                               mountPath: /workspace/.bashrc
                               subPath: bash-rc
+                            - name: kubeconfig
+                              mountPath: /home/coder/.kube/config
+                              subPath: config
                           env:
                             - name: XDG_CONFIG_HOME
                               value: /workspace/.local
@@ -1263,6 +1272,12 @@ spec:
                           configMap:
                             name: bash-rc
                             defaultMode: 420
+                        - name: kubeconfig
+                          secret:
+                            secretName: workspace
+                            items:
+                              - key: KUBECONFIG
+                                path: config
           ---
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
@@ -1293,6 +1308,7 @@ spec:
                   resources:
                     requests:
                       storage: 20Gi
+                  storageClassName: managed-nfs-storage
           ---
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
