@@ -18,6 +18,9 @@ metadata:
 provisioner: csi-rclone
 volumeBindingMode: Immediate
 reclaimPolicy: Delete
+parameters:
+  vfsOpt: '{"uid": 1000, "gid": 100, "noModTime": true}'
+  mountOpt: '{"allowOther": true, "defaultPermissions": true}'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -436,7 +439,7 @@ spec:
           value: "csi-rclone"
         - name: LOG_LEVEL
           value: "NOTICE"
-        image: ghcr.io/versioneer-tech/csi-rclone:v2025.3.1
+        image: ghcr.io/versioneer-tech/csi-rclone:v2025.4.1
         imagePullPolicy: IfNotPresent
         resources: {}
         securityContext:
@@ -549,7 +552,7 @@ spec:
           value: "unix://plugin/csi.sock"
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: "cluster.local"
-        image: ghcr.io/versioneer-tech/csi-rclone:v2025.3.1
+        image: ghcr.io/versioneer-tech/csi-rclone:v2025.4.1
         imagePullPolicy: IfNotPresent
         resources: {}
         ports:

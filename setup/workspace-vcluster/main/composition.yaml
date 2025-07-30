@@ -598,7 +598,7 @@ spec:
                     spec:
                       containers:
                       - name: workspace
-                        image: ghcr.io/versioneer-tech/package-r:v2025.7.1-rc4
+                        image: ghcr.io/versioneer-tech/package-r:v2025.7.1
                         ports:
                         - name: http
                           containerPort: 8080
