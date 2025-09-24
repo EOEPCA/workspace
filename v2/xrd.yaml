@@ -33,7 +33,8 @@ spec:
                 owner:
                   type: string
                   description: >
-                    Primary user used for ownership decisions and default access control.
+                    Primary user for the workspace, used for default
+                    ownership and access control.
                 members:
                   type: array
                   description: >
@@ -62,29 +63,30 @@ spec:
                 linkedBuckets:
                   type: array
                   description: >
-                    Buckets owned by other workspaces that this workspace wants to link to
-                    (i.e., request read/write access as governed by policy). Each entry is a bucket name.
+                    Buckets owned by other workspaces that this workspace wants to link to.
+                    Each entry is a bucket name.
                   items:
                     type: string
                   default: []
                 grants:
                   type: array
                   description: >
-                    Outbound access grants from this workspace’s buckets to other users.
-                    Each grant names a local bucket and a list of grantees.
+                    Outbound access grants from this workspace’s buckets to other principals.
+                    Each entry is flat and specifies the local bucket, the grantee, and the permission.
                   items:
                     type: object
-                    required: [bucket, grantees]
+                    required: [bucketName, grantee, permission]
                     properties:
-                      bucket:
+                      bucketName:
                         type: string
                         description: Name of the bucket (owned by this workspace) to grant access to.
-                      grantees:
-                        type: array
-                        description: >
-                          Users to grant access to. Grant type/permissions are implementation-specific.
-                        items:
-                          type: string
+                      grantee:
+                        type: string
+                        description: Identifier of the principal receiving access.
+                      permission:
+                        type: string
+                        description: Granted permission level.
+                        enum: [ReadWrite, ReadOnly, WriteOnly, None]
                   default: []
             status:
               type: object
