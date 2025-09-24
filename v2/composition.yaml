@@ -1,0 +1,87 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: workspace
+spec:
+  compositeTypeRef:
+    apiVersion: epca.eo/v1beta1
+    kind: Workspace
+  mode: Pipeline
+  pipeline:
+    - step: render-resources
+      functionRef:
+        name: crossplane-contrib-function-python
+      input:
+        apiVersion: python.fn.crossplane.io/v1beta1
+        kind: Script
+        script: |
+          from crossplane.function.proto.v1 import run_function_pb2 as fnv1
+          from google.protobuf import json_format
+
+          def to_dict(msg):
+              try:
+                  return json_format.MessageToDict(msg, preserving_proto_field_name=True)
+              except Exception:
+                  return {}
+
+          def set_resource(rsp, name, manifest):
+              meta = manifest.setdefault("metadata", {})
+              anns = meta.setdefault("annotations", {})
+              anns["crossplane.io/composition-resource-name"] = name
+
+              dr = rsp.desired.resources[name]
+              dr.resource.update(manifest)
+              dr.ready = True
+
+          def compose(req, rsp):
+              xr = to_dict(req.observed.composite.resource)
+              meta = xr.get("metadata", {}) or {}
+              spec = xr.get("spec", {}) or {}
+              ws_name = (meta.get("name") or "workspace").strip()
+              ws_ns   = (meta.get("namespace") or "default").strip()
+
+              owner   = (spec.get("owner") or ws_name).strip()
+              members = [m for m in (spec.get("members") or []) if isinstance(m, str) and m.strip()]
+              users   = []
+              for u in [owner] + members:
+                  if u and u not in users:
+                      users.append(u)
+
+              extra  = [b for b in (spec.get("extraBuckets") or []) if isinstance(b, str) and b.strip()]
+              linked = [b for b in (spec.get("linkedBuckets") or []) if isinstance(b, str) and b.strip()]
+              grants = [g for g in (spec.get("grants") or []) if isinstance(g, dict)]
+
+              buckets = [{"bucketName": ws_name}] + [{"bucketName": b} for b in extra]
+              access_requests = [{"bucketName": b, "permission": "ReadWrite"} for b in linked]
+
+              access_grants = []
+              for g in grants:
+                  bn = (g.get("bucketName") or g.get("bucket") or "").strip()
+                  gs = [s for s in (g.get("grantees") or []) if isinstance(s, str) and s.strip()]
+                  if bn and gs:
+                      access_grants.append({"bucketName": bn, "permission": "ReadWrite", "grantees": gs})
+
+              storage = {
+                "apiVersion": "pkg.internal/v1beta1",
+                "kind": "Storage",
+                "metadata": {"name": ws_name, "namespace": ws_ns},
+                "spec": {
+                  "owner": owner,
+                  "buckets": buckets,
+                  "bucketAccessRequests": access_requests,
+                  "bucketAccessGrants": access_grants
+                }
+              }
+              set_resource(rsp, "storage", storage)
+
+              datalab_spec = {"users": users, "sessions": ["default"]}
+              if "vcluster" in spec:
+                  datalab_spec["vcluster"] = spec.get("vcluster") == "always"
+
+              datalab = {
+                "apiVersion": "pkg.internal/v1beta1",
+                "kind": "Datalab",
+                "metadata": {"name": ws_name, "namespace": ws_ns},
+                "spec": datalab_spec
+              }
+              set_resource(rsp, "datalab", datalab)
