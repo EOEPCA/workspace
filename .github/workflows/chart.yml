@@ -14,7 +14,7 @@ permissions:
 
 env:
   INPUT_FILE: dependencies/input.yaml
-  SCRIPT: dependencies/flux-oci-to-helm.sh
+  SCRIPT: dependencies/flux-oci-to-helm-chart.sh
 
 jobs:
   build-and-push:
