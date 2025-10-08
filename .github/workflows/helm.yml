@@ -58,55 +58,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          # sanity checks
-          [[ -f "${INPUT_FILE}" ]] || { echo "Missing ${INPUT_FILE}"; exit 1; }
+          FILE="${INPUT_FILE}"
+          [[ -f "$FILE" ]] || { echo "Missing $FILE"; exit 1; }
 
           TAG="${{ steps.tag.outputs.tag }}"
-          echo "Using chart version tag: ${TAG}"
+          total=$(yq '.repos | length' "$FILE")
+          echo "Using chart version tag: $TAG (processing $total repos)"
 
-          # loop over all repo entries
-          yq -rc '.repos[] | @base64' "${INPUT_FILE}" | while read -r row; do
-            obj() { echo "${row}" | base64 -d | yq -r "$1"; }
+          for ((i=0; i<total; i++)); do
+            NAME=$(yq -r ".repos[$i].name" "$FILE")
+            VARS=$(yq -r ".repos[$i].variables // [] | join(\",\")" "$FILE")
 
-            NAME="$(obj '.name')"
-            VARS="$(obj '.variables | select(.) | join(",")')"
-
-            # ensure oci:// prefix
-            if [[ "${NAME}" == oci://* ]]; then
-              OCI_REF="${NAME}"
+            if [[ "$NAME" == oci://* ]]; then
+              OCI_REF="$NAME"
             else
-              OCI_REF="oci://${NAME}"
+              OCI_REF="oci://$NAME"
             fi
 
-            # derive base name from the tag portion (text after ':' up to the first '-')
             TAG_PART="${NAME#*:}"
             BASE="${TAG_PART%%-*}"
-            if [[ -z "${BASE}" || "${BASE}" == "${NAME}" ]]; then
-              echo "Could not derive base from name '${NAME}' (expect format repo:base-<something>)"
-              exit 1
-            fi
+            [[ -n "$BASE" && "$BASE" != "$NAME" ]] || { echo "Bad repo format: $NAME"; exit 1; }
 
-            echo
-            echo "=== Processing ==="
-            echo "  OCI   : ${OCI_REF}"
-            echo "  BASE  : ${BASE}"
-            echo "  VARS  : ${VARS:-<none>}"
-            echo "  REPO  : ${CHART_REPO}"
-            echo "  TAG   : ${TAG}"
-            echo "=================="
-
-            # build args for variables
             VAR_ARGS=()
-            if [[ -n "${VARS:-}" ]]; then
-              VAR_ARGS+=( --variables "${VARS}" )
-            fi
+            [[ -n "$VARS" ]] && VAR_ARGS+=( --variables "$VARS" )
 
-            # run converter (it will package & push)
-            "${SCRIPT}" "${OCI_REF}" "${BASE}" \
-              --tag "${TAG}" \
-              --repo "${CHART_REPO}" \
+            "${SCRIPT}" "$OCI_REF" "$BASE" \
+              --tag "$TAG" \
+              --repo "$CHART_REPO" \
               --push \
               "${VAR_ARGS[@]}"
-
           done
