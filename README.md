@@ -1,146 +1,77 @@
 # Workspace BB
 
-## Goals and Responsibilities
+The **Workspace Building Block (BB)** provides secure and extensible workspaces that combine compute, storage, and tools into one cohesive environment.  
+It represents a **trifecta** of capabilities — **storage**, **runtime**, and **tooling** — designed to simplify how users work with data, collaborate, and deploy applications.
 
-The Workspace BB is a foundational component designed to provide secure, adaptable, and extensible workspaces for individuals or collaborative groups. Its primary responsibilities include:
+A workspace brings together:
 
-1. **Compute Resource Provisioning**: Dynamically allocates compute resources within a Kubernetes cluster, ensuring tenant isolation and security. This is achieved using namespaces or vClusters, with adjustable resource quotas to optimize resource utilization.  
-2. **Object Storage Provisioning**: Facilitates the creation and management of object storage resources, enabling secure data storage and sharing within each workspace.  
-3. **Deployment of Ready-to-Use Applications**: Automatically sets up applications like the Workspace UI tool, empowering users to efficiently manage resources, access visualizations, and interact seamlessly with their workspace.  
-4. **Keycloak-Based IAM Integration**: Automates the provisioning of Keycloak resources, integrating workspaces with Identity and Access Management (IAM) systems to secure access and safeguard resources.  
-5. **Customizable Services**: Enables operators to deploy additional services through declarative configuration using GitOps and Kubernetes-native tools, allowing workspaces to be tailored to unique project or user requirements.  
+1. **Storage Resources** — object storage or network volumes for persisting and sharing data.  
+2. **Runtime Environments** — isolated Kubernetes namespaces or [vClusters](https://www.vcluster.com/) providing a full Kubernetes API surface for workloads.  
+3. **Domain-Specific Tooling** — e.g. VSCode-based datalabs preconfigured for Earth Observation, data analysis, or processing workflows.
 
-These capabilities make the Workspace BB a critical enabler for environments requiring scalable compute and storage resources, robust access controls, and tailored service deployments.
+These three elements form the core of the Workspace concept.  
+They are managed using Kubernetes-native resources — a **Storage** abstraction for object storage (MinIO, AWS S3, OTC, etc.) and a **Datalab** abstraction providing an interactive development and execution environment.
+
+Both layers are orchestrated by the [Workspace API & UI](https://github.com/EOEPCA/rm-workspace-api/), which exposes an HTTP API and web interface to manage users, storage, and runtime resources for individuals or teams.
+
+
+## Core Responsibilities
+
+1. **Compute Provisioning** — Allocates compute environments within Kubernetes using namespaces or vClusters for isolation and resource control.  
+2. **Object Storage Provisioning** — Creates and manages workspace-specific object storage, including access policies and credentials.  
+3. **Application Setup** — Deploys ready-to-use user environments such as VSCode datalabs or the Workspace UI.  
+4. **IAM Integration** — Uses Keycloak to automate user, group, and role management, ensuring secure access across all layers.
+
 
 ## Implementation Concept
 
-The component responsible for resource provisioning are Workspaces pipelines, which are built with [Crossplane](https://github.com/crossplane/crossplane) ([Apache 2 License](https://github.com/crossplane/crossplane/blob/main/LICENSE)), a Kubernetes-native framework. It is augmented with other Kubernetes-native features to deliver a flexible and powerful solution for resource and service management.
+The Workspace BB is built on **[Crossplane](https://github.com/crossplane/crossplane)** — an open-source control plane that extends Kubernetes with declarative resource provisioning and **composable APIs**.  
+In addition to managing infrastructure, Crossplane enables the definition of custom APIs through **Compositions**, allowing domain-specific abstractions such as “Storage,” “Datalab,” or “Workspace” to be defined declaratively and combined into higher-level resource types.
 
-### Core Implementation Features
+The Workspace BB leverages this composability by defining its own Crossplane **Compositions** that tie together compute, storage, and IAM layers under one unified “Workspace” API.  
+This allows infrastructure and service provisioning to be described, versioned, and managed in the same way as standard Kubernetes resources.
 
-1. **Crossplane Providers**: The declarative nature of Crossplane allows operators to adapt and configure pipelines with various providers. In the EOEPCA Demo Blueprint, the following providers are employed:
-   - [Provider-MinIO](https://github.com/vshn/provider-minio) ([Apache 2 License](https://github.com/vshn/provider-minio/blob/main/LICENSE))
-   - [Provider-Kubernetes](https://github.com/crossplane-contrib/provider-kubernetes) ([Apache 2 License](https://github.com/crossplane-contrib/provider-kubernetes/blob/main/LICENSE))
-   - [Provider-Helm](https://github.com/crossplane-contrib/provider-helm) ([Apache 2 License](https://github.com/crossplane-contrib/provider-helm/blob/main/LICENSE))
-   - [Provider-Keycloak](https://github.com/crossplane-contrib/provider-keycloak) ([Apache 2 License](https://github.com/crossplane-contrib/provider-keycloak/blob/main/LICENSE))
+The main providers used are:
 
-2. **External Secrets Operator**: The system uses the [External Secrets Operator](https://external-secrets.io) to securely handle sensitive data within the Kubernetes ecosystem, with setup [here](./setup/common/eso.yaml)
+- **Provider-Kubernetes** — manages native Kubernetes resources.  
+- **Provider-Helm** — installs and configures Helm-based components.  
+- **Provider-Keycloak** — provisions users, clients, and roles for IAM.  
+- **Provider-MinIO** — handles S3-compatible object storage, but can be replaced by any other provider supporting AWS S3, OTC, or similar APIs.
 
-3. **CSI Providers**: To enable browsing of mounted storage in the Workspace UI (for generating pre-signed URLs for data sharing), the standard mechanism of Kubernetes Persistent Volumes via CSI is used. We are utilizing [RClone](https://github.com/rclone/rclone), but alternatives such as [S3FS-Fuse](https://github.com/s3fs-fuse/s3fs-fuse) or [AWS mountpoint-s3](https://github.com/awslabs/mountpoint-s3) can be substituted as mount-based drivers.
 
-This implementation is inherently Kubernetes-native, emphasizing modularity, scalability, and the flexibility to address diverse platform and user needs.
+## Kubernetes-Native Design
 
-### Setup & Pipeline Blueprints Overview
+The Workspace API sits on top of two CRDs — **Storage** and **Datalab** — and reads and patches them to present a unified “Workspace” view.  
+This view includes the workspace’s storage, memberships, and session state, while all operations are applied via standard REST calls to simplify access and hide the complexity of direct CRD management.
 
-Pipeline blueprints illustrate how core features are integrated and applied to provision resources across various infrastructure setups.
+The Workspace API acts as a **facade** over the underlying Kubernetes resources, providing a single entry point for managing all workspace-related entities while remaining fully declarative and compliant with Kubernetes conventions.
 
-All referenced components are layered hierarchically:
-- `common`
-- `prerequisites` (depends on `common`)
-- `storage` and `workspace` (depend on `prerequisites`)
-
-Each component consists of two distinct phases: `init` and`main`. These phases must be executed in order, i.e. `init` must complete successfully before `main` begins.
-
-The required execution order can be enforced either through scripting or by using features of the chosen GitOps tooling:
-
-- Argo CD: Requires explicit ordering using the `sync-wave` annotation.
-- Flux CD: Doesn't fail but requires multiple reconciliation cycles, which increases provisioning time.
-
-> 💡 Ensure that your tooling or automation logic reflects these dependencies and phase requirements to avoid partial or failed deployments!
- 
-1) Required Base Setup
-
-The [`common`](/setup/common) component is **always required**. It installs the Keycloak Provider on top of Crossplane and provides the foundational functionality.
-
-2) Optional: Additional Functionality for Storage and Compute Workspaces
-
-To enable extended features, the [`prerequisites`](/setup/prerequisites) module must  be installed. On top of that, different combinations of storage and workspace setups can be selected depending on the intended use case. Example Deployments: 
-
-- [EOEPCA Demo](https://github.com/EOEPCA/workspace/tree/main/setup)
-
-   Uses:
-
-   - In-cluster MinIO buckets  
-   - vCluster for isolated environments
-
-   Required Modules:
-
-   - [`storage-minio`](/setup/storage-minio)
-   - [`workspace-vcluster`](/setup/workspace-vcluster/)
-
-   > 💡 *Note:* This setup uses ArgoCD for rollout.  
-   > - You can explore the ArgoCD Application Manifests via the link above.  
-   > - Ensure correct component order using `argocd.argoproj.io/sync-wave` annotations.  
-   > - Disable pruning and auto-syncing, as Crossplane's provider model does not integrate seamlessly with ArgoCD in fully automated replacement/deletion scenarios.
-
-- Terrabyte Platform (DLR)
-
-   Uses:
-
-   - Cinder (OpenStack) and Quobyte storage via regular Kubernetes PersistentVolumes and StorageClass, so only dummy Storage implementation is needed.
-   - vCluster for isolated environments
-
-   Required Modules:
-
-   - [`storage-dummy`](/setup/storage-dummy)
-   - [`workspace-vcluster`](/setup/workspace-vcluster/)
-
-   > 💡 *Note:* This setup uses ArgoCD for rollout as well.
+See: [Storage CRD](https://provider-storage.versioneer.at/latest/reference-guides/api/) · [Datalab CRD](https://provider-datalab.versioneer.at/latest/reference-guides/api/)
 
 
 
-# Runtime Privileges
+## Storage and Runtime Integration
 
-The workspace BB adheres to the principle of delegating runtime privilege management to the virtual cluster. As a result, applications like `code-server` are not started in privileged mode and must comply with the security policies enforced within the vCluster — that is, whatever restrictions apply to the vCluster also apply transparently to its workloads.
+Workspaces integrate object storage directly through CSI drivers, allowing data to be accessed as mounted volumes or via presigned URLs.  
+[RClone CSI](https://github.com/rclone/rclone) is used by default, with alternatives like [s3fs-fuse](https://github.com/s3fs-fuse/s3fs-fuse) or [mountpoint-s3](https://github.com/awslabs/mountpoint-s3) supported.
 
-To verify that containers are running without elevated privileges, the following checks can be performed:
-
-```bash
-getpcaps 1
-```
-
-Checks whether the main process has any assigned Linux capabilities (e.g., `CAP_SYS_ADMIN`, `CAP_NET_ADMIN`).
-
-```bash
-capsh --print
-```
-
-Displays the current, bounding, and permitted capabilities of the container process.
-
-```bash
-mkdir /tmp/mnt
-mount -t tmpfs tmpfs /tmp/mnt
-```
-
-Attempts to mount a temporary filesystem. This will fail unless the container has `CAP_SYS_ADMIN`, making it a useful check for privileged access.
-
-```bash
-sudo
-```
-
-Typical output:
-```
-sudo: The "no new privileges" flag is set, which prevents sudo from running as root.
-```
-
-Indicates that `sudo` is blocked due to the `no_new_privileges` flag, a common hardening measure in Kubernetes environments that prevents privilege escalation.
+Each workspace can include a **Datalab**, typically a VSCode instance deployed into its namespace or vCluster.  
+It is preconfigured with storage credentials and tools such as the AWS CLI or rclone, allowing immediate access to workspace data for analysis or automation.
 
 
-**Note**: As we inject the `KUBECONFIG` into the `code-server` pod, it is still possible to start processes in a Docker-like style:
+## Design Approach
 
-```bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+The Workspace BB emphasizes:
 
-chmod +x kubectl
-mkdir -p ~/.local/bin/
-mv kubectl ~/.local/bin/
+- **Kubernetes-Native Integration** — all resources are CRDs managed by the Kubernetes control plane.  
+- **Composable APIs** — Crossplane Compositions define higher-level abstractions that unify multiple resource types.  
+- **Multi-Cloud Compatibility** — supports S3-compatible and cloud-specific environments.  
+- **Reproducibility** — all configurations are declarative and versioned.  
+- **Simplicity** — the Workspace API abstracts low-level CRD operations into familiar REST endpoints.
 
-kubectl run hello-server --image=nginx
-kubectl expose pod hello-server --port=8080 --type=NodePort
-kubectl expose pod hello-server --port=8080 --target-port=80 --type=NodePort
-curl http://hello-server:8080
-```
 
-Please refer to our design considerations on ingress in the [docs](https://eoepca.readthedocs.io/projects/workspace/en/latest/design/vcluster/#networking-and-ingress-design).
+## License
 
-Our envisioned approach allows the platform operator to set up a shared gateway within the vCluster. This gateway may then be exposed by the platform operator via ingress externally, enabling end-users inside the cluster to register their services on the gateway still allowing them to be publically exposed.
+[Apache 2.0](LICENSE)  
+(Apache License Version 2.0, January 2004)  
+https://www.apache.org/licenses/LICENSE-2.0

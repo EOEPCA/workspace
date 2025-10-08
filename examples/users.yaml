@@ -1,0 +1,67 @@
+apiVersion: user.keycloak.m.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: alice
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    username: alice
+    realmId: eoepca
+    email: alice@eoepca.org
+    emailVerified: true
+    firstName: Alice
+    lastName: A
+---
+apiVersion: user.keycloak.m.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: bob
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    username: bob
+    realmId: eoepca
+    email: bob@eoepca.org
+    emailVerified: true
+    firstName: Bob
+    lastName: B
+---
+apiVersion: user.keycloak.m.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: eric
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    username: eric
+    realmId: eoepca
+    email: eric@eoepca.org
+    emailVerified: true
+    firstName: Eric
+    lastName: E
+---
+apiVersion: user.keycloak.m.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: frank
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    username: frank
+    realmId: eoepca
+    email: frank@eoepca.org
+    emailVerified: true
+    firstName: Frank
+    lastName: F
