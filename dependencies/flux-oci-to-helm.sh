@@ -83,10 +83,19 @@ if [[ -n "$VARIABLES" ]]; then
   for VAR in "${VARS[@]}"; do
     case "$VAR" in
       NAMESPACE) SED_ARGS+=(-e 's|\${NAMESPACE}|{{ .Release.Namespace }}|g');;
+      CLUSTER_INGRESS_DOMAIN) SED_ARGS+=(-e 's|\${CLUSTER_INGRESS_DOMAIN}|{{ .Values.CLUSTER_INGRESS_DOMAIN }}|g');;
+      CLUSTER_INGRESS_CLASS) SED_ARGS+=(-e 's|\${CLUSTER_INGRESS_CLASS}|{{ .Values.CLUSTER_INGRESS_CLASS }}|g');;
+      TLS_CERTIFICATE_REF_NAMESPACE) SED_ARGS+=(-e 's|\${TLS_CERTIFICATE_REF_NAMESPACE}|{{ .Values.TLS_CERTIFICATE_REF_NAMESPACE }}|g');;
+      TLS_CERTIFICATE_REF_NAME) SED_ARGS+=(-e 's|\${TLS_CERTIFICATE_REF_NAME}|{{ .Values.TLS_CERTIFICATE_REF_NAME }}|g');;
       *) ;;
     esac
   done
   if [[ ${#SED_ARGS[@]} -gt 0 ]]; then sed -i "${SED_ARGS[@]}" "$TPL_DIR/manifest.yaml"; fi
+fi
+
+# Escape Kyverno-style placeholders so Helm doesn't interpret them (e.g., {{ request.object... }})
+if grep -q '{{[^{}]*\brequest\b' "$TPL_DIR/manifest.yaml"; then
+  perl -0777 -pe 's/{{([^{}]*\brequest\b[^{}]*)}}/{{"{{"}}\1{{"}}"}}/g' -i "$TPL_DIR/manifest.yaml"
 fi
 
 PKG_DIR="./out"; mkdir -p "$PKG_DIR"
