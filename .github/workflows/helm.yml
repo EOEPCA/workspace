@@ -1,0 +1,109 @@
+name: Build & Push dependency helm charts
+
+on:
+  push:
+    tags:
+      - "[0-9]+\\.[0-9]+\\.[0-9]+"                 # 1.2.3
+      - "[0-9]+\\.[0-9]+\\.[0-9]+-alpha\\.[0-9]+"  # 1.2.3-alpha.1
+      - "[0-9]+\\.[0-9]+\\.[0-9]+-beta\\.[0-9]+"   # 1.2.3-beta.1
+      - "[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+"     # 1.2.3-rc.1
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CHART_REPO: oci://ghcr.io/${{ github.repository_owner }}/charts
+  INPUT_FILE: dependencies/input.yaml
+  SCRIPT: dependencies/flux-oci-to-helm.sh
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set TAG from ref (strip leading v)
+        id: tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install Flux CLI
+        uses: fluxcd/flux2/action@v2
+
+      - name: Install yq
+        run: |
+          VERSION=v4.44.3
+          curl -sSL "https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_linux_amd64" -o /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Helm login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Make script executable
+        run: chmod +x "${{ env.SCRIPT }}"
+
+      - name: Build & push all dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # sanity checks
+          [[ -f "${INPUT_FILE}" ]] || { echo "Missing ${INPUT_FILE}"; exit 1; }
+
+          TAG="${{ steps.tag.outputs.tag }}"
+          echo "Using chart version tag: ${TAG}"
+
+          # loop over all repo entries
+          yq -rc '.repos[] | @base64' "${INPUT_FILE}" | while read -r row; do
+            obj() { echo "${row}" | base64 -d | yq -r "$1"; }
+
+            NAME="$(obj '.name')"
+            VARS="$(obj '.variables | select(.) | join(",")')"
+
+            # ensure oci:// prefix
+            if [[ "${NAME}" == oci://* ]]; then
+              OCI_REF="${NAME}"
+            else
+              OCI_REF="oci://${NAME}"
+            fi
+
+            # derive base name from the tag portion (text after ':' up to the first '-')
+            TAG_PART="${NAME#*:}"
+            BASE="${TAG_PART%%-*}"
+            if [[ -z "${BASE}" || "${BASE}" == "${NAME}" ]]; then
+              echo "Could not derive base from name '${NAME}' (expect format repo:base-<something>)"
+              exit 1
+            fi
+
+            echo
+            echo "=== Processing ==="
+            echo "  OCI   : ${OCI_REF}"
+            echo "  BASE  : ${BASE}"
+            echo "  VARS  : ${VARS:-<none>}"
+            echo "  REPO  : ${CHART_REPO}"
+            echo "  TAG   : ${TAG}"
+            echo "=================="
+
+            # build args for variables
+            VAR_ARGS=()
+            if [[ -n "${VARS:-}" ]]; then
+              VAR_ARGS+=( --variables "${VARS}" )
+            fi
+
+            # run converter (it will package & push)
+            "${SCRIPT}" "${OCI_REF}" "${BASE}" \
+              --tag "${TAG}" \
+              --repo "${CHART_REPO}" \
+              --push \
+              "${VAR_ARGS[@]}"
+
+          done

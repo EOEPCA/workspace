@@ -1,0 +1,11 @@
+repos:
+  - name: ghcr.io/versioneer-tech/bases:csi-rclone-1fd2fe4770ce
+    variables:
+    - NAMESPACE
+  - name: ghcr.io/versioneer-tech/bases:educates-1fd2fe4770ce
+    variables:
+    - NAMESPACE
+    - CLUSTER_INGRESS_DOMAIN
+    - CLUSTER_INGRESS_CLASS
+    - TLS_CERTIFICATE_REF_NAMESPACE
+    - TLS_CERTIFICATE_REF_NAME
