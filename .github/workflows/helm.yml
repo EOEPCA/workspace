@@ -13,7 +13,6 @@ permissions:
   packages: write
 
 env:
-  CHART_REPO: oci://ghcr.io/${{ github.repository_owner }}/charts
   INPUT_FILE: dependencies/input.yaml
   SCRIPT: dependencies/flux-oci-to-helm.sh
 
@@ -62,6 +61,9 @@ jobs:
           [[ -f "$FILE" ]] || { echo "Missing $FILE"; exit 1; }
 
           TAG="${{ steps.tag.outputs.tag }}"
+          OWNER_LC="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          CHART_REPO="oci://ghcr.io/${OWNER_LC}/workspace"
+
           total=$(yq '.repos | length' "$FILE")
           echo "Using chart version tag: $TAG (processing $total repos)"
 
@@ -76,7 +78,7 @@ jobs:
             fi
 
             TAG_PART="${NAME#*:}"
-            BASE="${TAG_PART%%-*}"
+            BASE="${TAG_PART%-*}"
             [[ -n "$BASE" && "$BASE" != "$NAME" ]] || { echo "Bad repo format: $NAME"; exit 1; }
 
             VAR_ARGS=()
