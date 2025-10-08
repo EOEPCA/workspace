@@ -35,7 +35,10 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Install Flux CLI
-        uses: fluxcd/flux2/action@v2
+        run: |
+          set -euxo pipefail
+          curl -s https://fluxcd.io/install.sh | sudo bash
+          flux --version
 
       - name: Install yq
         run: |
