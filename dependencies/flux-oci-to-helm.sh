@@ -18,6 +18,7 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown arg: $1"; exit 1;;
   esac
 done
+
 [[ -n "$TAG" ]] || { echo "--tag is required"; exit 1; }
 if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
   echo "--tag must be SemVer (e.g., 0.0.1). Got: $TAG" >&2; exit 1
@@ -52,7 +53,6 @@ appVersion: "$CHART_VERSION"
 EOF
 
 : > "$TPL_DIR/manifest.yaml"
-CRD_SEEN="no"
 is_k8s_doc() {
   local f="$1"
   case "$(basename "$f" | tr '[:upper:]' '[:lower:]')" in
@@ -66,6 +66,7 @@ is_k8s_doc() {
 mapfile -t FILES < <(find "$SRC_DIR" -type f \( -iname '*.yaml' -o -iname '*.yml' \) | sort)
 [[ ${#FILES[@]} -gt 0 ]] || { echo "No YAML found in OCI artifact."; exit 1; }
 mkdir -p "$CRDS_DIR"
+CRD_SEEN="no"
 for f in "${FILES[@]}"; do
   if ! is_k8s_doc "$f"; then continue; fi
   if grep -q -E '^apiVersion:\s*apiextensions.k8s.io/' "$f"; then
@@ -82,31 +83,50 @@ if [[ -n "$VARIABLES" ]]; then
   IFS=',' read -r -a VARS <<< "$VARIABLES"
   for VAR in "${VARS[@]}"; do
     case "$VAR" in
-      NAMESPACE) SED_ARGS+=(-e 's|\${NAMESPACE}|{{ .Release.Namespace }}|g');;
-      CLUSTER_INGRESS_DOMAIN) SED_ARGS+=(-e 's|\${CLUSTER_INGRESS_DOMAIN}|{{ .Values.CLUSTER_INGRESS_DOMAIN }}|g');;
-      CLUSTER_INGRESS_CLASS) SED_ARGS+=(-e 's|\${CLUSTER_INGRESS_CLASS}|{{ .Values.CLUSTER_INGRESS_CLASS }}|g');;
+      NAMESPACE)                     SED_ARGS+=(-e 's|\${NAMESPACE}|{{ .Release.Namespace }}|g');;
+      CLUSTER_INGRESS_DOMAIN)        SED_ARGS+=(-e 's|\${CLUSTER_INGRESS_DOMAIN}|{{ .Values.CLUSTER_INGRESS_DOMAIN }}|g');;
+      CLUSTER_INGRESS_CLASS)         SED_ARGS+=(-e 's|\${CLUSTER_INGRESS_CLASS}|{{ .Values.CLUSTER_INGRESS_CLASS }}|g');;
       TLS_CERTIFICATE_REF_NAMESPACE) SED_ARGS+=(-e 's|\${TLS_CERTIFICATE_REF_NAMESPACE}|{{ .Values.TLS_CERTIFICATE_REF_NAMESPACE }}|g');;
-      TLS_CERTIFICATE_REF_NAME) SED_ARGS+=(-e 's|\${TLS_CERTIFICATE_REF_NAME}|{{ .Values.TLS_CERTIFICATE_REF_NAME }}|g');;
+      TLS_CERTIFICATE_REF_NAME)      SED_ARGS+=(-e 's|\${TLS_CERTIFICATE_REF_NAME}|{{ .Values.TLS_CERTIFICATE_REF_NAME }}|g');;
       *) ;;
     esac
   done
   if [[ ${#SED_ARGS[@]} -gt 0 ]]; then sed -i "${SED_ARGS[@]}" "$TPL_DIR/manifest.yaml"; fi
 fi
 
-# Escape non-Helm placeholders (e.g., Kyverno {{ request.* }}) so Helm doesn't process them
-if grep -qE '{{[^{}]*\b(request|variables)\b' "$TPL_DIR/manifest.yaml"; then
-  python3 - "$TPL_DIR/manifest.yaml" << 'PY'
-import re, sys, io
+# Escape non-Helm template braces (Kyverno/admission-style) so Helm won't parse them
+# Strategy: for every {{ ... }} block, if it contains 'request' or 'variables', or it contains '('
+# and does NOT look like a typical Helm directive, emit raw braces instead.
+python3 - "$TPL_DIR/manifest.yaml" << 'PY'
+import io, re, sys
 p = sys.argv[1]
 with io.open(p, 'r', encoding='utf-8') as f:
     s = f.read()
-s = re.sub(r'{{([^{}]*\b(request|variables)\b[^{}]*)}}',
-           r'{{"{{"}}\1{{"}}"}}',
-           s)
+
+# non-greedy match of any brace block
+pattern = re.compile(r'{{-?\s*(.+?)\s*-?}}', re.S)
+
+def looks_like_helm(expr: str) -> bool:
+    helm_tokens = ('include', 'tpl', 'if', 'else', 'end', 'range', 'with', 'define',
+                   '.Values', '.Release', '.Chart', '.Capabilities', 'required', 'default',
+                   'quote', 'nindent', 'indent', 'toYaml', 'printf', 'lookup', 'ternary')
+    return any(tok in expr for tok in helm_tokens)
+
+def should_escape(expr: str) -> bool:
+    if 'request' in expr or 'variables' in expr:
+        return True
+    if '(' in expr and not looks_like_helm(expr):
+        return True
+    return False
+
+def repl(m):
+    inner = m.group(1)
+    return '{{"{{"}}' + inner + '{{"}}"}}' if should_escape(inner) else m.group(0)
+
+s = pattern.sub(repl, s)
 with io.open(p, 'w', encoding='utf-8', newline='\n') as f:
     f.write(s)
 PY
-fi
 
 PKG_DIR="./out"; mkdir -p "$PKG_DIR"
 if command -v helm >/dev/null 2>&1; then
