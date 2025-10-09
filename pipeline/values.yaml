@@ -1,19 +1,12 @@
 globalAnnotations: {}
 
 storage:
-  packageRepo: "ghcr.io/versioneer-tech/provider-storage/minio"
-  version: ""                     
   annotations: {}
-  skipDependencyResolution: true  # usually true
 
 datalab:
-  packageRepo: "ghcr.io/versioneer-tech/provider-datalab/educates"
-  version:
   annotations: {}
-  skipDependencyResolution: true
 
-envcfg:
-  name: "datalab"
+environmentconfig:
   annotations: {}
 
   iam:

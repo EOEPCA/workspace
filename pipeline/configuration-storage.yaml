@@ -4,5 +4,5 @@ metadata:
   name: storage-minio
   annotations: {}   # filled dynamically from values.yaml
 spec:
-  package: ""       # dynamically set from values.yaml
+  package: ghcr.io/versioneer-tech/provider-storage/minio:0.1.0
   skipDependencyResolution: true
