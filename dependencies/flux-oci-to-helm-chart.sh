@@ -29,7 +29,7 @@ fi
 command -v flux >/dev/null 2>&1 || { echo "flux CLI not found"; exit 1; }
 
 CHART_VERSION="$TAG"
-CHART_NAME="dependencies-${BASE_NAME}"
+CHART_NAME="workspace-dependencies-${BASE_NAME}"
 
 WORK="$(mktemp -d)"
 SRC_DIR="$WORK/src"
