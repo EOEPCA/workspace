@@ -18,11 +18,19 @@ See: [Workspace OpenAPI Specification](https://workspace-api.develop.eoepca.org/
 
 <div align="left">
   <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" height="500" alt="Workspace UI - Additional Bucket Creation"/>
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" height="300" alt="Workspace UI - Additional Bucket Creation"/>
   </a>
   &nbsp;
   <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" height="500" alt="Workspace UI - Bucket Sharing"/>
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" height="300" alt="Workspace UI - Bucket Sharing"/>
+  </a>
+  &nbsp;
+  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui3.png" target="_blank">
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui3.png" height="300" alt="Workspace UI - Datalab Terminal"/>
+  </a>
+  &nbsp;
+  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui4.png" target="_blank">
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui4.png" height="300" alt="Workspace UI - Datalab Browser"/>
   </a>
 </div>
 
