@@ -54,10 +54,44 @@ A datalab is preconfigured with workspace-specific storage credentials, allowing
 
 See: [Workspace Documentation](https://eoepca.readthedocs.io/projects/workspace/)
 
-## Deployment
+## Deployment via Helm
 
 This repository serves as an umbrella for documentation and dynamic Helm-chart creation.  
 Published charts appear as GitHub Packages under this repository [here](https://github.com/orgs/EOEPCA/packages?tab=packages&q=workspace).
+
+### 🧩 Prerequisites
+
+Please note that **Crossplane v2** and the providers listed above must be installed in the cluster **before deploying any of the Workspace Helm charts**.  
+These providers supply the foundational CRDs required by the `workspace-pipeline` and dependency charts.
+
+### Workspace Dependency – CSI Rclone
+
+No specific configuration values are required for this chart.
+
+### Workspace Dependency – Educates
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `clusterIngressDomain` | string | Base domain under which Educates workshop environments will be exposed (e.g., `ngx.develop.eoepca.org`). |
+| `clusterIngressClass` | string | Ingress class used by Educates (e.g., `nginx`). |
+| `tlsCertificateRef.name` | string | Name of the TLS secret used for Educates ingress. |
+| `tlsCertificateRef.namespace` | string | Namespace where the TLS secret resides (e.g., `workspace`). |
+
+### Workspace Pipeline
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `environmentconfig.iam.realm` | string | Keycloak realm name for Workspace authentication. |
+| `environmentconfig.ingress.class` | string | Ingress class to use (e.g., `nginx`). |
+| `environmentconfig.ingress.domain` | string | Domain for all Workspace UIs and services. |
+| `environmentconfig.ingress.secret` | string | TLS secret for the domain. |
+| `environmentconfig.storage.endpoint` | string | S3-compatible endpoint (e.g., `https://minio.develop.eoepca.org`). |
+| `environmentconfig.storage.forcePathStyle` | bool | Use path-style addressing (`true` for MinIO/OTC). |
+| `environmentconfig.storage.provider` | string | Storage provider label (`MinIO`, `AWS`, `Other`, etc.). |
+| `environmentconfig.storage.region` | string | Region or identifier for the object storage backend. |
+| `environmentconfig.storage.secretNamespace` | string | Namespace for generated storage credentials. |
+| `environmentconfig.storage.type` | string | Storage type (`s3`). |
+| `environmentconfig.network.serviceCIDR` | string | Kubernetes service CIDR (e.g., `10.43.0.0/12`). |
 
 ## License
 
