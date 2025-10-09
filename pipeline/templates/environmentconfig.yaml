@@ -1,0 +1,21 @@
+apiVersion: apiextensions.crossplane.io/v1beta1
+kind: EnvironmentConfig
+metadata:
+  name: {{ .Values.environmentconfig.name | default "datalab" | quote }}
+  {{- include "wp.annotations.block" (dict "global" .Values.globalAnnotations "local" .Values.environmentconfig.annotations) | nindent 2 }}
+data:
+  iam:
+    realm: {{ .Values.environmentconfig.iam.realm | default "" | quote }}
+  ingress:
+    class: {{ .Values.environmentconfig.ingress.class | default "" | quote }}
+    domain: {{ .Values.environmentconfig.ingress.domain | default "" | quote }}
+    secret: {{ .Values.environmentconfig.ingress.secret | default "" | quote }}
+  storage:
+    endpoint: {{ .Values.environmentconfig.storage.endpoint | default "" | quote }}
+    force_path_style: {{ toString (default true .Values.environmentconfig.storage.forcePathStyle) | quote }}
+    provider: {{ .Values.environmentconfig.storage.provider | default "" | quote }}
+    region: {{ .Values.environmentconfig.storage.region | default "" | quote }}
+    secretNamespace: {{ .Values.environmentconfig.storage.secretNamespace | default "" | quote }}
+    type: {{ .Values.environmentconfig.storage.type | default "" | quote }}
+  network:
+    serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}

@@ -91,24 +91,28 @@ jobs:
               "${VAR_ARGS[@]}"
           done
 
-      - name: Build & push workspace-pipeline chart
+      - name: Build & push workspace-pipeline chart (from directory)
         run: |
           set -euo pipefail
           OWNER_LC="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
           TAG="${{ steps.tag.outputs.tag }}"
-          cd pipeline
-          chmod +x create-helm-chart.sh
-          ./create-helm-chart.sh \
-            --tag "${TAG}" \
-            --chart-name "workspace-pipeline" \
-            --out dist \
-            --repo "oci://ghcr.io/${OWNER_LC}/workspace" \
-            --push
-          ls -la dist || true
-          ls -la dist/pkg || true
+          REPO="oci://ghcr.io/${OWNER_LC}/workspace"
 
-      - name: Upload packaged charts (pipeline)
+          cd pipeline
+
+          yq -i ".version=\"${TAG}\" | .appVersion=\"${TAG}\"" Chart.yaml
+
+          mkdir -p dist
+          helm package . --destination dist
+
+          FILE="$(ls dist/workspace-pipeline-*.tgz)"
+          echo "Pushing $FILE to $REPO"
+          helm push "$FILE" "$REPO"
+
+          ls -la dist || true
+
+      - name: Upload packaged charts (workspace-pipeline)
         uses: actions/upload-artifact@v4
         with:
           name: workspace-pipeline-chart
-          path: pipeline/dist/pkg/
+          path: workspace-pipeline/dist/

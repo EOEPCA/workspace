@@ -1,0 +1,8 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: {{ .Values.datalab.name | default "datalab-educates" | quote }}
+  {{- include "wp.annotations.block" (dict "global" .Values.globalAnnotations "local" .Values.datalab.annotations) | nindent 2 }}
+spec:
+  package: {{ required "values.datalab.package is required" .Values.datalab.package | quote }}
+  skipDependencyResolution: true
