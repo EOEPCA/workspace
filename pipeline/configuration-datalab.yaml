@@ -1,0 +1,8 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: datalab-educates
+  annotations: {}   # filled dynamically from values.yaml
+spec:
+  package: ""       # dynamically set from values.yaml
+  skipDependencyResolution: true

@@ -1,0 +1,21 @@
+apiVersion: apiextensions.crossplane.io/v1beta1
+kind: EnvironmentConfig
+metadata:
+  name: datalab                
+  annotations: {}              # filled dynamically from values.yaml
+data:
+  iam:
+    realm: ""                  # from values.envcfg.iam.realm
+  ingress:
+    class: ""                  # from values.envcfg.ingress.class
+    domain: ""                 # from values.envcfg.ingress.domain
+    secret: ""                 # from values.envcfg.ingress.secret
+  storage:
+    endpoint: ""               # from values.envcfg.storage.endpoint
+    force_path_style: "true"   # from values.envcfg.storage.forcePathStyle
+    provider: ""               # from values.envcfg.storage.provider
+    region: ""                 # from values.envcfg.storage.region
+    secretNamespace: ""        # from values.envcfg.storage.secretNamespace
+    type: ""                   # from values.envcfg.storage.type
+  network:
+    serviceCIDR: ""            # from values.envcfg.network.serviceCIDR

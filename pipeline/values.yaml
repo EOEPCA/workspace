@@ -1,0 +1,36 @@
+globalAnnotations: {}
+
+storage:
+  packageRepo: "ghcr.io/versioneer-tech/provider-storage/minio"
+  version: ""                     
+  annotations: {}
+  skipDependencyResolution: true  # usually true
+
+datalab:
+  packageRepo: "ghcr.io/versioneer-tech/provider-datalab/educates"
+  version:
+  annotations: {}
+  skipDependencyResolution: true
+
+envcfg:
+  name: "datalab"
+  annotations: {}
+
+  iam:
+    realm: ""                     # e.g. eoepca
+
+  ingress:
+    class: ""                     # e.g. nginx
+    domain: ""                    # e.g. ngx.develop.eoepca.org
+    secret: ""                    # e.g. wildcard-tls
+
+  storage:
+    endpoint: ""                  # e.g. https://minio.develop.eoepca.org
+    forcePathStyle: true          # true/false
+    provider: ""                  # e.g. Other
+    region: ""                    # e.g. eoepca-demo
+    secretNamespace: ""           # e.g. workspace
+    type: ""                      # e.g. s3
+
+  network:
+    serviceCIDR: ""               # e.g. 10.43.0.0/12
