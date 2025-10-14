@@ -19,3 +19,7 @@ data:
     type: {{ .Values.environmentconfig.storage.type | default "" | quote }}
   network:
     serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}
+  {{- with .Values.environmentconfig.packages }}
+  packages:
+{{ toYaml . | nindent 4 }}
+  {{- end }}

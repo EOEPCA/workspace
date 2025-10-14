@@ -100,6 +100,7 @@ No specific configuration values are required for this chart.
 | `environmentconfig.storage.secretNamespace` | string | Namespace for generated storage credentials. |
 | `environmentconfig.storage.type` | string | Storage type (`s3`). |
 | `environmentconfig.network.serviceCIDR` | string | Kubernetes service CIDR (e.g., `10.43.0.0/12`). |
+| `environmentconfig.packages` | array | Optional list of extension packages to inject into workshops, each item supports `name` and `files[].image.url`. |
 
 ## License
 

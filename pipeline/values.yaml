@@ -28,3 +28,4 @@ environmentconfig:
     type: s3
   network:
     serviceCIDR: ""
+  packages: []
