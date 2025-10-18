@@ -28,13 +28,25 @@ data:
 {{ toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.environmentconfig.defaults }}
   defaults:
+    {{- $q := .quota | default dict }}
+    {{- if $q }}
     quota:
-      memory: {{ .Values.environmentconfig.defaults.quota.memory | default "" | quote }}
-      storage: {{ .Values.environmentconfig.defaults.quota.storage | default "" | quote }}
-      budget: {{ .Values.environmentconfig.defaults.quota.budget | default "" | quote }}
+      {{- range $k, $v := $q }}
+        {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{ $k }}: {{ toString $v | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
 
+    {{- $s := .security | default dict }}
+    {{- if $s }}
     security:
-      policy: {{ .Values.environmentconfig.defaults.security.policy | default "" | quote }}
-      kubernetesAccess: {{ toString (default "" .Values.environmentconfig.defaults.security.kubernetesAccess) | quote }}
-      kubernetesRole: {{ .Values.environmentconfig.defaults.security.kubernetesRole | default "" | quote }}
+      {{- range $k, $v := $s }}
+        {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{ $k }}: {{ toString $v | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
