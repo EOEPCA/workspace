@@ -7,7 +7,7 @@ storage:
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.1.0-rc.3
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.2.0-rc.1
   annotations: {}
 
 environmentconfig:
@@ -29,3 +29,12 @@ environmentconfig:
   network:
     serviceCIDR: ""
   packages: []
+  defaults:
+    quota:
+      memory: ""
+      storage: ""
+      budget: ""
+    security:
+      policy: ""
+      kubernetesAccess: ""
+      kubernetesRole: ""

@@ -6,10 +6,12 @@ metadata:
 data:
   iam:
     realm: {{ .Values.environmentconfig.iam.realm | default "" | quote }}
+
   ingress:
     class: {{ .Values.environmentconfig.ingress.class | default "" | quote }}
     domain: {{ .Values.environmentconfig.ingress.domain | default "" | quote }}
     secret: {{ .Values.environmentconfig.ingress.secret | default "" | quote }}
+
   storage:
     endpoint: {{ .Values.environmentconfig.storage.endpoint | default "" | quote }}
     force_path_style: {{ toString (default true .Values.environmentconfig.storage.forcePathStyle) | quote }}
@@ -17,9 +19,22 @@ data:
     region: {{ .Values.environmentconfig.storage.region | default "" | quote }}
     secretNamespace: {{ .Values.environmentconfig.storage.secretNamespace | default "" | quote }}
     type: {{ .Values.environmentconfig.storage.type | default "" | quote }}
+
   network:
     serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}
+
   {{- with .Values.environmentconfig.packages }}
   packages:
 {{ toYaml . | nindent 4 }}
   {{- end }}
+
+  defaults:
+    quota:
+      memory: {{ .Values.environmentconfig.defaults.quota.memory | default "" | quote }}
+      storage: {{ .Values.environmentconfig.defaults.quota.storage | default "" | quote }}
+      budget: {{ .Values.environmentconfig.defaults.quota.budget | default "" | quote }}
+
+    security:
+      policy: {{ .Values.environmentconfig.defaults.security.policy | default "" | quote }}
+      kubernetesAccess: {{ toString (default "" .Values.environmentconfig.defaults.security.kubernetesAccess) | quote }}
+      kubernetesRole: {{ .Values.environmentconfig.defaults.security.kubernetesRole | default "" | quote }}

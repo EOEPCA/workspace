@@ -1,0 +1,45 @@
+apiVersion: group.keycloak.m.crossplane.io/v1alpha1
+kind: Group
+metadata:
+  name: workspace-admin
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    realmId: eoepca
+    name: workspace-admin
+---
+apiVersion: user.keycloak.m.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: oscar
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    username: oscar
+    realmId: eoepca
+    email: oscar@eoepca.org
+    emailVerified: true
+    firstName: Oscar
+    lastName: O
+---
+apiVersion: group.keycloak.m.crossplane.io/v1alpha1
+kind: Memberships
+metadata:
+  name: oscar-workspace-admin
+  namespace: workspace
+spec:
+  providerConfigRef:
+    name: provider-keycloak
+    kind: ProviderConfig
+  forProvider:
+    realmId: eoepca
+    groupIdRef:
+      name: workspace-admin
+    members:
+    - oscar

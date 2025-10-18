@@ -1,61 +1,72 @@
 # Introduction
 
-The documentation for the `Workspace` building block is organised as follows...
+The **Workspace Building Block (BB)** provides a unified environment where large amounts of data may become instantly accessible, analysable, and shareable. It combines **object storage**, **interactive runtimes**, and **collaborative tooling** into a single Kubernetes-native platform — built on **Crossplane v2** and fully integrated with **Keycloak** for identity and access control.
 
-* **Introduction**<br>
-  Introduction to the BB - including summary of purpose and capabilities.
-* **Getting Started**<br>
-  Quick start instructions - including installation, e.g. of a local instance.
-* **Design**<br>
-  Description of the BB design - including its subcomponent architecture and interfaces.
-* **Usage**<br>
-  Tutorials, How-tos, etc. to communicate usage of the BB.
-* **Administration**<br>
-  Configuration and maintenance of the BB.
-* **API**<br>
-  Details of APIs provided by the BB - including endpoints, usage descriptions and examples etc.
+<div align="center">
+  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" target="_blank">
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" height="250" alt="Workspace UI"/>
+  </a>
+</div>
 
+Workspaces enable individuals, teams, and organisations to provision isolated, self-service environments for data access, algorithm development, and collaborative exploration — all **declaratively managed** on Kubernetes and orchestrated through the **Workspace REST API** or an intuitive **web interface** built on top of it.
 
-## About `Workspace`
+## Key Capabilities
 
-The `Workspace` building block provides a comprehensive solution for storing assets and offering services like cataloguing, data (cube) access, and visualization to explore stored assets. Workspaces can cater to individual users or serve as collaborative spaces for groups or projects.
+### Unified Storage and Runtime
+Each workspace integrates **persistent object storage** (via [provider-storage](https://provider-storage.versioneer.at)) and **interactive compute environments** (via [provider-datalab](https://provider-datalab.versioneer.at)).
 
-### Workspace Controller
+<div align="center">
+  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui3.png" target="_blank">
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui3.png" height="250" alt="Datalab Terminal"/>
+  </a>
+</div>
 
-The Workspace Controller acts as an API for workspace administration. This includes:
+Users can browse data, launch code editors or terminals, and generate secure share links directly from their Datalab — without leaving the browser.
 
-* **Provisioning and Lifecycle Management:** Creating, updating, and deleting workspaces.
-* **Workspace Instance Management:** Configuring and managing individual workspace instances and their associated services [BR066].
-* **REST API:** Providing a REST API for workspace administration [BR067].
-* **GitOps Approach:** Enabling workspace owners to manage their workspace offerings through a declarative GitOps approach [BR070].
-* **Extensibility:** Allowing for the extension of managed services by reusing existing building blocks [BR068, BR069].
-* **Resource Efficiency:** Designing for efficient use of platform resources [BR072].
-* **Service Management:** Enabling users to manage (enable, disable, suspend) the services provisioned within their workspace [BR071].
+<div align="center">
+  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui4.png" target="_blank">
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui4.png" height="250" alt="Datalab Browser"/>
+  </a>
+</div>
 
-### Storage Controller
+### Declarative Lifecycle Management
+Workspaces are managed through **Crossplane compositions**, ensuring reproducible provisioning and continuous reconciliation. Storage, runtime, and IAM components are described as manifests and can either be orchestrated by the Workspace API or be deployed manually, via API, or through GitOps tools such as Flux or ArgoCD.
 
-The Storage Controller provides an API for self-service management of storage buckets. Users can:
+```
+kubectl get storage -A
+NAMESPACE   NAME        SYNCED   READY   COMPOSITION     AGE
+workspace   ws-alice    True     True    storage-minio   8d
+workspace   ws-bob      True     True    storage-minio   8d
+workspace   ws-eric     True     True    storage-minio   8d
+```
 
-* **Create and Manage Buckets:** Create and manage object storage buckets via an API associated with the workspace [BR073, BR074].
-* **Bucket Management:** Manage buckets, including listing details like bucket name, service URL, and S3 access credentials [BR075].
-* **HTTP Access:** Access buckets via direct HTTP access, supporting HTTP range requests and allowing users to upload assets [BR076, BR077].
-* **IAM Integration:** Secure S3 and HTTP access by integrating with the IAM building block [BR078].
-* **External Storage Support:** Register and integrate external S3-compatible object storage services [BR079].
-* **Unique Identification:** Uniquely identify each S3 object storage service [BR080].
+### Secure Collaboration
+Built-in **Keycloak** integration ensures unified authentication and fine-grained access control. Workspace owners can **invite collaborators** and **manage shared storage** by granting or revoking access permissions as needed. Upcoming releases will introduce **vended credentials** for scoped, time-limited access tokens.
 
-### Workspace Services
+<div align="center">
+  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" target="_blank">
+    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" height="250" alt="Bucket Sharing"/>
+  </a>
+</div>
 
-The Workspace Services comprise an extensible set of services that can be provisioned within the workspace. These services include:
+### Extensible by Design  
+Datalab environments can be **curated and customised by teams themselves**, allowing them to adapt the workspace to their individual needs. Running on top of Kubernetes, each Datalab provides the flexibility to **deploy additional services** — such as catalogues, dashboards, or experiment-tracking tools — directly through the Kubernetes API (e.g. using `kubectl`).  
 
-* **Resource Registration/Discovery:** Enabling the registration and discovery of resources.
-* **Data & Datacube Access:** Providing access to data and data cubes.
-* **Extensibility:** Supporting arbitrary applications and tooling by reusing existing Helm charts for databases (e.g., PostGIS), JupyterHub, ML tooling (e.g., MLFlow, Tensorboard) [BR081, BR084].
-* **Public APIs:** Exposing all workspace services via their public APIs.
-* **Scoped Access:** Providing access to resources scoped according to the owning projects and users [BR082, BR083].
+Operators can decide whether to expose a **full Kubernetes API** (via *vcluster*) or to provide **namespaced access** within a shared cluster.  
+Within these environments, teams can further personalise their Datalabs by installing additional tools, libraries, or configurations into their **persistent workspace**.
 
-### Workspace User Interface
+## Architecture Overview
 
-The Workspace User Interface provides a web-based interface for:
+The Workspace Building Block integrates several core components:
 
-* **Workspace Lifecycle Management:** Creating, listing, updating, and deleting workspaces.
-* **Workspace Resource Management:** Managing workspace resources, including services, storage buckets, registered resources, and DOI registrations [BR085].
+- **Workspace API and UI**  
+  Orchestrate storage, runtime, and tooling resources via a unified REST API by managing the underlying Kubernetes Custom Resources (CRs).
+
+- **Storage Controller (`provider-storage`)**  
+  A Kubernetes Custom Resource responsible for creating and managing S3-compatible buckets (e.g., MinIO, AWS S3, or OTC OBS).
+
+- **Datalab Controller (`provider-datalab`)**  
+  A Kubernetes Custom Resource used to deploy persistent VSCode-based environments with direct object-storage access — either directly on Kubernetes or within a vCluster — preconfigured with essential services and tools.
+
+- **Identity & Access (Keycloak)**  
+  Manages user and team identities, enabling role-based access control and granting permissions to specific Datalabs and storage resources.
