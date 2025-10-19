@@ -9,9 +9,9 @@ nav:
     - index.md
     - Getting Started:
       - getting-started/quickstart.md
+      - getting-started/concepts.md
       - getting-started/operator-view.ipynb
       - getting-started/user-view.ipynb
-      - getting-started/concepts.md
     - Design:
       - design/architecture.md
       - design/iam-integration.md

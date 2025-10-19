@@ -28,6 +28,15 @@ data:
 {{ toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.environmentconfig.auth }}
+  auth:
+    {{- range $k, $v := . }}
+      {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+    {{ $k }}: {{ toString $v | quote }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
   {{- with .Values.environmentconfig.defaults }}
   defaults:
     {{- $q := .quota | default dict }}
