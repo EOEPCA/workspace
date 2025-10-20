@@ -67,16 +67,16 @@ Oscar then shares this URL with Frank.
    - Default **S3 bucket credentials** (for `ws-frank`)
    - Links to the **Datalab** and management pages`
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q1.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q1.png)
 
 ### 3) Frank: Start the Datalab and explore the environment
 
 1. Click **Open Datalab**.  
 2. After the session starts, Frank sees a familiar **VS Code** interface: **Terminal**, **Editor**, and a **Data** tab.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q2.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q2.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q3.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q3.png)
 
 **Verify S3 connectivity in Datalab terminal:**
 
@@ -85,9 +85,9 @@ aws s3 ls
 aws s3 ls s3://ws-frank --recursive
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q4.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q4.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q5.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q5.png)
 
 ### 4) Frank: Use MLflow in the Datalab environment as Additional Service
 
@@ -99,7 +99,7 @@ git clone https://github.com/mlflow/mlflow-example
 cd mlflow-example
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q6.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q6.png)
 
 **Run example project with local MLflow:**
 
@@ -117,7 +117,7 @@ uv pip install -r requirements.txt
 uv run python train.py
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q7.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q7.png)
 
 That worked successfully, but so far MLflow is only running in a local development shell. Next, it will be deployed as an additional service within the workspace.
 
@@ -125,7 +125,7 @@ That worked successfully, but so far MLflow is only running in a local developme
 
 Since `kubectl` is already preinstalled and configured for the connected Kubernetes cluster, we can simply apply the manifest (for example, the one provided in the [documentation](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/)).
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q8.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q8.png)
 
 Next, **port-forward the MLflow service** so that it appears in the **Ports** tab, allowing direct access to the MLflow UI in the browser.
 
@@ -135,7 +135,7 @@ kubectl port-forward svc/mlflow 5000:5000
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q9.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q10.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q10.png)
 
 Now, point to the newly deployed MLflow server and run the example project again:
 
@@ -145,14 +145,14 @@ export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
 uv run python train.py
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q11.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q11.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q12.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q12.png)
 
 
 The trained model is  stored as an **MLflow artifact** in a bucket within **Frank’s workspace**. Frank can also navigate to the **Data** tab of the Datalab environment, locate the artifacts, and share specific files — for example, the `.pkl` file with the model — via a **presigned URL**.  This allows others to download the (potentially large) ML model directly from the bucket using a **temporary access link**, without requiring permanent credentials.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q13.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q13.png)
 
 Confident that the Datalab can support his prototype development, Frank now turns to planning how best to structure storage and manage access.
 
@@ -163,14 +163,11 @@ Frank begins by creating two additional buckets to organize data exchange and pu
 - `ws-frank-stagein` — to be used by **Bob** to stage curated data subsets (e.g., filtered by geometry or time).  
 - `ws-frank-publish` — used by **Frank** himself to store and share finalized datasets with others.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q15.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q15.png)
 
-Frank then adds **Alice** as a member of `ws-frank`, granting her access — in addition to her own workspace — to the following resources:
+Frank then adds **Alice** as a member of `ws-frank`, granting her access to all workspace resources.
 
-- The **Datalab**, enabling collaborative development.  
-- The **buckets** (`ws-frank`, `ws-frank-stagein`, and `ws-frank-publish`), with permissions defined by the workspace’s access policy.
-
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q16.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q16.png)
 
 With these permissions in place, **Alice** can now open **Frank’s workspace**, view the necessary credentials, and collaborate with him in the shared Datalab environment.
 
@@ -180,9 +177,11 @@ Next, **Frank** requests access to `ws-eric-shared` to use Eric’s reference da
 - **Eric** then **approves** the request.  
 - Once approved, **Frank** can access `ws-eric-shared` seamlessly using his existing credentials.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q/q17.png)
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q17.png)
 
 Frank also notices that **Bob** has submitted a request to access `ws-frank-stagein`.  Frank reviews and **approves** the request.From that moment on, **Bob** can access `ws-frank-stagein` seamlessly using his existing credentials — unless **Frank** later decides to **revoke** the permission.
+
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q18.png)
 
 ## Summary
 
@@ -201,9 +200,7 @@ With the storage setup in place, everyone now understands where data should resi
 
 - Once the prototype is complete and the first data products are generated, **Frank** synchronizes results from `ws-frank` to `ws-frank-publish`, ensuring a clear separation between **working**, **staging**, and **published** data.
 
----
-
-### Bonus Section for Operators
+## Bonus Section for Operators
 
 The entire **storage configuration** is captured **declaratively** within the Kubernetes cluster. From there, it is continuously managed by **reconciliation engines** that enforce the desired state and ensure the setup remains consistent with the defined specification.
 
@@ -228,9 +225,11 @@ spec:
     - bucketName: ws-alice-3
       grantee: eric
       permission: ReadWrite
+      grantedAt: "2025-10-14T08:09:10.817000+00:00"
   bucketAccessRequests:
     - bucketName: ws-eric-shared
       reason: requesting access
+      requestedAt: "2025-10-19T13:25:59.655000+00:00"
 ---
 apiVersion: pkg.internal/v1beta1
 kind: Storage
@@ -242,9 +241,11 @@ spec:
   buckets:
     - bucketName: ws-bob
       discoverable: true
+  bucketAccessGrants: []
   bucketAccessRequests:
     - bucketName: ws-frank-stagein
       reason: requesting access
+      requestedAt: "2025-10-20T14:00:05.494000+00:00"
 ---
 apiVersion: pkg.internal/v1beta1
 kind: Storage
@@ -262,9 +263,15 @@ spec:
     - bucketName: ws-eric-shared
       grantee: alice
       permission: ReadWrite
+      grantedAt: "2025-10-19T13:28:45.636000+00:00"
+    - bucketName: ws-eric-shared
+      grantee: frank
+      permission: ReadWrite
+      grantedAt: "2025-10-20T14:32:22.153000+00:00"
   bucketAccessRequests:
     - bucketName: ws-alice-3
       reason: requesting access
+      requestedAt: "2025-10-14T08:08:53.953000+00:00"
 ---
 apiVersion: pkg.internal/v1beta1
 kind: Storage
@@ -284,4 +291,10 @@ spec:
     - bucketName: ws-frank-stagein
       grantee: bob
       permission: ReadWrite
+      grantedAt: "2025-10-20T14:01:49.246000+00:00"
+  bucketAccessRequests:
+    - bucketName: ws-eric-shared
+      reason: requesting access
+      requestedAt: "2025-10-20T14:32:10.939000+00:00"
+
 ```
