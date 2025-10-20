@@ -1,0 +1,104 @@
+###########
+# Storage #
+###########
+apiVersion: pkg.internal/v1beta1
+kind: Storage
+metadata:
+  name: ws-alice
+  namespace: workspace
+spec:
+  principal: alice
+  buckets:
+    - bucketName: ws-alice
+      discoverable: true
+    - bucketName: ws-alice-2
+      discoverable: true
+    - bucketName: ws-alice-3
+      discoverable: true
+  bucketAccessGrants:
+    - bucketName: ws-alice-3
+      grantee: eric
+      permission: ReadWrite
+      grantedAt: "2025-10-14T08:09:10.817000+00:00"
+  bucketAccessRequests:
+    - bucketName: ws-eric-shared
+      reason: requesting access
+      requestedAt: "2025-10-19T13:25:59.655000+00:00"
+
+---
+apiVersion: pkg.internal/v1beta1
+kind: Storage
+metadata:
+  name: ws-bob
+  namespace: workspace
+spec:
+  principal: bob
+  buckets:
+    - bucketName: ws-bob
+      discoverable: true
+---
+apiVersion: pkg.internal/v1beta1
+kind: Storage
+metadata:
+  name: ws-eric
+  namespace: workspace
+spec:
+  principal: eric
+  buckets:
+    - bucketName: ws-eric
+      discoverable: true
+    - bucketName: ws-eric-shared
+      discoverable: true
+  bucketAccessGrants:
+    - bucketName: ws-eric-shared
+      grantee: alice
+      permission: ReadWrite
+      grantedAt: "2025-10-19T13:28:45.636000+00:00"
+  bucketAccessRequests:
+    - bucketName: ws-alice-3
+      reason: requesting access
+      requestedAt: "2025-10-14T08:08:53.953000+00:00"
+---
+###########
+# Datalab #
+###########
+apiVersion: pkg.internal/v1beta1
+kind: Datalab
+metadata:
+  name: ws-alice
+  namespace: workspace
+spec:
+  users:
+    - alice
+  secretName: alice
+  sessions: []
+  vcluster: true
+---
+apiVersion: pkg.internal/v1beta1
+kind: Datalab
+metadata:
+  name: ws-bob
+  namespace: workspace
+spec:
+  users:
+    - bob
+    - alice
+  secretName: bob
+  sessions: []
+  quota:
+    memory: 3Gi
+    storage: 6Gi
+    budget: large
+  vcluster: true
+---
+apiVersion: pkg.internal/v1beta1
+kind: Datalab
+metadata:
+  name: ws-eric
+  namespace: workspace
+spec:
+  users:
+    - eric
+  secretName: eric
+  sessions: []
+  vcluster: false
