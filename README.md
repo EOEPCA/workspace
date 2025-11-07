@@ -101,6 +101,10 @@ No specific configuration values are required for this chart.
 | `environmentconfig.storage.type` | string | Storage type (`s3`). |
 | `environmentconfig.network.serviceCIDR` | string | Kubernetes service CIDR (e.g., `10.43.0.0/12`). |
 | `environmentconfig.packages` | array | Optional list of extension packages to inject into workshops, each item supports `name` and `files[].image.url`. |
+| `environmentconfig.auth.type` | string | Authentication mode, `credentials` (default) prompts for storage credentials; `none` adds no additional check. |
+| `environmentconfig.default.quota.memory` | string | Default memory quota for Datalab sessions when unspecified. Default: `2Gi`. |
+| `environmentconfig.default.quota.storage` | string | Default volume size (PVC) for Datalab sessions when unspecified. Default: `1Gi`. |
+| `environmentconfig.default.quota.budget` | string | Default resource budget class (`small`, `medium`, `large`, …). Default: `medium`. |
 
 ## License
 
