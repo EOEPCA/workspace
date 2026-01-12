@@ -7,7 +7,7 @@ metadata:
   name: ws-alice
   namespace: workspace
 spec:
-  principal: alice
+  principal: ws-alice
   buckets:
     - bucketName: ws-alice
       discoverable: true
@@ -17,7 +17,7 @@ spec:
       discoverable: true
   bucketAccessGrants:
     - bucketName: ws-alice-3
-      grantee: eric
+      grantee: ws-eric
       permission: ReadWrite
       grantedAt: "2025-10-14T08:09:10.817000+00:00"
   bucketAccessRequests:
@@ -32,7 +32,7 @@ metadata:
   name: ws-bob
   namespace: workspace
 spec:
-  principal: bob
+  principal: ws-bob
   buckets:
     - bucketName: ws-bob
       discoverable: true
@@ -43,7 +43,7 @@ metadata:
   name: ws-eric
   namespace: workspace
 spec:
-  principal: eric
+  principal: ws-eric
   buckets:
     - bucketName: ws-eric
       discoverable: true
@@ -51,7 +51,7 @@ spec:
       discoverable: true
   bucketAccessGrants:
     - bucketName: ws-eric-shared
-      grantee: alice
+      grantee: ws-alice
       permission: ReadWrite
       grantedAt: "2025-10-19T13:28:45.636000+00:00"
   bucketAccessRequests:
@@ -70,9 +70,8 @@ metadata:
 spec:
   users:
     - alice
-  secretName: alice
-  sessions:
-  - default
+  secretName: ws-alice
+  sessions: []
   vcluster: true
 ---
 apiVersion: pkg.internal/v1beta1
@@ -88,7 +87,7 @@ spec:
     alice:
       grantedAt: "2025-10-15T08:08:53.953000+00:00"
       role: user
-  secretName: bob
+  secretName: ws-bob
   sessions: []
   quota:
     memory: 3Gi
@@ -111,6 +110,6 @@ metadata:
 spec:
   users:
     - eric
-  secretName: eric
+  secretName: ws-eric
   sessions: []
   vcluster: false
