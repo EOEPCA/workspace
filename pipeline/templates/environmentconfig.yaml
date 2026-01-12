@@ -59,3 +59,24 @@ data:
       {{- end }}
     {{- end }}
   {{- end }}
+
+  {{- with .Values.environmentconfig.database }}
+  database:
+    {{- $gw := .gateway | default dict }}
+    {{- if $gw }}
+    gateway:
+      {{- range $k, $v := $gw }}
+        {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{ $k }}: {{ toString $v | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{- if or (kindIs "bool" .storageClassName) (ne (toString .storageClassName) "") }}
+    storageClassName: {{ toString .storageClassName | quote }}
+    {{- end }}
+
+    {{- if or (kindIs "bool" .backupStorageClassName) (ne (toString .backupStorageClassName) "") }}
+    backupStorageClassName: {{ toString .backupStorageClassName | quote }}
+    {{- end }}
+  {{- end }}

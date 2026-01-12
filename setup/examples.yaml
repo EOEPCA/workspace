@@ -71,7 +71,8 @@ spec:
   users:
     - alice
   secretName: alice
-  sessions: []
+  sessions:
+  - default
   vcluster: true
 ---
 apiVersion: pkg.internal/v1beta1
@@ -83,6 +84,10 @@ spec:
   users:
     - bob
     - alice
+  userOverrides:
+    alice:
+      grantedAt: "2025-10-15T08:08:53.953000+00:00"
+      role: user
   secretName: bob
   sessions: []
   quota:
@@ -90,6 +95,13 @@ spec:
     storage: 6Gi
     budget: large
   vcluster: true
+  databases:
+    pg0:
+      names:
+      - dev
+      - prod
+      storage: 1Gi
+      backupStorage: 10Gi
 ---
 apiVersion: pkg.internal/v1beta1
 kind: Datalab

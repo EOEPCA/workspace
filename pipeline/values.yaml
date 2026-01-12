@@ -7,7 +7,7 @@ storage:
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.2.0
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.3.0
   annotations: {}
 
 environmentconfig:
@@ -40,3 +40,10 @@ environmentconfig:
       policy: ""
       kubernetesAccess: ""
       kubernetesRole: ""
+  database: 
+    gateway:
+      parentName: ""
+      parentNamespace: ""
+      sectionName: ""
+    storageClassName: ""
+    backupStorageClassName: ""

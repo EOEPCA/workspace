@@ -105,6 +105,11 @@ No specific configuration values are required for this chart.
 | `environmentconfig.default.quota.memory` | string | Default memory quota for Datalab sessions when unspecified. Default: `2Gi`. |
 | `environmentconfig.default.quota.storage` | string | Default volume size (PVC) for Datalab sessions when unspecified. Default: `1Gi`. |
 | `environmentconfig.default.quota.budget` | string | Default resource budget class (`small`, `medium`, `large`, …). Default: `medium`. |
+| `environmentconfig.database.gateway.parentName` | string | Name of the Gateway API `Gateway` hosting the PostgreSQL `TLSRoute` for external access (optional). |
+| `environmentconfig.database.gateway.parentNamespace` | string | Namespace of the referenced Gateway API `Gateway` (optional). |
+| `environmentconfig.database.gateway.sectionName` | string | Listener / section name on the Gateway to attach the PostgreSQL `TLSRoute` (optional). |
+| `environmentconfig.database.storageClassName` | string | StorageClass for the primary PostgreSQL data volume (empty uses cluster default). |
+| `environmentconfig.database.backupStorageClassName` | string | StorageClass for database backups if supported by the PostgreSQL operator (empty uses cluster default). |
 
 ## License
 
