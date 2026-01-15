@@ -111,6 +111,14 @@ No specific configuration values are required for this chart.
 | `environmentconfig.database.storageClassName` | string | StorageClass for the primary PostgreSQL data volume (empty uses cluster default). |
 | `environmentconfig.database.backupStorageClassName` | string | StorageClass for database backups if supported by the PostgreSQL operator (empty uses cluster default). |
 
+### Authentication and User Management
+
+The workspace API and UI layer use a gateway-based authentication concept. OAuth2 JWTs are passed from the edge (Kubernetes ingress) to the workspace API with validated claims. These claims are enforced to grant management permissions. For more details, see the Workspace API README on [authentication and authorization](https://github.com/EOEPCA/rm-workspace-api/?tab=readme-ov-file#authentication-and-authorization).
+
+By orchestrating **DataLab** resources, the workspace layer also allows these claims to be bootstrapped automatically. This includes provisioning `ws_admin` Keycloak roles in addition to `ws_access` roles, as well as creating the corresponding Keycloak user and admin groups for each individual workspace. All of this is provisioned dynamically through the workspace pipelines orchestrating the DataLab Crossplane XRs.
+
+Further details are available in the [DataLab documentation](https://provider-datalab.versioneer.at/).
+
 ## License
 
 Apache 2.0 (Apache License Version 2.0, January 2004)  
