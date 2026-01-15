@@ -73,6 +73,8 @@ spec:
   secretName: ws-alice
   sessions: []
   vcluster: true
+  data:
+    readOnlyMount: true
 ---
 apiVersion: pkg.internal/v1beta1
 kind: Datalab
@@ -94,6 +96,8 @@ spec:
     storage: 6Gi
     budget: large
   vcluster: true
+  data:
+    enabled: false
   databases:
     pg0:
       names:
