@@ -2,7 +2,7 @@ globalAnnotations: {}
 
 storage:
   name: storage-minio
-  package: ghcr.io/versioneer-tech/provider-storage/minio:0.1.0
+  package: ghcr.io/versioneer-tech/provider-storage/minio:0.2.0
   annotations: {}
 
 datalab:
