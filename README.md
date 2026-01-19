@@ -172,7 +172,6 @@ pyenv local 3.12.11
 python --version
 uv lock --python python
 uv sync --python python --extra dev
-uv run pre-commit install
 ```
 
 and follow the notebooks in the [Getting Started](./docs/getting-started) getting-started section.
