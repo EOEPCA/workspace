@@ -167,7 +167,7 @@ The [documentation section](./docs) contains notebooks preconfigured for the EOE
 You can follow the examples locally with the steps below:
 
  
-``
+```
 pyenv local 3.12.11
 python --version
 uv lock --python python
