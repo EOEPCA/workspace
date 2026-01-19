@@ -115,9 +115,67 @@ No specific configuration values are required for this chart.
 
 The workspace API and UI layer use a gateway-based authentication concept. OAuth2 JWTs are passed from the edge (Kubernetes ingress) to the workspace API with validated claims. These claims are enforced to grant management permissions. For more details, see the Workspace API README on [authentication and authorization](https://github.com/EOEPCA/rm-workspace-api/?tab=readme-ov-file#authentication-and-authorization).
 
+Two complementary permission layers exist within the system.
+
+**Global Workspace Administration**
+
+General administrative actions - such as:
+
+- viewing all workspaces  
+- editing any workspace  
+- creating new workspaces  
+- deleting existing workspaces  
+
+are controlled through the `admin` role of the `workspace-api` client.
+
+Users assigned this role have platform-wide authority over the workspace lifecycle and configuration, independent of any individual workspace membership.
+
+**Workspace-Specific Permissions**
+
+In addition to global administration, each workspace has its own dedicated authorization context.
+
+The workspace-pipeline component automatically provisions:
+
+- a dedicated OAuth2 client for each workspace  
+- the roles `ws-access` and `ws-admin` bound to that client  
+
+These roles grant permissions only for the specific workspace to which the client belongs.  
+This ensures strict isolation between workspaces while still enabling delegated administration at workspace level.
+
+All authentication and authorization decisions are enforced by the EOEPCA IAM framework, based on:
+
+- the APISIX OpenID Connect plugin for identity verification  
+- Open Policy Agent (OPA) for fine-grained policy evaluation  
+
+To perform privileged actions, the operator must therefore be:
+
+- authenticated via OIDC  
+- assigned the appropriate role  
+  - either the global `admin` role on the `workspace-api` client to follow the Operator View  
+  - or the workspace-local `ws-admin` or `ws-access` role on the dedicated workspace client to follow the User View  
+
+Only then are management operations permitted by the policy enforcement layer.
+
 By orchestrating **DataLab** resources, the workspace layer also allows these claims to be bootstrapped automatically. This includes provisioning `ws_admin` Keycloak roles in addition to `ws_access` roles, as well as creating the corresponding Keycloak user and admin groups for each individual workspace. All of this is provisioned dynamically through the workspace pipelines orchestrating the DataLab Crossplane XRs.
 
 Further details are available in the [DataLab documentation](https://provider-datalab.versioneer.at/).
+
+## Getting Started with Live Code
+
+The [documentation section](./docs) contains notebooks preconfigured for the EOEPCA demo system to demonstrate typical user journeys for both operators and workspace users. These examples use a [preconfigured setup](./setup) with the test users **alice**, **bob**, and **eric**. Each of them is an administrator of their own workspace but may also have access to other workspaces. In addition, **oscar** acts as a global administrator and is able to create and delete workspaces, as shown in the operator view tutorial.
+
+You can follow the examples locally with the steps below:
+
+ 
+``
+pyenv local 3.12.11
+python --version
+uv lock --python python
+uv sync --python python --extra dev
+uv run pre-commit install
+```
+
+and follow the notebooks in the [Getting Started](./docs/getting-started) getting-started section.
 
 ## License
 

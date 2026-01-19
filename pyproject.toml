@@ -1,0 +1,19 @@
+[project]
+name = "workspace-docs"
+version = "0.1.0"
+description = "Documentation notebooks and examples for workspace user and operator journeys."
+readme = "README.md"
+requires-python = "==3.12.11"
+dependencies = [
+  "jupyterlab>=4.0",
+  "ipykernel>=6.0",
+  "pyjwt>=2.10.1",
+  "python-dotenv>=1.2.1",
+  "playwright>=1.57.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pre-commit>=3.0",
+  "ruff>=0.5",
+]
