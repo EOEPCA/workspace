@@ -2,7 +2,7 @@ repos:
   - name: ghcr.io/versioneer-tech/bases:csi-rclone-1fd2fe4770ce
     variables:
     - NAMESPACE
-  - name: ghcr.io/versioneer-tech/bases:educates-1fd2fe4770ce
+  - name: ghcr.io/versioneer-tech/bases:educates-1e567a1e3ece
     variables:
     - NAMESPACE
     - CLUSTER_INGRESS_DOMAIN
