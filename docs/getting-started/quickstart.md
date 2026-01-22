@@ -183,54 +183,28 @@ Frank also notices that **Bob** has submitted a request to access `ws-frank-stag
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q18.png)
 
-### 6) Bob: Connects stac-fastapi-pgstac to the managed database instance of his workspace
+# 6) Bob: Connects stac-fastapi-pgstac to the managed database instance of his workspace
 
-Bob has created several managed PostgreSQL databases instances via the **Workspace UI**.
+Bob has created several managed PostgreSQL database instances via the **Workspace UI**.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q19.png)
+Using the database credentials exposed on his dashboard page, he can directly connect applications such as **stac-fastapi-pgstac** to a database inside his workspace.
 
-Using the database credentials exposed on his dashboard page he can directly connect applications such as **stac-fastapi-pgstac** to an instance of his workspace.
+Each workspace exposes ready-to-use environment variables like:
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q20.png)
+- DATABASE_HOST
+- DATABASE_URL
+- DATABASE_NAME
+- DATABASE_USER
+- DATABASE_PASSWORD
+- DATABASE_URL_EXTERNAL
 
-Each workspace exposes ready-to-use environment variables like `DATABASE_USER`, `DATABASE_PASSWORD`,... but also `DATABASE_URL_EXTERNAL` for external access, so applications can connect immediately without additional configuration.
+This allows applications to connect immediately without additional configuration.
 
-Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API.  
-Because he does not need the service running permanently, he prefers to start it **on demand** only when required.
+> Note: The Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
 
-Thanks to the external endpoint, he can either:
+Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API. Because he does not need the service running permanently, he starts it **on demand** inside the Datalab only when required.
 
-- run the service locally via Docker, or  
-- run it inside his Datalab namespace on Kubernetes.
-
-a) locally via Docker
-
-Bob simply exports the external database URL from the workspace dashboard and starts the container.
-
-```bash
-export DATABASE_URL_EXTERNAL="postgresql://..."
-```
-
-```bash
-docker run --rm -p 8080:8080   -e DATABASE_URL="$DATABASE_URL_EXTERNAL"   ghcr.io/stac-utils/stac-fastapi-pgstac:latest
-```
-
-Open the API in the browser:
-
-http://localhost:8080
-
-Typical endpoints:
-
-- `/collections`
-- `/search`
-- `/collections/{id}/items`
-
-When finished, stopping the container immediately shuts the service down.  
-No cleanup or cluster resources are required.
-
----
-
-b) from the Datalab in Kubernetes
+First, apply the following manifests to the Kubernetes cluster.
 
 ```bash
 envsubst <<'EOF' | kubectl apply -f -
@@ -242,7 +216,8 @@ spec:
   selector:
     app: stac-api
   ports:
-    - port: 8080
+    - name: http
+      port: 8080
       targetPort: 8080
 ---
 apiVersion: apps/v1
@@ -261,37 +236,48 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/stac-utils/stac-fastapi-pgstac:latest
+          image: ghcr.io/stac-utils/stac-fastapi-pgstac:6.2.0
           ports:
             - containerPort: 8080
           env:
-            - name: DATABASE_URL
-              value: ${DATABASE_URL_EXTERNAL}
+            - name: PGHOST
+              value: ${DATABASE_HOST}
+            - name: PGPORT
+              value: "${DATABASE_PORT}"
+            - name: PGDATABASE
+              value: ${DATABASE_NAME}
+            - name: PGUSER
+              value: ${DATABASE_USER}
+            - name: PGPASSWORD
+              value: ${DATABASE_PASSWORD}
           resources:
             requests: { cpu: "100m", memory: "256Mi" }
             limits:   { cpu: "500m", memory: "1Gi" }
 EOF
 ```
 
-Expose it locally:
+Next, **port-forward the stac-fastapi-pgstac service** so that it appears in the **Ports** tab, allowing direct access to the service in the browser.
 
 ```bash
 kubectl port-forward svc/stac-api 8080:8080
 ```
 
-Then open:
+Now you can open `http://localhost:8080` and browse common endpoints like
 
-http://localhost:8080
+```
+/collections
+/search
+/collections/{id}/items
+```
 
-When no longer needed:
+To cleanup, run
 
 ```bash
 kubectl delete deploy stac-api
 kubectl delete svc stac-api
 ```
 
-This approach keeps the service **ephemeral and cost-efficient** while still benefiting from a fully managed database providing persistence and automated backups.
-
+This keeps the service **ephemeral and cost-efficient** while still benefiting from a fully managed database that provides persistence and automated backups.
 
 ## Summary
 
