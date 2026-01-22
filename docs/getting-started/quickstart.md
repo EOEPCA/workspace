@@ -27,7 +27,7 @@ Personas:
 - **Frank** — workspace owner.
 - **Alice** — collaborator in Frank’s workspace.
 - **Eric** — provides a shared reference bucket.
-- **Bob** — curates large datasets and stages subsets for Frank.
+- **Bob** — curates large datasets and stages subsets for Frank. He also uses the managed database instance of his workspace to keep track of what has been prepared and delivered.
 
 ### 1) Oscar: Creating a Workspace for Frank
 
@@ -182,6 +182,116 @@ Next, **Frank** requests access to `ws-eric-shared` to use Eric’s reference da
 Frank also notices that **Bob** has submitted a request to access `ws-frank-stagein`.  Frank reviews and **approves** the request.From that moment on, **Bob** can access `ws-frank-stagein` seamlessly using his existing credentials — unless **Frank** later decides to **revoke** the permission.
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q18.png)
+
+### 6) Bob: Connects stac-fastapi-pgstac to the managed database instance of his workspace
+
+Bob has created several managed PostgreSQL databases instances via the **Workspace UI**.
+
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q19.png)
+
+Using the database credentials exposed on his dashboard page he can directly connect applications such as **stac-fastapi-pgstac** to an instance of his workspace.
+
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q20.png)
+
+Each workspace exposes ready-to-use environment variables like `DATABASE_USER`, `DATABASE_PASSWORD`,... but also `DATABASE_URL_EXTERNAL` for external access, so applications can connect immediately without additional configuration.
+
+Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API.  
+Because he does not need the service running permanently, he prefers to start it **on demand** only when required.
+
+Thanks to the external endpoint, he can either:
+
+- run the service locally via Docker, or  
+- run it inside his Datalab namespace on Kubernetes.
+
+a) locally via Docker
+
+Bob simply exports the external database URL from the workspace dashboard and starts the container.
+
+```bash
+export DATABASE_URL_EXTERNAL="postgresql://..."
+```
+
+```bash
+docker run --rm -p 8080:8080   -e DATABASE_URL="$DATABASE_URL_EXTERNAL"   ghcr.io/stac-utils/stac-fastapi-pgstac:latest
+```
+
+Open the API in the browser:
+
+http://localhost:8080
+
+Typical endpoints:
+
+- `/collections`
+- `/search`
+- `/collections/{id}/items`
+
+When finished, stopping the container immediately shuts the service down.  
+No cleanup or cluster resources are required.
+
+---
+
+b) from the Datalab in Kubernetes
+
+```bash
+envsubst <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: stac-api
+spec:
+  selector:
+    app: stac-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stac-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stac-api
+  template:
+    metadata:
+      labels:
+        app: stac-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/stac-utils/stac-fastapi-pgstac:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              value: ${DATABASE_URL_EXTERNAL}
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits:   { cpu: "500m", memory: "1Gi" }
+EOF
+```
+
+Expose it locally:
+
+```bash
+kubectl port-forward svc/stac-api 8080:8080
+```
+
+Then open:
+
+http://localhost:8080
+
+When no longer needed:
+
+```bash
+kubectl delete deploy stac-api
+kubectl delete svc stac-api
+```
+
+This approach keeps the service **ephemeral and cost-efficient** while still benefiting from a fully managed database providing persistence and automated backups.
+
 
 ## Summary
 
