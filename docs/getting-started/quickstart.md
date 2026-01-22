@@ -193,9 +193,9 @@ Using the database credentials exposed on his dashboard page, he can directly co
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q20.png)
 
-Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar. This allows applications to connect immediately without additional configuration.
+Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar. This allows applications to connect immediately without additional configuration. Also external access from outside of the Kubernetes cluster is possible.
 
-> Note: The Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
+> Note: The external Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
 
 Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API. Because he does not need the service running permanently, he starts it **on demand** inside the Datalab only when required.
 
