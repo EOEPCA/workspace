@@ -183,7 +183,7 @@ Frank also notices that **Bob** has submitted a request to access `ws-frank-stag
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q18.png)
 
-# 6) Bob: Connects stac-fastapi-pgstac to the managed database instance of his workspace
+### 6) Bob: Connects stac-fastapi-pgstac to the managed database instance of his workspace
 
 Bob has created several managed PostgreSQL database instances via the **Workspace UI**.
 
