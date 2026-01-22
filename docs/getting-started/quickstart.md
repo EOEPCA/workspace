@@ -187,18 +187,13 @@ Frank also notices that **Bob** has submitted a request to access `ws-frank-stag
 
 Bob has created several managed PostgreSQL database instances via the **Workspace UI**.
 
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q19.png)
+
 Using the database credentials exposed on his dashboard page, he can directly connect applications such as **stac-fastapi-pgstac** to a database inside his workspace.
 
-Each workspace exposes ready-to-use environment variables like:
+![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q20.png)
 
-- DATABASE_HOST
-- DATABASE_URL
-- DATABASE_NAME
-- DATABASE_USER
-- DATABASE_PASSWORD
-- DATABASE_URL_EXTERNAL
-
-This allows applications to connect immediately without additional configuration.
+Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar. This allows applications to connect immediately without additional configuration.
 
 > Note: The Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
 
