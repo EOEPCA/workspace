@@ -251,6 +251,20 @@ spec:
 EOF
 ```
 
+Now, initalize the database
+
+```bash
+kubectl run pgstac-migrate -it --rm \
+  --image=ghcr.io/stac-utils/pgstac-pypgstac:v0.9.8 \
+  --restart=Never \
+  --env="PGHOST=${DATABASE_HOST}" \
+  --env="PGPORT=${DATABASE_PORT}" \
+  --env="PGDATABASE=${DATABASE_NAME}" \
+  --env="PGUSER=${DATABASE_USER}" \
+  --env="PGPASSWORD=${DATABASE_PASSWORD}" \
+  --command -- sh -lc 'pypgstac migrate'
+```
+
 Next, **port-forward the stac-fastapi-pgstac service** so that it appears in the **Ports** tab, allowing direct access to the service in the browser.
 
 ```bash
