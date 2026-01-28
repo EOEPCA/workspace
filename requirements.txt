@@ -1,0 +1,5 @@
+mkdocs==1.5.3
+mkdocs-material==9.5.17
+mkdocs-jupyter==0.24.6
+mkdocs-autorefs==1.0.1
+pymdown-extensions==10.16.1
