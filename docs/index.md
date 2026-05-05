@@ -32,11 +32,13 @@ Users can browse data, launch code editors or terminals, and generate secure sha
 ### Declarative Lifecycle Management
 Workspaces are managed through **Crossplane compositions**, ensuring reproducible provisioning and continuous reconciliation. Storage, runtime, and IAM components are described as manifests and can either be orchestrated by the Workspace API or be deployed manually, via API, or through GitOps tools such as Flux or ArgoCD.
 
-    kubectl get storage -A
-    NAMESPACE   NAME        SYNCED   READY   COMPOSITION     AGE
-    workspace   ws-alice    True     True    storage-minio   8d
-    workspace   ws-bob      True     True    storage-minio   8d
-    workspace   ws-eric     True     True    storage-minio   8d
+```
+kubectl get storage -A
+NAMESPACE   NAME        SYNCED   READY   COMPOSITION     AGE
+workspace   ws-alice    True     True    storage-minio   8d
+workspace   ws-bob      True     True    storage-minio   8d
+workspace   ws-eric     True     True    storage-minio   8d
+```
 
 ### Secure Collaboration
 Built-in **Keycloak** integration ensures unified authentication and fine-grained access control. Workspace owners can **invite collaborators** and **manage shared storage** by granting or revoking access permissions as needed. Upcoming releases will introduce **vended credentials** for scoped, time-limited access tokens.

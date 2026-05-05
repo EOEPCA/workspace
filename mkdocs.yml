@@ -58,7 +58,6 @@ markdown_extensions:
   - admonition
   - abbr
   - attr_list
-  - fenced_code
   - pymdownx.details
   - pymdownx.superfences:
       custom_fences:
