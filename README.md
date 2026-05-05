@@ -89,6 +89,7 @@ No specific configuration values are required for this chart.
 
 | Key | Type | Description |
 |-----|------|-------------|
+| `environmentconfig.name` | string | EnvironmentConfig name consumed by provider-datalab and provider-storage when XRs are labeled with the matching environment name. Default: `datalab`. |
 | `environmentconfig.iam.realm` | string | Keycloak realm name for Workspace authentication. |
 | `environmentconfig.ingress.class` | string | Ingress class to use (e.g., `nginx`). |
 | `environmentconfig.ingress.domain` | string | Domain for all Workspace UIs and services. |
@@ -99,17 +100,25 @@ No specific configuration values are required for this chart.
 | `environmentconfig.storage.region` | string | Region or identifier for the object storage backend. |
 | `environmentconfig.storage.secretNamespace` | string | Namespace for generated storage credentials. |
 | `environmentconfig.storage.type` | string | Storage type (`s3`). |
+| `environmentconfig.storage.lifecycle.schedule` | string | Cron schedule for provider-storage lifecycle rule reconciliation. Default in provider-storage: `17 2 * * *`. |
+| `environmentconfig.storageClasses.allowed` | array | Optional allowlist for Datalab-owned session PVC StorageClasses. |
 | `environmentconfig.network.serviceCIDR` | string | Kubernetes service CIDR (e.g., `10.43.0.0/12`). |
 | `environmentconfig.packages` | array | Optional list of extension packages to inject into workshops, each item supports `name` and `files[].image.url`. |
 | `environmentconfig.auth.type` | string | Authentication mode, `credentials` (default) prompts for storage credentials; `none` adds no additional check. |
-| `environmentconfig.default.quota.memory` | string | Default memory quota for Datalab sessions when unspecified. Default: `2Gi`. |
-| `environmentconfig.default.quota.storage` | string | Default volume size (PVC) for Datalab sessions when unspecified. Default: `1Gi`. |
-| `environmentconfig.default.quota.budget` | string | Default resource budget class (`small`, `medium`, `large`, …). Default: `medium`. |
+| `environmentconfig.defaults.quota.memory` | string | Default memory quota for Datalab sessions when unspecified. Default: `2Gi`. |
+| `environmentconfig.defaults.quota.storage` | string | Default volume size (PVC) for Datalab sessions when unspecified. Default: `1Gi`. |
+| `environmentconfig.defaults.quota.budget` | string | Default resource budget class (`small`, `medium`, `large`, …). Default: `medium`. |
+| `environmentconfig.defaults.security.policy` | string | Default Pod Security Standard level for Datalab sessions (`restricted`, `baseline`, or `privileged`). Default: `baseline`. |
+| `environmentconfig.defaults.security.kubernetesAccess` | bool | Whether sessions receive Kubernetes API access by default. Default: `true`. |
+| `environmentconfig.defaults.security.kubernetesRole` | string | Default session namespace RBAC role (`admin`, `edit`, or `view`). Default: `edit`. |
 | `environmentconfig.database.gateway.parentName` | string | Name of the Gateway API `Gateway` hosting the PostgreSQL `TLSRoute` for external access (optional). |
 | `environmentconfig.database.gateway.parentNamespace` | string | Namespace of the referenced Gateway API `Gateway` (optional). |
 | `environmentconfig.database.gateway.sectionName` | string | Listener / section name on the Gateway to attach the PostgreSQL `TLSRoute` (optional). |
 | `environmentconfig.database.storageClassName` | string | StorageClass for the primary PostgreSQL data volume (empty uses cluster default). |
 | `environmentconfig.database.backupStorageClassName` | string | StorageClass for database backups if supported by the PostgreSQL operator (empty uses cluster default). |
+| `environmentconfig.mongodb.storageClassName` | string | StorageClass for Datalab-managed MongoDB document stores (empty uses cluster default). |
+| `environmentconfig.redis.storageClassName` | string | StorageClass for Datalab-managed Redis cache stores (empty uses cluster default). |
+| `environmentconfig.qdrant.storageClassName` | string | StorageClass for Datalab-managed Qdrant vector stores (empty uses cluster default). |
 
 ### Authentication and User Management
 

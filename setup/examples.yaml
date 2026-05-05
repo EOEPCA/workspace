@@ -6,6 +6,8 @@ kind: Storage
 metadata:
   name: ws-alice
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: ws-alice
   credentialsRollover:
@@ -34,6 +36,8 @@ kind: Storage
 metadata:
   name: ws-bob
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: ws-bob
   buckets:
@@ -45,6 +49,8 @@ kind: Storage
 metadata:
   name: ws-eric
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: ws-eric
   buckets:
@@ -70,6 +76,8 @@ kind: Datalab
 metadata:
   name: ws-alice
   namespace: workspace
+  labels:
+    datalabs.pkg.internal/environment: datalab
 spec:
   users:
     - alice  
@@ -79,11 +87,13 @@ spec:
   data:
     readOnlyMount: true
 ---
-apiVersion: pkg.internal/v1beta1
+apiVersion: pkg.internal/v1beta2
 kind: Datalab
 metadata:
   name: ws-bob
   namespace: workspace
+  labels:
+    datalabs.pkg.internal/environment: datalab
 spec:
   users:
     - bob
@@ -95,12 +105,26 @@ spec:
   secretName: ws-bob
   sessions: []
   quota:
-    memory: 3Gi
-    storage: 6Gi
-    budget: large
+    memory: 6Gi
+    storage: 1Gi
+    budget: x-large
   vcluster: true
   data:
     enabled: false
+  security:
+    kubernetesAccess: false
+  registry:
+    enabled: true
+    storage: 3Gi
+  documentStores:
+    prod:
+      storage: 1Gi
+  cacheStores:
+    prod:
+      storage: 1Gi
+  vectorStores:
+    prod:
+      storage: 1Gi
   databases:
     pg0:
       names:
@@ -114,6 +138,8 @@ kind: Datalab
 metadata:
   name: ws-eric
   namespace: workspace
+  labels:
+    datalabs.pkg.internal/environment: datalab
 spec:
   users:
     - eric

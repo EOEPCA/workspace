@@ -39,12 +39,11 @@ CRDS_DIR="$OUT_DIR/crds"
 mkdir -p "$SRC_DIR" "$TPL_DIR"
 
 echo ">> Pulling OCI with Flux: $SRC_REF"
-if ! flux pull artifact "$SRC_REF" --output "$SRC_DIR" 2>/dev/null; then
-  ART="$WORK/artifact.tar"
-  flux pull artifact "$SRC_REF" > "$ART"
-  mkdir -p "$SRC_DIR"
-  tar -xzf "$ART" -C "$SRC_DIR" 2>/dev/null || tar -xf "$ART" -C "$SRC_DIR"
+if [[ -z "${DOCKER_CONFIG:-}" ]]; then
+  export DOCKER_CONFIG="$WORK/docker-config"
+  mkdir -p "$DOCKER_CONFIG"
 fi
+flux pull artifact "$SRC_REF" --output "$SRC_DIR"
 
 echo ">> Scaffolding chart at $OUT_DIR (version: $CHART_VERSION)"
 mkdir -p "$OUT_DIR"

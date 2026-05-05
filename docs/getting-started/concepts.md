@@ -1,107 +1,63 @@
 # Concepts
 
-This page introduces the core concepts of the Workspace platform: who uses it, what it’s made of, and how collaboration actually works. At its heart, a Workspace brings together three elements — **Storage**, the **Runtime environment (Datalab)**, and **Tools & Services** — under a single identity and lifecycle.
+Workspace brings together storage, runtime, and tooling under one Kubernetes-native control plane. The detailed behavior lives in the provider documentation; this page keeps only the platform-level highlights.
 
-- **Storage** offers S3-compatible buckets with consistent policies.  
-- **The Datalab** provides a browser-based environment (VS Code Server, Terminal, Data Browser) wired to those buckets and credentials.  
-- **Tooling** supplies pre-configured CLIs and SDKs combined with operator-provided and user-managed **Services**, so teams can work productively from day one.  
+## Building Blocks
 
-The Workspace ties these parts together by orchestrating Crossplane Compositions, ensuring that what you run is reproducible, auditable, and easy to reason about.
+- **Storage** is the persistent data layer. It provides S3-compatible buckets, normalized credentials, cross-workspace access requests and grants, and bucket-level lifecycle rules.
+- **Datalab** is the interactive runtime. It gives users a browser-based development environment with terminal access, object storage integration, and optional Kubernetes access for additional services.
+- **Tools and services** are layered on top. Datalabs include common CLIs and SDKs, and can run extra user or operator-provided services when the cluster policy allows it.
 
-The platform serves three personas with overlapping responsibilities.
+These pieces are reconciled through Crossplane compositions so the desired workspace state stays declarative, auditable, and reproducible.
 
-**Platform Operators** stand up and maintain the system, connect identity, and enforce guardrails.  
+## Access Model
 
-**Workspace Managers** curate the project space, invite members, organize buckets, and define how data is shared.  
+Authentication is centralized through Keycloak/OIDC. Workspace membership gives users access to their Datalab, while storage permissions are handled at bucket level.
 
-**Workspace Users** focus on exploration and delivery, using the Datalab and tools to turn data into results.  
+Bucket access is intentionally simple:
 
-> While these roles clarify intent, there is currently no strict RBAC split between “manager” and “user”: once assigned to a workspace, members possess the same capabilities within that environment.
+- `ReadOnly` for listing and reading objects.
+- `ReadWrite` for reading, writing, and deleting objects.
+- `WriteOnly` for write-oriented exchange workflows.
+- `None` for explicit denial or removal of access.
 
-Identity and access cut across everything. Authentication is centralized in **Keycloak** (OIDC), and authorization is expressed through workspace membership and bucket-level policies. These bucket-level policies are deliberately simple (`readOnly`, `readWrite`, `writeOnly`) and grant flows are supported through an interactive UI. For sustained collaboration, workspaces grant each other access so foreign buckets appear alongside local ones with no extra bootstrap steps. For ad-hoc, external sharing of **individual objects**, users can mint **pre-signed URLs** directly from the lab's Data Browser.  
+Workspaces can request access to discoverable buckets owned by other workspaces. Owners approve or deny those requests through grants, and individual objects can still be shared ad hoc with pre-signed URLs from the Datalab data browser.
 
-The Datalab can be **on-demand** (auto-start/cull) for cost-effective interactivity or **always-on** when continuous services are required. Operators can provide shared services as the Datalab runs on the same underlying Kubernetes cluster, and users can deploy their own session-bound additional Servicers — all under the same policy umbrella.
+## Storage Highlights
 
-For deeper dives into the building blocks: storage capabilities are implemented by [**provider-storage**](https://provider-storage.versioneer.at), and the interactive runtime by [**provider-datalab**](https://provider-datalab.versioneer.at). Their documentation explains the operational details, usage patterns, and guardrails you can apply in production.
+Provider Storage gives users one `Storage` API while operators choose the backing implementation. Current supported storage backends include MinIO, AWS S3, and OTC OBS, with the same bucket, credential, request, grant, and lifecycle model across them.
 
-## Storage in Practice
+Buckets can include lifecycle rules under `spec.buckets[].lifecycleRules`. A rule targets either the whole bucket (`*`) or a prefix such as `tmp/*`, then either:
 
-The object storage layer is built and abstracted to allow both operators and users to deploy across different backends depending on needs, constraints, and budgets — providing a unified model for bucket access and sharing.  
+- `Notify` reports matching objects when the time condition is met.
+- `Delete` removes matching objects when the time condition is met.
 
-It gives end users a simple way to request and share S3 buckets, and it gives operators a consistent control plane to enforce policies across multiple backends such as **MinIO**, **AWS S3**, **OTC OBS**, and others.  
+Rules can use a relative object age such as `12h`, `30d`, or `2w`, or a fixed UTC timestamp via `at`.
 
-### Example Flow: Cross-workspace collaboration
+Read more in the provider-storage docs:
 
-Users from Alice’s workspace (`ws-alice`) want to access data stored in Eric’s shared workspace (`ws-eric-shared`).  
-They therefore **request access** to the relevant bucket, and a member of Eric’s team can **approve or deny the request**, i.e. grant access via simple click when collaboration is desired.
+- [Usage & Concepts](https://provider-storage.versioneer.at/latest/how-to-guides/usage_concepts/)
+- [Permissions](https://provider-storage.versioneer.at/latest/how-to-guides/permissions/)
+- [Backend Differences](https://provider-storage.versioneer.at/latest/how-to-guides/backend_differences/)
+- [Storage API Reference](https://provider-storage.versioneer.at/latest/reference-guides/api/)
 
-**Result:**  
-Alice’s team can directly browse and read the curated objects from Eric’s shared bucket without duplicating data. If the request is denied, the bucket remains inaccessible, ensuring that all data exchange is intentional and auditable.
+## Datalab Highlights
 
-<div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a1.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a1.png" height="250" alt="Request Access"/>
-  </a>
-  &nbsp;
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a2.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a2.png" height="250" alt="Grant Access"/>
-  </a>
-  &nbsp;
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a3.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a3.png" height="250" alt="Explore Bucket"/>
-  </a>
-  &nbsp;
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a4.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/a4.png" height="250" alt="Access Bucket Data"/>
-  </a>
-</div>
+Provider Datalab manages the interactive workspace runtime. A Datalab can run on demand for cost-efficient work, stay always-on for long-running collaboration, or run in a vCluster when stronger isolation and a fuller Kubernetes API surface are needed.
 
-### Example Flow: Ad-hoc sharing with **pre-signed URLs**
+Different storage types can be attached or provisioned depending on operator configuration and workload needs:
 
-Eric holds interesting VHR data in his bucket and a colleague asks him to share a specific file for review.  He previews the data in the **Data Browser** and generates a **pre-signed URL** directly from the Datalab, which produces a time-limited link. The colleague can then access the object directly without needing a Workspace account or any prior setup.
+- Object storage buckets for data, artifacts, and workspace exchange.
+- Session PVC storage for the Datalab runtime filesystem.
+- Managed PostgreSQL databases for relational state.
+- MongoDB document stores, Redis cache stores, and Qdrant vector stores for application services.
+- A workspace-scoped Docker registry for local container images when Docker-capable sessions are enabled.
 
-**Result:**  
-The file becomes temporarily accessible to anyone holding the link until it expires. This lightweight sharing method is ideal for quick, one-off reviews or data exchanges outside the workspace, while long-term collaboration should rely on workspace-to-workspace access grants.
+Datalab sessions inherit configured quotas, security settings, network rules, and storage credentials. Users can deploy additional services such as dashboards, APIs, Dask, or MLflow from inside the Datalab when Kubernetes access is enabled.
 
-<div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/b1.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/b1.png" height="250" alt="Preview Bucket Data"/>
-  </a>
-  &nbsp;
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/b2.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/b2.png" height="250" alt="Share Bucket Data"/>
-  </a>
-</div>
+Read more in the provider-datalab docs:
 
-For further information on specific aspects of the Storage Layer:
-
-- **[Usage Concepts](https://provider-storage.versioneer.at/latest/how-to-guides/usage_concepts/)** — explains how users can create, view, and manage S3 buckets within their workspace, how storage requests are processed, and how shared buckets appear across workspaces through declarative grants.  
-- **[Permissions and Access Control](https://provider-storage.versioneer.at/latest/how-to-guides/permissions/)** — describes how workspace-to-workspace access is managed, how readOnly, readWrite, and writeOnly permissions are enforced, and how users can grant or revoke access directly through the Workspace UI.  
-
-## Datalab in Practice
-
-The Datalab is the powerhouse of the workspace experience — an interactive runtime that connects compute, storage, and services. It can operate in **on-demand** mode, where sessions start automatically when needed and shut down when idle, or in **always-on** mode for continuous collaboration or long-running services. Users can also launch auxiliary services bound to their session, such as dashboards, notebooks, or backend APIs, while operators can provide persistent shared services for teams. All Datalab sessions respect workspace policies and quotas, inheriting network rules, resource limits, and access control. Buckets are mounted or accessed via SDKs and command-line tools, while the integrated object browser allows quick previews and pre-signed URL generation.
-
-### Example Flow: Deploying MLflow for Experiment Tracking
-
-Alice wants to train a machine learning model in a Jupyter Notebook within her workspace.  
-To ensure the experiment is **tracked and reproducible**, she deploys **MLflow** directly from the Datalab environment. This allows her to monitor metrics, parameters, and results interactively as the training progresses.
-
-**Result:**  
-The **MLflow UI** becomes available directly from the Datalab, providing a seamless and interactive experience for experiment tracking and visualization — all within the same authenticated workspace environment.
-
-<div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/c1.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/c1.png" height="250" alt="Deploy MLflow"/>
-  </a>
-  &nbsp;
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/c2.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/c2.png" height="250" alt="Share Bucket Data"/>
-  </a>
-</div>
-
-For further information on specific aspects of the Datalab:
-
-- **[Usage Concepts](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/)** — explains how users can start, stop, and reconnect Datalab sessions across workspaces. It also outlines persistence options, data retention behavior, and the lifecycle of ephemeral versus persistent sessions.  
-- **[Additional Services](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/)** — describes how to extend a Datalab session with additional services, such as dashboards, APIs, or other runtime components that can be attached to a user session or shared workspace.  
-- **[Security and Constraints](https://provider-datalab.versioneer.at/latest/how-to-guides/security/)** — discusses how authentication, network isolation, and configuration settings are applied in Datalab environments, as well as how quotas and resource limits ensure secure multi-tenant operation.
+- [Usage & Concepts](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/)
+- [Additional Services](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/)
+- [Security](https://provider-datalab.versioneer.at/latest/how-to-guides/security/)
+- [Datalab API Reference](https://provider-datalab.versioneer.at/latest/reference-guides/api/)

@@ -50,7 +50,7 @@ Built-in **Keycloak** integration ensures unified authentication and fine-graine
 </div>
 
 ### Extensible by Design  
-Datalab environments can be **curated and customised by teams themselves**, allowing them to adapt the workspace to their individual needs. Running on top of Kubernetes, each Datalab provides the flexibility to **deploy additional services** — such as catalogues, dashboards, or experiment-tracking tools — directly through the Kubernetes API (e.g. using `kubectl`).  
+Datalab environments can be **curated and customised by teams themselves**, allowing them to adapt the workspace to their individual needs. Running on top of Kubernetes, each Datalab provides the flexibility to **deploy additional services** — such as catalogues, dashboards, or experiment-tracking tools — directly through the Kubernetes API (e.g. using `kubectl`). Datalabs can also provision managed backing services such as PostgreSQL databases, MongoDB document stores, Redis cache stores, Qdrant vector stores, and a workspace-scoped Docker registry when the corresponding operators are installed.
 
 Operators can decide whether to expose a **full Kubernetes API** (via *vcluster*) or to provide **namespaced access** within a shared cluster.  
 Within these environments, teams can further personalise their Datalabs by installing additional tools, libraries, or configurations into their **persistent workspace**.

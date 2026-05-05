@@ -7,7 +7,7 @@ storage:
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.4.3
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.6.4
   annotations: {}
 
 environmentconfig:
@@ -26,6 +26,10 @@ environmentconfig:
     region: ""
     secretNamespace: ""
     type: s3
+    lifecycle:
+      schedule: ""
+  storageClasses:
+    allowed: []
   network:
     serviceCIDR: ""
   packages: []
@@ -47,3 +51,9 @@ environmentconfig:
       sectionName: ""
     storageClassName: ""
     backupStorageClassName: ""
+  mongodb:
+    storageClassName: ""
+  redis:
+    storageClassName: ""
+  qdrant:
+    storageClassName: ""

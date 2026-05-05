@@ -1,8 +1,4 @@
-apiVersion: apiextensions.crossplane.io/v1beta1
-kind: EnvironmentConfig
-metadata:
-  name: {{ .Values.environmentconfig.name | default "datalab" | quote }}
-  {{- include "wp.annotations.block" (dict "global" .Values.globalAnnotations "local" .Values.environmentconfig.annotations) | nindent 2 }}
+{{- define "wp.environmentconfig.data" -}}
 data:
   iam:
     realm: {{ .Values.environmentconfig.iam.realm | default "" | quote }}
@@ -19,6 +15,17 @@ data:
     region: {{ .Values.environmentconfig.storage.region | default "" | quote }}
     secretNamespace: {{ .Values.environmentconfig.storage.secretNamespace | default "" | quote }}
     type: {{ .Values.environmentconfig.storage.type | default "" | quote }}
+    {{- $lifecycleSchedule := .Values.environmentconfig.storage.lifecycle.schedule | default "" }}
+    {{- if ne (toString $lifecycleSchedule) "" }}
+    lifecycle:
+      schedule: {{ toString $lifecycleSchedule | quote }}
+    {{- end }}
+
+  {{- with .Values.environmentconfig.storageClasses.allowed }}
+  storageClasses:
+    allowed:
+{{- toYaml . | nindent 6 }}
+  {{- end }}
 
   network:
     serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}
@@ -28,55 +35,80 @@ data:
 {{ toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- with .Values.environmentconfig.auth }}
+  {{- $auth := dict }}
+  {{- range $k, $v := (.Values.environmentconfig.auth | default dict) }}
+    {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{- $_ := set $auth $k $v }}
+    {{- end }}
+  {{- end }}
+  {{- if $auth }}
   auth:
-    {{- range $k, $v := . }}
-      {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
-    {{ $k }}: {{ toString $v | quote }}
-      {{- end }}
-    {{- end }}
+{{- toYaml $auth | nindent 4 }}
   {{- end }}
 
-  {{- with .Values.environmentconfig.defaults }}
+  {{- $defaults := .Values.environmentconfig.defaults | default dict }}
+  {{- $quota := dict }}
+  {{- range $k, $v := ($defaults.quota | default dict) }}
+    {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{- $_ := set $quota $k $v }}
+    {{- end }}
+  {{- end }}
+  {{- $security := dict }}
+  {{- range $k, $v := ($defaults.security | default dict) }}
+    {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{- $_ := set $security $k $v }}
+    {{- end }}
+  {{- end }}
+  {{- if or $quota $security }}
   defaults:
-    {{- $q := .quota | default dict }}
-    {{- if $q }}
+    {{- if $quota }}
     quota:
-      {{- range $k, $v := $q }}
-        {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
-      {{ $k }}: {{ toString $v | quote }}
-        {{- end }}
-      {{- end }}
+{{- toYaml $quota | nindent 6 }}
     {{- end }}
 
-    {{- $s := .security | default dict }}
-    {{- if $s }}
+    {{- if $security }}
     security:
-      {{- range $k, $v := $s }}
-        {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
-      {{ $k }}: {{ toString $v | quote }}
-        {{- end }}
-      {{- end }}
+{{- toYaml $security | nindent 6 }}
     {{- end }}
   {{- end }}
 
-  {{- with .Values.environmentconfig.database }}
+  {{- $database := .Values.environmentconfig.database | default dict }}
+  {{- $gateway := dict }}
+  {{- range $k, $v := ($database.gateway | default dict) }}
+    {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{- $_ := set $gateway $k (toString $v) }}
+    {{- end }}
+  {{- end }}
+  {{- $storageClassName := get $database "storageClassName" }}
+  {{- $backupStorageClassName := get $database "backupStorageClassName" }}
+  {{- if or $gateway (or (or (kindIs "bool" $storageClassName) (ne (toString $storageClassName) "")) (or (kindIs "bool" $backupStorageClassName) (ne (toString $backupStorageClassName) ""))) }}
   database:
-    {{- $gw := .gateway | default dict }}
-    {{- if $gw }}
+    {{- if $gateway }}
     gateway:
-      {{- range $k, $v := $gw }}
-        {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
-      {{ $k }}: {{ toString $v | quote }}
-        {{- end }}
-      {{- end }}
+{{- toYaml $gateway | nindent 6 }}
     {{- end }}
 
-    {{- if or (kindIs "bool" .storageClassName) (ne (toString .storageClassName) "") }}
-    storageClassName: {{ toString .storageClassName | quote }}
+    {{- if or (kindIs "bool" $storageClassName) (ne (toString $storageClassName) "") }}
+    storageClassName: {{ toString $storageClassName | quote }}
     {{- end }}
 
-    {{- if or (kindIs "bool" .backupStorageClassName) (ne (toString .backupStorageClassName) "") }}
-    backupStorageClassName: {{ toString .backupStorageClassName | quote }}
+    {{- if or (kindIs "bool" $backupStorageClassName) (ne (toString $backupStorageClassName) "") }}
+    backupStorageClassName: {{ toString $backupStorageClassName | quote }}
     {{- end }}
   {{- end }}
+
+  {{- range $section := list "mongodb" "redis" "qdrant" }}
+    {{- $cfg := get $.Values.environmentconfig $section | default dict }}
+    {{- $backendStorageClassName := get $cfg "storageClassName" }}
+    {{- if or (kindIs "bool" $backendStorageClassName) (ne (toString $backendStorageClassName) "") }}
+  {{ $section }}:
+    storageClassName: {{ toString $backendStorageClassName | quote }}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+apiVersion: apiextensions.crossplane.io/v1beta1
+kind: EnvironmentConfig
+metadata:
+  name: {{ .Values.environmentconfig.name | default "datalab" | quote }}
+  {{- include "wp.annotations.block" (dict "global" .Values.globalAnnotations "local" .Values.environmentconfig.annotations) | nindent 2 }}
+{{ include "wp.environmentconfig.data" . }}

@@ -27,7 +27,7 @@ Personas:
 - **Frank** — workspace owner.
 - **Alice** — collaborator in Frank’s workspace.
 - **Eric** — provides a shared reference bucket.
-- **Bob** — curates large datasets and stages subsets for Frank. He also uses the managed database instance of his workspace to keep track of what has been prepared and delivered.
+- **Bob** — curates large datasets and stages subsets for Frank. He also uses the managed backing services of his workspace, including PostgreSQL, MongoDB, Redis, Qdrant, and a workspace-scoped Docker registry, to keep track of what has been prepared and delivered.
 
 ### 1) Oscar: Creating a Workspace for Frank
 
@@ -183,21 +183,71 @@ Frank also notices that **Bob** has submitted a request to access `ws-frank-stag
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q18.png)
 
-### 6) Bob: Connects stac-fastapi-pgstac to the managed database instance of his workspace
+### 6) Bob: Connects stac-fastapi-pgstac to the managed services of his workspace
 
-Bob has created several managed PostgreSQL database instances via the **Workspace UI**.
+Bob's Datalab is provisioned with the managed backing services used in the demo workflow: PostgreSQL databases for catalog metadata, a MongoDB document store, a Redis cache store, a Qdrant vector store, and a small in-session Docker registry for workspace-local container images.
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q19.png)
 
-Using the database credentials exposed on his dashboard page, he can directly connect applications such as **stac-fastapi-pgstac** to a database inside his workspace.
+Using the service credentials exposed on his dashboard page, he can directly connect applications such as **stac-fastapi-pgstac** to a database inside his workspace. The same pattern applies to document, cache, vector, and registry-backed services when Bob needs them for curation or indexing workflows.
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q20.png)
 
-Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar. This allows applications to connect immediately without additional configuration. Also external access from outside of the Kubernetes cluster is possible.
+Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar service-specific variables. This allows applications to connect immediately without additional configuration. Also external access from outside of the Kubernetes cluster is possible where the service supports it.
 
 > Note: The external Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
 
 Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API. Because he does not need the service running permanently, he starts it **on demand** inside the Datalab only when required.
+
+The corresponding Bob Datalab manifest exercises all managed backing storage types used in this example.
+
+```yaml
+apiVersion: pkg.internal/v1beta2
+kind: Datalab
+metadata:
+  name: ws-bob
+  namespace: workspace
+  labels:
+    datalabs.pkg.internal/environment: datalab
+spec:
+  users:
+    - bob
+    - alice
+  userOverrides:
+    alice:
+      grantedAt: "2025-10-15T08:08:53.953000+00:00"
+      role: user
+  secretName: ws-bob
+  sessions: []
+  vcluster: true
+  data:
+    enabled: false
+  quota:
+    memory: 6Gi
+    storage: 1Gi
+    budget: x-large
+  security:
+    kubernetesAccess: false
+  registry:
+    enabled: true
+    storage: 3Gi
+  documentStores:
+    prod:
+      storage: 1Gi
+  cacheStores:
+    prod:
+      storage: 1Gi
+  vectorStores:
+    prod:
+      storage: 1Gi
+  databases:
+    pg0:
+      names:
+        - dev
+        - prod
+      storage: 1Gi
+      backupStorage: 10Gi
+```
 
 First, apply the following manifests to the Kubernetes cluster.
 
@@ -286,7 +336,7 @@ kubectl delete deploy stac-api
 kubectl delete svc stac-api
 ```
 
-This keeps the service **ephemeral and cost-efficient** while still benefiting from a fully managed database that provides persistence and automated backups.
+This keeps the service **ephemeral and cost-efficient** while still benefiting from managed backing services that provide persistence, automated backups where supported, and workspace-local service credentials.
 
 ## Summary
 
@@ -317,6 +367,8 @@ kind: Storage
 metadata:
   name: ws-alice
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: alice
   buckets:
@@ -341,6 +393,8 @@ kind: Storage
 metadata:
   name: ws-bob
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: bob
   buckets:
@@ -357,6 +411,8 @@ kind: Storage
 metadata:
   name: ws-eric
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: eric
   buckets:
@@ -383,6 +439,8 @@ kind: Storage
 metadata:
   name: ws-frank
   namespace: workspace
+  labels:
+    storages.pkg.internal/environment: datalab
 spec:
   principal: frank
   buckets:
