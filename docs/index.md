@@ -32,7 +32,7 @@ Users can browse data, launch code editors or terminals, and generate secure sha
 ### Declarative Lifecycle Management
 Workspaces are managed through **Crossplane compositions**, ensuring reproducible provisioning and continuous reconciliation. Storage, runtime, and IAM components are described as manifests and can either be orchestrated by the Workspace API or be deployed manually, via API, or through GitOps tools such as Flux or ArgoCD.
 
-```
+```console
 kubectl get storage -A
 NAMESPACE   NAME        SYNCED   READY   COMPOSITION     AGE
 workspace   ws-alice    True     True    storage-minio   8d
