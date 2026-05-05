@@ -37,22 +37,18 @@ Oscar sets up a new workspace for Frank using an **HTTP API–driven approach**,
 
 After authenticating (e.g., through the **OAuth2 Device Code Flow** to obtain a `TOKEN`; see [Operator View](https://eoepca.readthedocs.io/projects/workspace/en/latest/getting-started/operator-view/)), Oscar initiates the workspace creation request:
 
-```bash
-curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "preferred_name": "frank",
-    "default_owner": "frank"
-  }'
-```
+    curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "preferred_name": "frank",
+        "default_owner": "frank"
+      }'
 
 **Expected result:**  
 The API returns a workspace URL such as:
 
-```
-https://workspace-api.develop.eoepca.org/workspaces/ws-frank
-```
+    https://workspace-api.develop.eoepca.org/workspaces/ws-frank
 
 (where `ws-` is the configured prefix for workspace names).
 
@@ -80,10 +76,8 @@ Oscar then shares this URL with Frank.
 
 **Verify S3 connectivity in Datalab terminal:**
 
-```bash
-aws s3 ls
-aws s3 ls s3://ws-frank --recursive
-```
+    aws s3 ls
+    aws s3 ls s3://ws-frank --recursive
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q4.png)
 
@@ -94,10 +88,9 @@ aws s3 ls s3://ws-frank --recursive
 Frank wants MLflow for experiment tracking (artifacts to go to `ws-frank`).
 
 **Clone an example project:**
-```bash
-git clone https://github.com/mlflow/mlflow-example
-cd mlflow-example
-```
+
+    git clone https://github.com/mlflow/mlflow-example
+    cd mlflow-example
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q6.png)
 
@@ -105,17 +98,15 @@ cd mlflow-example
 
 > Note: Frank prefers to use `uv` over conda so he has to convert the environment file
 
-```bash
-yq eval -o=json '.dependencies[]' conda.yaml | jq -r '
-  if type=="string" then .
-  elif has("pip") then .pip[]
-  else empty end
-' > requirements.txt
-
-uv venv
-uv pip install -r requirements.txt
-uv run python train.py
-```
+    yq eval -o=json '.dependencies[]' conda.yaml | jq -r '
+      if type=="string" then .
+      elif has("pip") then .pip[]
+      else empty end
+    ' > requirements.txt
+    
+    uv venv
+    uv pip install -r requirements.txt
+    uv run python train.py
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q7.png)
 
@@ -129,9 +120,7 @@ Since `kubectl` is already preinstalled and configured for the connected Kuberne
 
 Next, **port-forward the MLflow service** so that it appears in the **Ports** tab, allowing direct access to the MLflow UI in the browser.
 
-```bash
-kubectl port-forward svc/mlflow 5000:5000
-```
+    kubectl port-forward svc/mlflow 5000:5000
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q9.png)
 
@@ -139,11 +128,9 @@ kubectl port-forward svc/mlflow 5000:5000
 
 Now, point to the newly deployed MLflow server and run the example project again:
 
-```bash
-export MLFLOW_TRACKING_URI="http://localhost:5000"
-export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
-uv run python train.py
-```
+    export MLFLOW_TRACKING_URI="http://localhost:5000"
+    export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
+    uv run python train.py
 
 ![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q11.png)
 
@@ -201,140 +188,128 @@ Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them thr
 
 The corresponding Bob Datalab manifest exercises all managed backing storage types used in this example.
 
-```yaml
-apiVersion: pkg.internal/v1beta2
-kind: Datalab
-metadata:
-  name: ws-bob
-  namespace: workspace
-  labels:
-    datalabs.pkg.internal/environment: datalab
-spec:
-  users:
-    - bob
-    - alice
-  userOverrides:
-    alice:
-      grantedAt: "2025-10-15T08:08:53.953000+00:00"
-      role: user
-  secretName: ws-bob
-  sessions: []
-  vcluster: true
-  data:
-    enabled: false
-  quota:
-    memory: 6Gi
-    storage: 1Gi
-    budget: x-large
-  security:
-    kubernetesAccess: false
-  registry:
-    enabled: true
-    storage: 3Gi
-  documentStores:
-    prod:
-      storage: 1Gi
-  cacheStores:
-    prod:
-      storage: 1Gi
-  vectorStores:
-    prod:
-      storage: 1Gi
-  databases:
-    pg0:
-      names:
-        - dev
-        - prod
-      storage: 1Gi
-      backupStorage: 10Gi
-```
+    apiVersion: pkg.internal/v1beta2
+    kind: Datalab
+    metadata:
+      name: ws-bob
+      namespace: workspace
+      labels:
+        datalabs.pkg.internal/environment: datalab
+    spec:
+      users:
+        - bob
+        - alice
+      userOverrides:
+        alice:
+          grantedAt: "2025-10-15T08:08:53.953000+00:00"
+          role: user
+      secretName: ws-bob
+      sessions: []
+      vcluster: true
+      data:
+        enabled: false
+      quota:
+        memory: 6Gi
+        storage: 1Gi
+        budget: x-large
+      security:
+        kubernetesAccess: false
+      registry:
+        enabled: true
+        storage: 3Gi
+      documentStores:
+        prod:
+          storage: 1Gi
+      cacheStores:
+        prod:
+          storage: 1Gi
+      vectorStores:
+        prod:
+          storage: 1Gi
+      databases:
+        pg0:
+          names:
+            - dev
+            - prod
+          storage: 1Gi
+          backupStorage: 10Gi
 
 First, apply the following manifests to the Kubernetes cluster.
 
-```bash
-envsubst <<'EOF' | kubectl apply -f -
-apiVersion: v1
-kind: Service
-metadata:
-  name: stac-api
-spec:
-  selector:
-    app: stac-api
-  ports:
-    - name: http
-      port: 8080
-      targetPort: 8080
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: stac-api
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: stac-api
-  template:
+    envsubst <<'EOF' | kubectl apply -f -
+    apiVersion: v1
+    kind: Service
     metadata:
-      labels:
-        app: stac-api
+      name: stac-api
     spec:
-      containers:
-        - name: api
-          image: ghcr.io/stac-utils/stac-fastapi-pgstac:6.2.0
-          ports:
-            - containerPort: 8080
-          env:
-            - name: PGHOST
-              value: ${DATABASE_HOST}
-            - name: PGPORT
-              value: "${DATABASE_PORT}"
-            - name: PGDATABASE
-              value: ${DATABASE_NAME}
-            - name: PGUSER
-              value: ${DATABASE_USER}
-            - name: PGPASSWORD
-              value: ${DATABASE_PASSWORD}
-          resources:
-            requests: { cpu: "100m", memory: "256Mi" }
-            limits:   { cpu: "500m", memory: "1Gi" }
-EOF
-```
+      selector:
+        app: stac-api
+      ports:
+        - name: http
+          port: 8080
+          targetPort: 8080
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: stac-api
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: stac-api
+      template:
+        metadata:
+          labels:
+            app: stac-api
+        spec:
+          containers:
+            - name: api
+              image: ghcr.io/stac-utils/stac-fastapi-pgstac:6.2.0
+              ports:
+                - containerPort: 8080
+              env:
+                - name: PGHOST
+                  value: ${DATABASE_HOST}
+                - name: PGPORT
+                  value: "${DATABASE_PORT}"
+                - name: PGDATABASE
+                  value: ${DATABASE_NAME}
+                - name: PGUSER
+                  value: ${DATABASE_USER}
+                - name: PGPASSWORD
+                  value: ${DATABASE_PASSWORD}
+              resources:
+                requests: { cpu: "100m", memory: "256Mi" }
+                limits:   { cpu: "500m", memory: "1Gi" }
+    EOF
 
 Now, initalize the database
 
-```bash
-kubectl run pgstac-migrate -it --rm \
-  --image=ghcr.io/stac-utils/pgstac-pypgstac:v0.9.8 \
-  --restart=Never \
-  --env="PGHOST=${DATABASE_HOST}" \
-  --env="PGPORT=${DATABASE_PORT}" \
-  --env="PGDATABASE=${DATABASE_NAME}" \
-  --env="PGUSER=${DATABASE_USER}" \
-  --env="PGPASSWORD=${DATABASE_PASSWORD}" \
-  --command -- sh -lc 'pypgstac migrate'
-```
+    kubectl run pgstac-migrate -it --rm \
+      --image=ghcr.io/stac-utils/pgstac-pypgstac:v0.9.8 \
+      --restart=Never \
+      --env="PGHOST=${DATABASE_HOST}" \
+      --env="PGPORT=${DATABASE_PORT}" \
+      --env="PGDATABASE=${DATABASE_NAME}" \
+      --env="PGUSER=${DATABASE_USER}" \
+      --env="PGPASSWORD=${DATABASE_PASSWORD}" \
+      --command -- sh -lc 'pypgstac migrate'
 
 Next, **port-forward the stac-fastapi-pgstac service** so that it appears in the **Ports** tab, allowing direct access to the service in the browser.
 
-```bash
-kubectl port-forward svc/stac-api 8080:8080
-```
+    kubectl port-forward svc/stac-api 8080:8080
 
 Now you can open `http://localhost:8080` and browse common endpoints like
 
-```
-/collections
-/search
-/collections/{id}/items
-```
+    /collections
+    /search
+    /collections/{id}/items
 
 To cleanup, run
 
-```bash
-kubectl delete deploy stac-api
-kubectl delete svc stac-api
-```
+    kubectl delete deploy stac-api
+    kubectl delete svc stac-api
 
 This keeps the service **ephemeral and cost-efficient** while still benefiting from managed backing services that provide persistence, automated backups where supported, and workspace-local service credentials.
 
@@ -361,103 +336,101 @@ The entire **storage configuration** is captured **declaratively** within the Ku
 
 The relevant portion of the **storage manifest** can be found directly after this quickstart, providing operators with a clear view of how the workspace and its associated buckets are provisioned and maintained.
 
-```yaml
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-alice
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: alice
-  buckets:
-    - bucketName: ws-alice
-      discoverable: true
-    - bucketName: ws-alice-2
-      discoverable: true
-    - bucketName: ws-alice-3
-      discoverable: true
-  bucketAccessGrants:
-    - bucketName: ws-alice-3
-      grantee: eric
-      permission: ReadWrite
-      grantedAt: "2025-10-14T08:09:10.817000+00:00"
-  bucketAccessRequests:
-    - bucketName: ws-eric-shared
-      reason: requesting access
-      requestedAt: "2025-10-19T13:25:59.655000+00:00"
----
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-bob
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: bob
-  buckets:
-    - bucketName: ws-bob
-      discoverable: true
-  bucketAccessGrants: []
-  bucketAccessRequests:
-    - bucketName: ws-frank-stagein
-      reason: requesting access
-      requestedAt: "2025-10-20T14:00:05.494000+00:00"
----
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-eric
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: eric
-  buckets:
-    - bucketName: ws-eric
-      discoverable: true
-    - bucketName: ws-eric-shared
-      discoverable: true
-  bucketAccessGrants:
-    - bucketName: ws-eric-shared
-      grantee: alice
-      permission: ReadWrite
-      grantedAt: "2025-10-19T13:28:45.636000+00:00"
-    - bucketName: ws-eric-shared
-      grantee: frank
-      permission: ReadWrite
-      grantedAt: "2025-10-20T14:32:22.153000+00:00"
-  bucketAccessRequests:
-    - bucketName: ws-alice-3
-      reason: requesting access
-      requestedAt: "2025-10-14T08:08:53.953000+00:00"
----
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-frank
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: frank
-  buckets:
-    - bucketName: ws-frank
-      discoverable: true
-    - bucketName: ws-frank-stagein
-      discoverable: true
-    - bucketName: ws-frank-publish
-      discoverable: true
-  bucketAccessGrants:
-    - bucketName: ws-frank-stagein
-      grantee: bob
-      permission: ReadWrite
-      grantedAt: "2025-10-20T14:01:49.246000+00:00"
-  bucketAccessRequests:
-    - bucketName: ws-eric-shared
-      reason: requesting access
-      requestedAt: "2025-10-20T14:32:10.939000+00:00"
-
-```
+    apiVersion: pkg.internal/v1beta1
+    kind: Storage
+    metadata:
+      name: ws-alice
+      namespace: workspace
+      labels:
+        storages.pkg.internal/environment: datalab
+    spec:
+      principal: alice
+      buckets:
+        - bucketName: ws-alice
+          discoverable: true
+        - bucketName: ws-alice-2
+          discoverable: true
+        - bucketName: ws-alice-3
+          discoverable: true
+      bucketAccessGrants:
+        - bucketName: ws-alice-3
+          grantee: eric
+          permission: ReadWrite
+          grantedAt: "2025-10-14T08:09:10.817000+00:00"
+      bucketAccessRequests:
+        - bucketName: ws-eric-shared
+          reason: requesting access
+          requestedAt: "2025-10-19T13:25:59.655000+00:00"
+    ---
+    apiVersion: pkg.internal/v1beta1
+    kind: Storage
+    metadata:
+      name: ws-bob
+      namespace: workspace
+      labels:
+        storages.pkg.internal/environment: datalab
+    spec:
+      principal: bob
+      buckets:
+        - bucketName: ws-bob
+          discoverable: true
+      bucketAccessGrants: []
+      bucketAccessRequests:
+        - bucketName: ws-frank-stagein
+          reason: requesting access
+          requestedAt: "2025-10-20T14:00:05.494000+00:00"
+    ---
+    apiVersion: pkg.internal/v1beta1
+    kind: Storage
+    metadata:
+      name: ws-eric
+      namespace: workspace
+      labels:
+        storages.pkg.internal/environment: datalab
+    spec:
+      principal: eric
+      buckets:
+        - bucketName: ws-eric
+          discoverable: true
+        - bucketName: ws-eric-shared
+          discoverable: true
+      bucketAccessGrants:
+        - bucketName: ws-eric-shared
+          grantee: alice
+          permission: ReadWrite
+          grantedAt: "2025-10-19T13:28:45.636000+00:00"
+        - bucketName: ws-eric-shared
+          grantee: frank
+          permission: ReadWrite
+          grantedAt: "2025-10-20T14:32:22.153000+00:00"
+      bucketAccessRequests:
+        - bucketName: ws-alice-3
+          reason: requesting access
+          requestedAt: "2025-10-14T08:08:53.953000+00:00"
+    ---
+    apiVersion: pkg.internal/v1beta1
+    kind: Storage
+    metadata:
+      name: ws-frank
+      namespace: workspace
+      labels:
+        storages.pkg.internal/environment: datalab
+    spec:
+      principal: frank
+      buckets:
+        - bucketName: ws-frank
+          discoverable: true
+        - bucketName: ws-frank-stagein
+          discoverable: true
+        - bucketName: ws-frank-publish
+          discoverable: true
+      bucketAccessGrants:
+        - bucketName: ws-frank-stagein
+          grantee: bob
+          permission: ReadWrite
+          grantedAt: "2025-10-20T14:01:49.246000+00:00"
+      bucketAccessRequests:
+        - bucketName: ws-eric-shared
+          reason: requesting access
+          requestedAt: "2025-10-20T14:32:10.939000+00:00"
+    
