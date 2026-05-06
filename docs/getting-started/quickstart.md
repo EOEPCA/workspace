@@ -219,16 +219,16 @@ spec:
       grantedAt: "2025-10-15T08:08:53.953000+00:00"
       role: user
   secretName: ws-bob
-  sessions: []
+  sessions:
+    - name: default
+      state: started
   vcluster: true
   data:
-    enabled: false
+    enabled: true
   quota:
-    memory: 6Gi
-    storage: 1Gi
+    memory: 18Gi
+    storage: 10Gi
     budget: x-large
-  security:
-    kubernetesAccess: false
   registry:
     enabled: true
     storage: 3Gi
@@ -250,7 +250,78 @@ spec:
       backupStorage: 10Gi
 ```
 
-First, apply the following manifests to the Kubernetes cluster.
+The `prod` document store exposes MongoDB connection details as session environment variables. For most application code, `MONGO_PROD_URI` is the easiest option. Split values such as `MONGO_PROD_HOST`, `MONGO_PROD_PORT`, `MONGO_PROD_DATABASE`, `MONGO_PROD_USER`, `MONGO_PROD_PASSWORD`, and `MONGO_PROD_AUTH_SOURCE` are also available when a library expects separate fields.
+
+Bob can validate the MongoDB document store from the Datalab terminal with a short Python script:
+
+```bash
+cat > mongo_demo.py <<'PY'
+import logging
+import os
+from datetime import datetime, timezone
+
+from pymongo import MongoClient
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+log = logging.getLogger("mongo-demo")
+
+mongo_uri = os.environ["MONGO_PROD_URI"]
+database_name = os.getenv("MONGO_PROD_DATABASE", "prod")
+collection_name = os.getenv("MONGO_COLLECTION", "curation_demo")
+
+log.info("connecting to MongoDB database=%s collection=%s", database_name, collection_name)
+
+with MongoClient(mongo_uri) as client:
+    db = client[database_name]
+
+    if collection_name not in db.list_collection_names():
+        db.create_collection(collection_name)
+        log.info("created collection %s", collection_name)
+    else:
+        log.info("collection %s already exists", collection_name)
+
+    collection = db[collection_name]
+    collection.delete_many({})
+    log.info("cleared previous demo documents")
+
+    documents = [
+        {
+            "_id": "scene-a",
+            "workspace": "ws-bob",
+            "status": "prepared",
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "_id": "scene-b",
+            "workspace": "ws-bob",
+            "status": "queued",
+            "created_at": datetime.now(timezone.utc),
+        },
+    ]
+
+    result = collection.insert_many(documents)
+    log.info("inserted %s documents: %s", len(result.inserted_ids), result.inserted_ids)
+
+    for item in collection.find({}, {"_id": 1, "workspace": 1, "status": 1}).sort("_id"):
+        log.info("found document: %s", item)
+
+    delete_result = collection.delete_one({"_id": "scene-b"})
+    log.info("deleted %s document with _id=scene-b", delete_result.deleted_count)
+
+    remaining = list(collection.find({}, {"_id": 1, "workspace": 1, "status": 1}).sort("_id"))
+    log.info("remaining documents: %s", remaining)
+PY
+
+uv run --with pymongo python mongo_demo.py
+```
+
+After the script runs, Bob has created a collection, inserted two metadata documents, read them back, deleted one document, and listed the remaining content. The same pattern can be used from a notebook cell by keeping the Python block and omitting the shell wrapper.
+
+Next, Bob deploys **stac-fastapi-pgstac** against the managed PostgreSQL database. First, apply the following manifests to the Kubernetes cluster.
 
 ```
 envsubst <<'EOF' | kubectl apply -f -

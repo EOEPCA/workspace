@@ -117,16 +117,14 @@ spec:
   secretName: ws-bob
   sessions:
     - name: default
-      state: stopped
+      state: started
   quota:
-    memory: 6Gi
-    storage: 1Gi
+    memory: 18Gi
+    storage: 10Gi
     budget: x-large
   vcluster: true
   data:
-    enabled: false
-  security:
-    kubernetesAccess: false
+    enabled: true
   registry:
     enabled: true
     storage: 3Gi
@@ -161,6 +159,9 @@ spec:
   sessions:
     - name: default
       state: stopped
+  security:
+    policy: privileged
+    kubernetesAccess: false
   vcluster: false
   registry:
     enabled: true
