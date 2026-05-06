@@ -3,8 +3,8 @@
 The **Workspace Building Block (BB)** provides a unified environment where large amounts of data may become instantly accessible, analysable, and shareable. It combines **object storage**, **interactive runtimes**, and **collaborative tooling** into a single Kubernetes-native platform — built on **Crossplane v2** and fully integrated with **Keycloak** for identity and access control.
 
 <div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui1.png" height="250" alt="Workspace UI"/>
+  <a href="img/ui1.png" target="_blank">
+    <img src="img/ui1.png" height="250" alt="Workspace UI"/>
   </a>
 </div>
 
@@ -16,16 +16,16 @@ Workspaces enable individuals, teams, and organisations to provision isolated, s
 Each workspace integrates **persistent object storage** (via [provider-storage](https://provider-storage.versioneer.at)) and **interactive compute environments** (via [provider-datalab](https://provider-datalab.versioneer.at)).
 
 <div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui3.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui3.png" height="250" alt="Datalab Terminal"/>
+  <a href="img/ui3.png" target="_blank">
+    <img src="img/ui3.png" height="250" alt="Datalab Terminal"/>
   </a>
 </div>
 
 Users can browse data, launch code editors or terminals, and generate secure share links directly from their Datalab — without leaving the browser.
 
 <div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui4.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui4.png" height="250" alt="Datalab Browser"/>
+  <a href="img/ui4.png" target="_blank">
+    <img src="img/ui4.png" height="250" alt="Datalab Browser"/>
   </a>
 </div>
 
@@ -44,8 +44,8 @@ workspace   ws-eric     True     True    storage-minio   8d
 Built-in **Keycloak** integration ensures unified authentication and fine-grained access control. Workspace owners can **invite collaborators** and **manage shared storage** by granting or revoking access permissions as needed. Upcoming releases will introduce **vended credentials** for scoped, time-limited access tokens.
 
 <div align="center">
-  <a href="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" target="_blank">
-    <img src="https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/ui2.png" height="250" alt="Bucket Sharing"/>
+  <a href="img/ui2.png" target="_blank">
+    <img src="img/ui2.png" height="250" alt="Bucket Sharing"/>
   </a>
 </div>
 

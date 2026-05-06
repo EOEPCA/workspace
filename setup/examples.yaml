@@ -43,6 +43,13 @@ spec:
   buckets:
     - bucketName: ws-bob
       discoverable: true
+      lifecycleRules:
+        - target: tmp/*
+          mode: Delete
+          minAge: 12h
+        - target: scratch/*
+          mode: Notify
+          minAge: 1w
 ---
 apiVersion: pkg.internal/v1beta1
 kind: Storage

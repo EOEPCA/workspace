@@ -67,16 +67,16 @@ Oscar then shares this URL with Frank.
    - Default **S3 bucket credentials** (for `ws-frank`)
    - Links to the **Datalab** and management pages`
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q1.png)
+![alt text](../img/q1.png)
 
 ### 3) Frank: Start the Datalab and explore the environment
 
 1. Click **Open Datalab**.  
 2. After the session starts, Frank sees a familiar **VS Code** interface: **Terminal**, **Editor**, and a **Data** tab.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q2.png)
+![alt text](../img/q2.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q3.png)
+![alt text](../img/q3.png)
 
 **Verify S3 connectivity in Datalab terminal:**
 
@@ -85,9 +85,9 @@ aws s3 ls
 aws s3 ls s3://ws-frank --recursive
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q4.png)
+![alt text](../img/q4.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q5.png)
+![alt text](../img/q5.png)
 
 ### 4) Frank: Use MLflow in the Datalab environment as Additional Service
 
@@ -100,7 +100,7 @@ git clone https://github.com/mlflow/mlflow-example
 cd mlflow-example
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q6.png)
+![alt text](../img/q6.png)
 
 **Run example project with local MLflow:**
 
@@ -118,7 +118,7 @@ uv pip install -r requirements.txt
 uv run python train.py
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q7.png)
+![alt text](../img/q7.png)
 
 That worked successfully, but so far MLflow is only running in a local development shell. Next, it will be deployed as an additional service within the workspace.
 
@@ -126,7 +126,7 @@ That worked successfully, but so far MLflow is only running in a local developme
 
 Since `kubectl` is already preinstalled and configured for the connected Kubernetes cluster, we can simply apply the manifest (for example, the one provided in the [documentation](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/)).
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q8.png)
+![alt text](../img/q8.png)
 
 Next, **port-forward the MLflow service** so that it appears in the **Ports** tab, allowing direct access to the MLflow UI in the browser.
 
@@ -134,9 +134,9 @@ Next, **port-forward the MLflow service** so that it appears in the **Ports** ta
 kubectl port-forward svc/mlflow 5000:5000
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q9.png)
+![alt text](../img/q9.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q10.png)
+![alt text](../img/q10.png)
 
 Now, point to the newly deployed MLflow server and run the example project again:
 
@@ -146,14 +146,14 @@ export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
 uv run python train.py
 ```
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q11.png)
+![alt text](../img/q11.png)
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q12.png)
+![alt text](../img/q12.png)
 
 
 The trained model is  stored as an **MLflow artifact** in a bucket within **Frank’s workspace**. Frank can also navigate to the **Data** tab of the Datalab environment, locate the artifacts, and share specific files — for example, the `.pkl` file with the model — via a **presigned URL**.  This allows others to download the (potentially large) ML model directly from the bucket using a **temporary access link**, without requiring permanent credentials.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q13.png)
+![alt text](../img/q13.png)
 
 Confident that the Datalab can support his prototype development, Frank now turns to planning how best to structure storage and manage access.
 
@@ -164,11 +164,11 @@ Frank begins by creating two additional buckets to organize data exchange and pu
 - `ws-frank-stagein` — to be used by **Bob** to stage curated data subsets (e.g., filtered by geometry or time).  
 - `ws-frank-publish` — used by **Frank** himself to store and share finalized datasets with others.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q15.png)
+![alt text](../img/q15.png)
 
 Frank then adds **Alice** as a member of `ws-frank`, granting her access to all workspace resources.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q16.png)
+![alt text](../img/q16.png)
 
 With these permissions in place, **Alice** can now open **Frank’s workspace**, view the necessary credentials, and collaborate with him in the shared Datalab environment.
 
@@ -178,21 +178,21 @@ Next, **Frank** requests access to `ws-eric-shared` to use Eric’s reference da
 - **Eric** then **approves** the request.  
 - Once approved, **Frank** can access `ws-eric-shared` seamlessly using his existing credentials.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q17.png)
+![alt text](../img/q17.png)
 
 Frank also notices that **Bob** has submitted a request to access `ws-frank-stagein`.  Frank reviews and **approves** the request.From that moment on, **Bob** can access `ws-frank-stagein` seamlessly using his existing credentials — unless **Frank** later decides to **revoke** the permission.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q18.png)
+![alt text](../img/q18.png)
 
 ### 6) Bob: Connects stac-fastapi-pgstac to the managed services of his workspace
 
 Bob's Datalab is provisioned with the managed backing services used in the demo workflow: PostgreSQL databases for catalog metadata, a MongoDB document store, a Redis cache store, a Qdrant vector store, and a small in-session Docker registry for workspace-local container images.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q19.png)
+![alt text](../img/q19.png)
 
 Using the service credentials exposed on his dashboard page, he can directly connect applications such as **stac-fastapi-pgstac** to a database inside his workspace. The same pattern applies to document, cache, vector, and registry-backed services when Bob needs them for curation or indexing workflows.
 
-![alt text](https://github.com/EOEPCA/workspace/raw/refs/heads/main/docs/img/q20.png)
+![alt text](../img/q20.png)
 
 Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar service-specific variables. This allows applications to connect immediately without additional configuration. Also external access from outside of the Kubernetes cluster is possible where the service supports it.
 
