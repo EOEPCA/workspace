@@ -14,10 +14,10 @@ This guide walks through a fictive end-to-end scenario to be executed on the `eo
 
 **Frank** is prototyping a **data-driven AI workflow**. He needs:
 
-- A **workspace** with a VS Code like runtime to develop and and buckets for storage.
+- A **workspace** with a VS Code like runtime for development and buckets for storage.
 - **Alice** as a collaborator (co-development).
-- Read access to **Bob’s** shared reference data.
-- A way to let **Eric** stage subsets of large ground-truth data into Frank’s workspace.
+- Read access to **Eric's** shared reference data.
+- A way to let **Bob** stage curated subsets of large ground-truth data into Frank's workspace.
 - **MLflow** for experiment tracking, with model artifacts stored in Frank’s bucket.
 - A clear **separation of storage buckets**, each potentially holding data ranging from gigabytes to terabytes.
 
@@ -37,7 +37,7 @@ Oscar sets up a new workspace for Frank using an **HTTP API–driven approach**,
 
 After authenticating (e.g., through the **OAuth2 Device Code Flow** to obtain a `TOKEN`; see [Operator View](https://eoepca.readthedocs.io/projects/workspace/en/latest/getting-started/operator-view/)), Oscar initiates the workspace creation request:
 
-```
+```bash
 curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
@@ -50,7 +50,7 @@ curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
 **Expected result:**  
 The API returns a workspace URL such as:
 
-```
+```text
 https://workspace-api.develop.eoepca.org/workspaces/ws-frank
 ```
 
@@ -80,7 +80,7 @@ Oscar then shares this URL with Frank.
 
 **Verify S3 connectivity in Datalab terminal:**
 
-```
+```bash
 aws s3 ls
 aws s3 ls s3://ws-frank --recursive
 ```
@@ -95,7 +95,7 @@ Frank wants MLflow for experiment tracking (artifacts to go to `ws-frank`).
 
 **Clone an example project:**
 
-```
+```bash
 git clone https://github.com/mlflow/mlflow-example
 cd mlflow-example
 ```
@@ -106,7 +106,7 @@ cd mlflow-example
 
 > Note: Frank prefers to use `uv` over conda so he has to convert the environment file
 
-```
+```bash
 yq eval -o=json '.dependencies[]' conda.yaml | jq -r '
   if type=="string" then .
   elif has("pip") then .pip[]
@@ -130,7 +130,7 @@ Since `kubectl` is already preinstalled and configured for the connected Kuberne
 
 Next, **port-forward the MLflow service** so that it appears in the **Ports** tab, allowing direct access to the MLflow UI in the browser.
 
-```
+```bash
 kubectl port-forward svc/mlflow 5000:5000
 ```
 
@@ -140,7 +140,7 @@ kubectl port-forward svc/mlflow 5000:5000
 
 Now, point to the newly deployed MLflow server and run the example project again:
 
-```
+```bash
 export MLFLOW_TRACKING_URI="http://localhost:5000"
 export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
 uv run python train.py
@@ -180,29 +180,23 @@ Next, **Frank** requests access to `ws-eric-shared` to use Eric’s reference da
 
 ![alt text](../img/q17.png)
 
-Frank also notices that **Bob** has submitted a request to access `ws-frank-stagein`.  Frank reviews and **approves** the request.From that moment on, **Bob** can access `ws-frank-stagein` seamlessly using his existing credentials — unless **Frank** later decides to **revoke** the permission.
+Frank also notices that **Bob** has submitted a request to access `ws-frank-stagein`. Frank reviews and **approves** the request. From that moment on, **Bob** can access `ws-frank-stagein` seamlessly using his existing credentials — unless **Frank** later decides to **revoke** the permission.
 
 ![alt text](../img/q18.png)
 
-### 6) Bob: Connects stac-fastapi-pgstac to the managed services of his workspace
+### 6) Bob: Uses managed services for curation and catalog publishing
 
-Bob's Datalab is provisioned with the managed backing services used in the demo workflow: PostgreSQL databases for catalog metadata, a MongoDB document store, a Redis cache store, a Qdrant vector store, and a small in-session Docker registry for workspace-local container images.
+Bob's Datalab is provisioned with the managed backing services used in the demo workflow. As one workspace configuration, it enables PostgreSQL databases, a MongoDB document store, a Redis cache store, a Qdrant vector store, data buckets, and a small in-session Docker registry for workspace-local container images.
 
 ![alt text](../img/q19.png)
 
-Using the service credentials exposed on his dashboard page, he can directly connect applications such as **stac-fastapi-pgstac** to a database inside his workspace. The same pattern applies to document, cache, vector, and registry-backed services when Bob needs them for curation or indexing workflows.
+Using the service credentials exposed on his dashboard page, Bob can connect applications directly to these services from inside the Datalab. Each backing service follows the same pattern: the workspace creates the service, exposes credentials and connection settings, and keeps the service lifecycle tied to the Datalab configuration.
 
 ![alt text](../img/q20.png)
 
-Each workspace exposes ready-to-use environment variables like `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD` and similar service-specific variables. This allows applications to connect immediately without additional configuration. Also external access from outside of the Kubernetes cluster is possible where the service supports it.
-
-> Note: The external Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
-
-Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API. Because he does not need the service running permanently, he starts it **on demand** inside the Datalab only when required.
-
 The corresponding Bob Datalab manifest exercises all managed backing storage types used in this example.
 
-```
+```yaml
 apiVersion: pkg.internal/v1beta2
 kind: Datalab
 metadata:
@@ -249,6 +243,8 @@ spec:
       storage: 1Gi
       backupStorage: 10Gi
 ```
+
+Bob plans to curate selected satellite scenes before staging them for Frank. For this, he first tests the MongoDB document store as a simple place to keep structured scene metadata, processing status, and handover notes.
 
 The `prod` document store exposes MongoDB connection details as session environment variables. For most application code, `MONGO_PROD_URI` is the easiest option. Split values such as `MONGO_PROD_HOST`, `MONGO_PROD_PORT`, `MONGO_PROD_DATABASE`, `MONGO_PROD_USER`, `MONGO_PROD_PASSWORD`, and `MONGO_PROD_AUTH_SOURCE` are also available when a library expects separate fields.
 
@@ -321,9 +317,15 @@ uv run --with pymongo python mongo_demo.py
 
 After the script runs, Bob has created a collection, inserted two metadata documents, read them back, deleted one document, and listed the remaining content. The same pattern can be used from a notebook cell by keeping the Python block and omitting the shell wrapper.
 
-Next, Bob deploys **stac-fastapi-pgstac** against the managed PostgreSQL database. First, apply the following manifests to the Kubernetes cluster.
+After validating the document workflow, Bob turns to catalog publication. He uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API backed by the managed PostgreSQL database. Because he does not need the service running permanently, he starts it **on demand** inside the Datalab only when required.
 
-```
+Each workspace exposes ready-to-use PostgreSQL environment variables for the declared database host. For Bob's `pg0` host and `prod` database, these include `POSTGRES_PG0_HOST`, `POSTGRES_PG0_PORT`, `POSTGRES_PG0_USER`, `POSTGRES_PG0_PASSWORD`, and `POSTGRES_PG0_PROD_URL`. This allows applications to connect immediately without additional configuration. External access from outside of the Kubernetes cluster is also possible where the service supports it.
+
+> Note: The external Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
+
+First, apply the following manifests to the Kubernetes cluster.
+
+```bash
 envsubst <<'EOF' | kubectl apply -f -
 apiVersion: v1
 kind: Service
@@ -358,44 +360,44 @@ spec:
             - containerPort: 8080
           env:
             - name: PGHOST
-              value: ${DATABASE_HOST}
+              value: ${POSTGRES_PG0_HOST}
             - name: PGPORT
-              value: "${DATABASE_PORT}"
+              value: "${POSTGRES_PG0_PORT}"
             - name: PGDATABASE
-              value: ${DATABASE_NAME}
+              value: prod
             - name: PGUSER
-              value: ${DATABASE_USER}
+              value: ${POSTGRES_PG0_USER}
             - name: PGPASSWORD
-              value: ${DATABASE_PASSWORD}
+              value: ${POSTGRES_PG0_PASSWORD}
           resources:
             requests: { cpu: "100m", memory: "256Mi" }
             limits:   { cpu: "500m", memory: "1Gi" }
 EOF
 ```
 
-Now, initalize the database
+Now, initialize the database.
 
-```
+```bash
 kubectl run pgstac-migrate -it --rm \
   --image=ghcr.io/stac-utils/pgstac-pypgstac:v0.9.8 \
   --restart=Never \
-  --env="PGHOST=${DATABASE_HOST}" \
-  --env="PGPORT=${DATABASE_PORT}" \
-  --env="PGDATABASE=${DATABASE_NAME}" \
-  --env="PGUSER=${DATABASE_USER}" \
-  --env="PGPASSWORD=${DATABASE_PASSWORD}" \
+  --env="PGHOST=${POSTGRES_PG0_HOST}" \
+  --env="PGPORT=${POSTGRES_PG0_PORT}" \
+  --env="PGDATABASE=prod" \
+  --env="PGUSER=${POSTGRES_PG0_USER}" \
+  --env="PGPASSWORD=${POSTGRES_PG0_PASSWORD}" \
   --command -- sh -lc 'pypgstac migrate'
 ```
 
 Next, **port-forward the stac-fastapi-pgstac service** so that it appears in the **Ports** tab, allowing direct access to the service in the browser.
 
-```
+```bash
 kubectl port-forward svc/stac-api 8080:8080
 ```
 
 Now you can open `http://localhost:8080` and browse common endpoints like
 
-```
+```text
 /collections
 /search
 /collections/{id}/items
@@ -403,7 +405,7 @@ Now you can open `http://localhost:8080` and browse common endpoints like
 
 To cleanup, run
 
-```
+```bash
 kubectl delete deploy stac-api
 kubectl delete svc stac-api
 ```
@@ -431,9 +433,9 @@ With the storage setup in place, everyone now understands where data should resi
 
 The entire **storage configuration** is captured **declaratively** within the Kubernetes cluster. From there, it is continuously managed by **reconciliation engines** that enforce the desired state and ensure the setup remains consistent with the defined specification.
 
-The relevant portion of the **storage manifest** can be found directly after this quickstart, providing operators with a clear view of how the workspace and its associated buckets are provisioned and maintained.
+The scenario-specific **storage manifest** can be found directly after this quickstart, providing operators with a clear view of how the workspace and its associated buckets are provisioned and maintained.
 
-```
+```yaml
 apiVersion: pkg.internal/v1beta1
 kind: Storage
 metadata:
@@ -442,7 +444,10 @@ metadata:
   labels:
     storages.pkg.internal/environment: datalab
 spec:
-  principal: alice
+  principal: ws-alice
+  credentialsRollover:
+    interval: weekly
+    maxToKeep: 2
   buckets:
     - bucketName: ws-alice
       discoverable: true
@@ -452,7 +457,7 @@ spec:
       discoverable: true
   bucketAccessGrants:
     - bucketName: ws-alice-3
-      grantee: eric
+      grantee: ws-eric
       permission: ReadWrite
       grantedAt: "2025-10-14T08:09:10.817000+00:00"
   bucketAccessRequests:
@@ -468,11 +473,17 @@ metadata:
   labels:
     storages.pkg.internal/environment: datalab
 spec:
-  principal: bob
+  principal: ws-bob
   buckets:
     - bucketName: ws-bob
       discoverable: true
-  bucketAccessGrants: []
+      lifecycleRules:
+        - target: tmp/*
+          mode: Delete
+          minAge: 12h
+        - target: scratch/*
+          mode: Notify
+          minAge: 1w
   bucketAccessRequests:
     - bucketName: ws-frank-stagein
       reason: requesting access
@@ -486,7 +497,7 @@ metadata:
   labels:
     storages.pkg.internal/environment: datalab
 spec:
-  principal: eric
+  principal: ws-eric
   buckets:
     - bucketName: ws-eric
       discoverable: true
@@ -494,11 +505,11 @@ spec:
       discoverable: true
   bucketAccessGrants:
     - bucketName: ws-eric-shared
-      grantee: alice
+      grantee: ws-alice
       permission: ReadWrite
       grantedAt: "2025-10-19T13:28:45.636000+00:00"
     - bucketName: ws-eric-shared
-      grantee: frank
+      grantee: ws-frank
       permission: ReadWrite
       grantedAt: "2025-10-20T14:32:22.153000+00:00"
   bucketAccessRequests:
@@ -514,7 +525,7 @@ metadata:
   labels:
     storages.pkg.internal/environment: datalab
 spec:
-  principal: frank
+  principal: ws-frank
   buckets:
     - bucketName: ws-frank
       discoverable: true
@@ -524,7 +535,7 @@ spec:
       discoverable: true
   bucketAccessGrants:
     - bucketName: ws-frank-stagein
-      grantee: bob
+      grantee: ws-bob
       permission: ReadWrite
       grantedAt: "2025-10-20T14:01:49.246000+00:00"
   bucketAccessRequests:
