@@ -65,7 +65,7 @@ Oscar then shares this URL with Frank.
 
    - Workspace details (`ws-frank`)
    - Default **S3 bucket credentials** (for `ws-frank`)
-   - Links to the **Datalab** and management pages`
+   - Links to the **Datalab** and management pages
 
 ![alt text](../img/q1.png)
 
