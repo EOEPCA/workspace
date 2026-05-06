@@ -95,6 +95,9 @@ spec:
   vcluster: true
   data:
     readOnlyMount: true
+  registry:
+    enabled: true
+    storage: 3Gi
 ---
 apiVersion: pkg.internal/v1beta2
 kind: Datalab
@@ -159,3 +162,6 @@ spec:
     - name: default
       state: stopped
   vcluster: false
+  registry:
+    enabled: true
+    storage: 3Gi
