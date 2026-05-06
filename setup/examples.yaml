@@ -71,7 +71,7 @@ spec:
 ###########
 # Datalab #
 ###########
-apiVersion: pkg.internal/v1beta1
+apiVersion: pkg.internal/v1beta2
 kind: Datalab
 metadata:
   name: ws-alice
@@ -82,7 +82,9 @@ spec:
   users:
     - alice  
   secretName: ws-alice
-  sessions: []
+  sessions:
+    - name: default
+      state: stopped
   vcluster: true
   data:
     readOnlyMount: true
@@ -103,7 +105,9 @@ spec:
       grantedAt: "2025-10-15T08:08:53.953000+00:00"
       role: user
   secretName: ws-bob
-  sessions: []
+  sessions:
+    - name: default
+      state: stopped
   quota:
     memory: 6Gi
     storage: 1Gi
@@ -133,7 +137,7 @@ spec:
       storage: 1Gi
       backupStorage: 10Gi
 ---
-apiVersion: pkg.internal/v1beta1
+apiVersion: pkg.internal/v1beta2
 kind: Datalab
 metadata:
   name: ws-eric
@@ -144,5 +148,7 @@ spec:
   users:
     - eric
   secretName: ws-eric
-  sessions: []
+  sessions:
+    - name: default
+      state: stopped
   vcluster: false

@@ -37,7 +37,7 @@ Oscar sets up a new workspace for Frank using an **HTTP API–driven approach**,
 
 After authenticating (e.g., through the **OAuth2 Device Code Flow** to obtain a `TOKEN`; see [Operator View](https://eoepca.readthedocs.io/projects/workspace/en/latest/getting-started/operator-view/)), Oscar initiates the workspace creation request:
 
-```bash
+```
 curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
@@ -80,7 +80,7 @@ Oscar then shares this URL with Frank.
 
 **Verify S3 connectivity in Datalab terminal:**
 
-```bash
+```
 aws s3 ls
 aws s3 ls s3://ws-frank --recursive
 ```
@@ -95,7 +95,7 @@ Frank wants MLflow for experiment tracking (artifacts to go to `ws-frank`).
 
 **Clone an example project:**
 
-```bash
+```
 git clone https://github.com/mlflow/mlflow-example
 cd mlflow-example
 ```
@@ -106,7 +106,7 @@ cd mlflow-example
 
 > Note: Frank prefers to use `uv` over conda so he has to convert the environment file
 
-```bash
+```
 yq eval -o=json '.dependencies[]' conda.yaml | jq -r '
   if type=="string" then .
   elif has("pip") then .pip[]
@@ -130,7 +130,7 @@ Since `kubectl` is already preinstalled and configured for the connected Kuberne
 
 Next, **port-forward the MLflow service** so that it appears in the **Ports** tab, allowing direct access to the MLflow UI in the browser.
 
-```bash
+```
 kubectl port-forward svc/mlflow 5000:5000
 ```
 
@@ -140,7 +140,7 @@ kubectl port-forward svc/mlflow 5000:5000
 
 Now, point to the newly deployed MLflow server and run the example project again:
 
-```bash
+```
 export MLFLOW_TRACKING_URI="http://localhost:5000"
 export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
 uv run python train.py
@@ -202,7 +202,7 @@ Bob uses **stac-fastapi-pgstac** to catalog curated datasets and expose them thr
 
 The corresponding Bob Datalab manifest exercises all managed backing storage types used in this example.
 
-```yaml
+```
 apiVersion: pkg.internal/v1beta2
 kind: Datalab
 metadata:
@@ -252,7 +252,7 @@ spec:
 
 First, apply the following manifests to the Kubernetes cluster.
 
-```bash
+```
 envsubst <<'EOF' | kubectl apply -f -
 apiVersion: v1
 kind: Service
@@ -304,7 +304,7 @@ EOF
 
 Now, initalize the database
 
-```bash
+```
 kubectl run pgstac-migrate -it --rm \
   --image=ghcr.io/stac-utils/pgstac-pypgstac:v0.9.8 \
   --restart=Never \
@@ -318,7 +318,7 @@ kubectl run pgstac-migrate -it --rm \
 
 Next, **port-forward the stac-fastapi-pgstac service** so that it appears in the **Ports** tab, allowing direct access to the service in the browser.
 
-```bash
+```
 kubectl port-forward svc/stac-api 8080:8080
 ```
 
@@ -332,7 +332,7 @@ Now you can open `http://localhost:8080` and browse common endpoints like
 
 To cleanup, run
 
-```bash
+```
 kubectl delete deploy stac-api
 kubectl delete svc stac-api
 ```
@@ -362,7 +362,7 @@ The entire **storage configuration** is captured **declaratively** within the Ku
 
 The relevant portion of the **storage manifest** can be found directly after this quickstart, providing operators with a clear view of how the workspace and its associated buckets are provisioned and maintained.
 
-```yaml
+```
 apiVersion: pkg.internal/v1beta1
 kind: Storage
 metadata:
