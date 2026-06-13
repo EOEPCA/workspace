@@ -7,7 +7,7 @@ storage:
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.6.4
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.7.0
   annotations: {}
 
 environmentconfig:

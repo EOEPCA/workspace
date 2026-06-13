@@ -8,7 +8,7 @@ A workspace combines:
 2. **Runtime Environments** — isolated Kubernetes namespaces or [vClusters](https://www.vcluster.com/) providing a full Kubernetes API surface for workloads.  
 3. **Domain-Specific Tooling** — such as VSCode Server–based datalabs preconfigured for EO data exploration, analysis, and processing workflows.
 
-These three elements are managed through Kubernetes-native abstractions — a **Storage** resource for object storage (MinIO, AWS S3, OTC, etc.) and a **Datalab** resource providing an interactive development and exploraration environment.
+These three elements are managed through Kubernetes-native abstractions — a **Storage** resource for object storage (MinIO, AWS S3, OTC, etc.) and a **Datalab** resource providing an interactive development and exploration environment.
 
 See: [Storage CRD](https://provider-storage.versioneer.at/latest/reference-guides/api/) · [Datalab CRD](https://provider-datalab.versioneer.at/latest/reference-guides/api/)
 
@@ -104,7 +104,7 @@ No specific configuration values are required for this chart.
 | `environmentconfig.storageClasses.allowed` | array | Optional allowlist for Datalab-owned session PVC StorageClasses. |
 | `environmentconfig.network.serviceCIDR` | string | Kubernetes service CIDR (e.g., `10.43.0.0/12`). |
 | `environmentconfig.packages` | array | Optional list of extension packages to inject into workshops, each item supports `name` and `files[].image.url`. |
-| `environmentconfig.auth.type` | string | Authentication mode, `credentials` (default) prompts for storage credentials; `none` adds no additional check. |
+| `environmentconfig.auth.type` | string | Session authentication mode passed to provider-datalab. `credentials` (provider default) uses the storage credentials for runtime login; `delegated` delegates authentication to the surrounding platform, typically ingress/IAM. See [Datalab authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication). |
 | `environmentconfig.defaults.quota.memory` | string | Default memory quota for Datalab sessions when unspecified. Default: `2Gi`. |
 | `environmentconfig.defaults.quota.storage` | string | Default volume size (PVC) for Datalab sessions when unspecified. Default: `1Gi`. |
 | `environmentconfig.defaults.quota.budget` | string | Default resource budget class (`small`, `medium`, `large`, …). Default: `medium`. |

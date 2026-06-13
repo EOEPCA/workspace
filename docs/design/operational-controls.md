@@ -35,7 +35,7 @@ Enforced via **NetworkPolicies** to define allowed communication paths.
 
 ## Ingress and Authentication
 
-Ingress routing should handled centrally at the host-cluster level (not within individual vClusters).  
+Ingress routing should be handled centrally at the host-cluster level (not within individual vClusters).  
 
 ## Data Persistence and Storage
 
