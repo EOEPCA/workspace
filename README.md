@@ -72,6 +72,13 @@ Published charts appear as GitHub Packages under this repository [here](https://
 Please note that **Crossplane v2** and the providers listed above must be installed in the cluster **before deploying any of the Workspace Helm charts**.  
 These providers supply the foundational CRDs required by the `workspace-pipeline` and dependency charts.
 
+The target cluster must also provide:
+
+- A CNI that enforces Kubernetes `NetworkPolicy`; generated Datalab policies rely on CNI enforcement.
+- Kyverno; the Workspace/Datalab setup can create policy resources automatically, but enforcement requires the admission controller to be present.
+
+Keep the detailed runtime policy model in the provider-datalab documentation: [authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication), [workspace sessions as sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/), and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
+
 ### Workspace Dependency – CSI Rclone
 
 No specific configuration values are required for this chart.
@@ -167,7 +174,7 @@ Only then are management operations permitted by the policy enforcement layer.
 
 By orchestrating **DataLab** resources, the workspace layer also allows these claims to be bootstrapped automatically. This includes provisioning `ws_admin` Keycloak roles in addition to `ws_access` roles, as well as creating the corresponding Keycloak user and admin groups for each individual workspace. All of this is provisioned dynamically through the workspace pipelines orchestrating the DataLab Crossplane XRs.
 
-Further details are available in the [DataLab documentation](https://provider-datalab.versioneer.at/).
+Further details are available in the [DataLab documentation](https://provider-datalab.versioneer.at/), especially the provider-datalab sections on [authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication), [workspace sessions as sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/), and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
 
 ## Getting Started with Live Code
 

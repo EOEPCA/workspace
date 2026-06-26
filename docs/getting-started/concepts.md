@@ -59,5 +59,7 @@ Read more in the provider-datalab docs:
 
 - [Usage & Concepts](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/)
 - [Additional Services](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/)
-- [Security](https://provider-datalab.versioneer.at/latest/how-to-guides/security/)
+- [Authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication)
+- [Workspace Sessions as Sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/)
+- [Sandbox Security Measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/)
 - [Datalab API Reference](https://provider-datalab.versioneer.at/latest/reference-guides/api/)
