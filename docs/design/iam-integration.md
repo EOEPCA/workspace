@@ -20,19 +20,49 @@ The Workspace Building Block (BB) provides a unified and secure access model tha
 
 When a workspace is provisioned, the following Keycloak entities are automatically created and configured:
 
-**Keycloak Client**  
+**Keycloak Client**
 
-  - Created per workspace (e.g., `ws-alice`)  
-  - Used for OpenID Connect authentication at ingress level  
-  - Defines a role (e.g., `ws_access`) used to authorize requests to the workspace endpoints  
+  - Created per workspace (e.g., `ws-alice`)
+  - Named after the workspace so it can appear as a key in OAuth2 `resource_access`
+  - Used for OpenID Connect authentication at ingress level
+  - Defines the client roles `ws_access` and `ws_admin`, which authorize requests to workspace endpoints
 
-**Keycloak Group**  
+**Keycloak Group**
 
-  - Mirrors the workspace name (e.g., `ws-alice`)  
-  - Group membership defines access to the Workspace UI and Datalab  
-  - The workspace owner is automatically added to the group as the initial member  
+  - Mirrors the workspace name (e.g., `ws-alice`)
+  - Group membership defines access to the Workspace UI and Datalab
+  - The workspace owner is automatically added to the group as the initial member
 
-Adding or removing users from the workspace group dynamically updates their access to the UI, API, and Datalab without manual operator intervention.
+Provider-datalab creates these Keycloak objects while reconciling the `Datalab` Crossplane XR. Adding or removing users from the workspace group dynamically updates their access to the UI, API, and Datalab without manual operator intervention.
+
+## Workspace API Token Contract
+
+Workspace-api does not discover Keycloak clients directly. It receives the already validated bearer token from the gateway and derives workspace permissions from the OAuth2 `resource_access` claim.
+
+A user with access to two workspaces receives a token shape like:
+
+```json
+{
+  "preferred_username": "alice",
+  "resource_access": {
+    "ws-alice": {
+      "roles": ["ws_access"]
+    },
+    "ws-bob": {
+      "roles": ["ws_admin"]
+    }
+  }
+}
+```
+
+Workspace-api interprets this as follows:
+
+- each non-`workspace-api` `resource_access` key is a workspace name
+- `ws_access` grants workspace view permissions
+- `ws_admin` grants workspace view and management permissions
+- `workspace-api` with role `admin` grants platform-wide administration
+
+This connects the automatically generated provider-datalab Keycloak client (`ws-alice`, `ws-bob`, and so on) with workspace-api's management authorization model. Endpoints such as `GET /workspaces` can therefore list the caller's explicit workspace grants directly from the token, while individual workspace operations still check the mapped internal permissions.
 
 ## Storage-Level IAM Entities
 

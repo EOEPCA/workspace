@@ -137,10 +137,10 @@ Two complementary permission layers exist within the system.
 
 General administrative actions - such as:
 
-- viewing all workspaces  
-- editing any workspace  
-- creating new workspaces  
-- deleting existing workspaces  
+- viewing all workspaces
+- editing any workspace
+- creating new workspaces
+- deleting existing workspaces
 
 are controlled through the `admin` role of the `workspace-api` client.
 
@@ -148,31 +148,44 @@ Users assigned this role have platform-wide authority over the workspace lifecyc
 
 **Workspace-Specific Permissions**
 
-In addition to global administration, each workspace has its own dedicated authorization context.
+In addition to global administration, each workspace has its own dedicated authorization context. The workspace-pipeline creates a `Datalab` Crossplane XR for each workspace, and provider-datalab reconciles that XR into the workspace-local IAM objects:
 
-The workspace-pipeline component automatically provisions:
+- a dedicated OAuth2/OIDC client named after the workspace, for example `ws-alice`
+- the client roles `ws_access` and `ws_admin`
+- user and admin groups for that workspace
+- role assignments and memberships derived from the workspace membership model
 
-- a dedicated OAuth2 client for each workspace  
-- the roles `ws-access` and `ws-admin` bound to that client  
+These roles grant permissions only for the specific workspace to which the client belongs. This ensures strict isolation between workspaces while still enabling delegated administration at workspace level.
 
-These roles grant permissions only for the specific workspace to which the client belongs.  
-This ensures strict isolation between workspaces while still enabling delegated administration at workspace level.
+The end-to-end authorization path is:
 
-All authentication and authorization decisions are enforced by the EOEPCA IAM framework, based on:
+1. provider-datalab provisions the Keycloak client and roles for the workspace.
+2. Keycloak includes assigned workspace-client roles in the user's access token under the OAuth2 `resource_access` claim.
+3. The APISIX OpenID Connect plugin validates the token at the edge and forwards the validated JWT to workspace-api.
+4. workspace-api reads `resource_access`, treats each workspace client id as a workspace name, and maps `ws_access` / `ws_admin` to internal permissions.
 
-- the APISIX OpenID Connect plugin for identity verification  
-- Open Policy Agent (OPA) for fine-grained policy evaluation  
+For example, access to two workspaces is represented as:
 
-To perform privileged actions, the operator must therefore be:
+```json
+{
+  "resource_access": {
+    "ws-alice": {
+      "roles": ["ws_access"]
+    },
+    "ws-bob": {
+      "roles": ["ws_admin"]
+    }
+  }
+}
+```
 
-- authenticated via OIDC  
-- assigned the appropriate role  
-  - either the global `admin` role on the `workspace-api` client to follow the Operator View  
-  - or the workspace-local `ws-admin` or `ws-access` role on the dedicated workspace client to follow the User View  
+The global operator path remains separate: platform-wide actions are controlled by the `admin` role on the `workspace-api` client. Workspace-local actions use the `ws_access` or `ws_admin` role on the dedicated workspace client.
 
-Only then are management operations permitted by the policy enforcement layer.
+Ingress authentication and policy enforcement are handled by the EOEPCA IAM framework, based on:
 
-By orchestrating **DataLab** resources, the workspace layer also allows these claims to be bootstrapped automatically. This includes provisioning `ws_admin` Keycloak roles in addition to `ws_access` roles, as well as creating the corresponding Keycloak user and admin groups for each individual workspace. All of this is provisioned dynamically through the workspace pipelines orchestrating the DataLab Crossplane XRs.
+- the APISIX OpenID Connect plugin for identity verification
+- Open Policy Agent (OPA) for fine-grained ingress policy evaluation where deployed
+- workspace-api's internal permission mapping for management API operations
 
 Further details are available in the [DataLab documentation](https://provider-datalab.versioneer.at/), especially the provider-datalab sections on [authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication), [workspace sessions as sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/), and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
 
