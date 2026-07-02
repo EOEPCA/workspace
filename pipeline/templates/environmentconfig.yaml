@@ -2,6 +2,10 @@
 data:
   iam:
     realm: {{ .Values.environmentconfig.iam.realm | default "" | quote }}
+    {{- with .Values.environmentconfig.iam.extraAudiences }}
+    extraAudiences:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
 
   ingress:
     class: {{ .Values.environmentconfig.ingress.class | default "" | quote }}
@@ -28,7 +32,23 @@ data:
   {{- end }}
 
   network:
+    {{- with .Values.environmentconfig.network.externalEgressCIDRs }}
+    externalEgressCIDRs:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
     serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}
+    {{- with .Values.environmentconfig.network.podCIDRs }}
+    podCIDRs:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.environmentconfig.network.blacklistIPs }}
+    blacklistIPs:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.environmentconfig.network.excludePolicies }}
+    excludePolicies:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
 
   {{- with .Values.environmentconfig.packages }}
   packages:

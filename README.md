@@ -96,28 +96,35 @@ No specific configuration values are required for this chart.
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `environmentconfig.name` | string | EnvironmentConfig name consumed by provider-datalab and provider-storage when XRs are labeled with the matching environment name. Default: `datalab`. |
+| `environmentconfig.name` | string | EnvironmentConfig name used by matching Storage and Datalab resources. Default: `datalab`. |
 | `environmentconfig.iam.realm` | string | Keycloak realm name for Workspace authentication. |
+| `environmentconfig.iam.extraAudiences` | array | Extra token audiences for generated workspace clients, for example `workspace-api`. |
 | `environmentconfig.ingress.class` | string | Ingress class to use (e.g., `nginx`). |
-| `environmentconfig.ingress.domain` | string | Domain for all Workspace UIs and services. |
-| `environmentconfig.ingress.secret` | string | TLS secret for the domain. |
+| `environmentconfig.ingress.domain` | string | Base domain for Workspace UIs and services. |
+| `environmentconfig.ingress.secret` | string | TLS secret for Workspace ingresses. |
 | `environmentconfig.storage.endpoint` | string | S3-compatible endpoint (e.g., `https://minio.develop.eoepca.org`). |
 | `environmentconfig.storage.forcePathStyle` | bool | Use path-style addressing (`true` for MinIO/OTC). |
 | `environmentconfig.storage.provider` | string | Storage provider label (`MinIO`, `AWS`, `Other`, etc.). |
 | `environmentconfig.storage.region` | string | Region or identifier for the object storage backend. |
-| `environmentconfig.storage.secretNamespace` | string | Namespace for generated storage credentials. |
+| `environmentconfig.storage.secretNamespace` | string | Namespace where Datalabs read storage credential Secrets. |
 | `environmentconfig.storage.type` | string | Storage type (`s3`). |
-| `environmentconfig.storage.lifecycle.schedule` | string | Cron schedule for provider-storage lifecycle rule reconciliation. Default in provider-storage: `17 2 * * *`. |
-| `environmentconfig.storageClasses.allowed` | array | Optional allowlist for Datalab-owned session PVC StorageClasses. |
-| `environmentconfig.network.serviceCIDR` | string | Kubernetes service CIDR (e.g., `10.43.0.0/12`). |
-| `environmentconfig.packages` | array | Optional list of extension packages to inject into workshops, each item supports `name` and `files[].image.url`. |
-| `environmentconfig.auth.type` | string | Session authentication mode passed to provider-datalab. `credentials` (provider default) uses the storage credentials for runtime login; `delegated` delegates authentication to the surrounding platform, typically ingress/IAM. See [Datalab authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication). |
+| `environmentconfig.storage.lifecycle.schedule` | string | Cron schedule for storage lifecycle jobs. Provider default: `17 2 * * *`. |
+| `environmentconfig.storageClasses.allowed` | array | Allowed StorageClasses for Datalab session PVCs. Empty allows any requested class. |
+| `environmentconfig.network.externalEgressCIDRs` | array | Allowed external CIDRs for Datalab sessions. See the example below. |
+| `environmentconfig.network.serviceCIDR` | string | Cluster Service CIDR, used to keep service traffic out of broad egress rules. |
+| `environmentconfig.network.podCIDRs` | array | Cluster Pod CIDRs. |
+| `environmentconfig.network.blacklistIPs` | array | CIDRs excluded from generated external egress, for example metadata endpoints. |
+| `environmentconfig.network.excludePolicies` | array | Generated NetworkPolicy names to skip. |
+| `environmentconfig.packages` | array | Extension packages to inject into workshops. |
+| `environmentconfig.auth.type` | string | Datalab session authentication mode: `credentials` or `delegated`. See [Datalab authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication). |
 | `environmentconfig.defaults.quota.memory` | string | Default memory quota for Datalab sessions when unspecified. Default: `2Gi`. |
 | `environmentconfig.defaults.quota.storage` | string | Default volume size (PVC) for Datalab sessions when unspecified. Default: `1Gi`. |
 | `environmentconfig.defaults.quota.budget` | string | Default resource budget class (`small`, `medium`, `large`, …). Default: `medium`. |
 | `environmentconfig.defaults.security.policy` | string | Default Pod Security Standard level for Datalab sessions (`restricted`, `baseline`, or `privileged`). Default: `baseline`. |
 | `environmentconfig.defaults.security.kubernetesAccess` | bool | Whether sessions receive Kubernetes API access by default. Default: `true`. |
 | `environmentconfig.defaults.security.kubernetesRole` | string | Default session namespace RBAC role (`admin`, `edit`, or `view`). Default: `edit`. |
+| `environmentconfig.defaults.security.externalEgress` | bool | Default external egress setting for Datalab runtime namespaces. |
+| `environmentconfig.defaults.security.internalEgress` | bool | Default internal egress setting for Datalab runtime namespaces. |
 | `environmentconfig.database.gateway.parentName` | string | Name of the Gateway API `Gateway` hosting the PostgreSQL `TLSRoute` for external access (optional). |
 | `environmentconfig.database.gateway.parentNamespace` | string | Namespace of the referenced Gateway API `Gateway` (optional). |
 | `environmentconfig.database.gateway.sectionName` | string | Listener / section name on the Gateway to attach the PostgreSQL `TLSRoute` (optional). |
@@ -127,67 +134,65 @@ No specific configuration values are required for this chart.
 | `environmentconfig.redis.storageClassName` | string | StorageClass for Datalab-managed Redis cache stores (empty uses cluster default). |
 | `environmentconfig.qdrant.storageClassName` | string | StorageClass for Datalab-managed Qdrant vector stores (empty uses cluster default). |
 
-### Authentication and User Management
+Example:
 
-The workspace API and UI layer use a gateway-based authentication concept. OAuth2 JWTs are passed from the edge (Kubernetes ingress) to the workspace API with validated claims. These claims are enforced to grant management permissions. For more details, see the Workspace API README on [authentication and authorization](https://github.com/EOEPCA/rm-workspace-api/?tab=readme-ov-file#authentication-and-authorization).
-
-Two complementary permission layers exist within the system.
-
-**Global Workspace Administration**
-
-General administrative actions - such as:
-
-- viewing all workspaces
-- editing any workspace
-- creating new workspaces
-- deleting existing workspaces
-
-are controlled through the `admin` role of the `workspace-api` client.
-
-Users assigned this role have platform-wide authority over the workspace lifecycle and configuration, independent of any individual workspace membership.
-
-**Workspace-Specific Permissions**
-
-In addition to global administration, each workspace has its own dedicated authorization context. The workspace-pipeline creates a `Datalab` Crossplane XR for each workspace, and provider-datalab reconciles that XR into the workspace-local IAM objects:
-
-- a dedicated OAuth2/OIDC client named after the workspace, for example `ws-alice`
-- the client roles `ws_access` and `ws_admin`
-- user and admin groups for that workspace
-- role assignments and memberships derived from the workspace membership model
-
-These roles grant permissions only for the specific workspace to which the client belongs. This ensures strict isolation between workspaces while still enabling delegated administration at workspace level.
-
-The end-to-end authorization path is:
-
-1. provider-datalab provisions the Keycloak client and roles for the workspace.
-2. Keycloak includes assigned workspace-client roles in the user's access token under the OAuth2 `resource_access` claim.
-3. The APISIX OpenID Connect plugin validates the token at the edge and forwards the validated JWT to workspace-api.
-4. workspace-api reads `resource_access`, treats each workspace client id as a workspace name, and maps `ws_access` / `ws_admin` to internal permissions.
-
-For example, access to two workspaces is represented as:
-
-```json
-{
-  "resource_access": {
-    "ws-alice": {
-      "roles": ["ws_access"]
-    },
-    "ws-bob": {
-      "roles": ["ws_admin"]
-    }
-  }
-}
+```yaml
+environmentconfig:
+  iam:
+    realm: eoepca
+    extraAudiences:
+      - workspace-api
+  ingress:
+    class: nginx
+    domain: ws.example.org
+    secret: workspace-tls
+  storage:
+    endpoint: https://s3.example.org
+    forcePathStyle: true
+    provider: Other
+    region: eoepca
+    secretNamespace: workspace
+    type: s3
+  storageClasses:
+    allowed:
+      - fast-rwx
+      - standard-rwx
+  network:
+    # Allow all external IPv4/IPv6 egress for sessions with externalEgress enabled.
+    externalEgressCIDRs:
+      - 0.0.0.0/0
+      - ::/0
+    serviceCIDR: 10.43.0.0/16
+    podCIDRs:
+      - 10.42.0.0/16
+    blacklistIPs:
+      - 169.254.169.254/32
+      - fd00:ec2::254/128
+  defaults:
+    security:
+      policy: baseline
+      kubernetesAccess: true
+      kubernetesRole: edit
+      externalEgress: true
+      internalEgress: true
 ```
 
-The global operator path remains separate: platform-wide actions are controlled by the `admin` role on the `workspace-api` client. Workspace-local actions use the `ws_access` or `ws_admin` role on the dedicated workspace client.
+For the detailed NetworkPolicy semantics of `externalEgressCIDRs`, `serviceCIDR`, `podCIDRs`, and `blacklistIPs`, see the provider-datalab [installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/).
+For the ingress and egress policy model, including `allow-internal-egress` and the `externalEgress` / `internalEgress` toggles, see [IAM Integration](docs/design/iam-integration.md).
 
-Ingress authentication and policy enforcement are handled by the EOEPCA IAM framework, based on:
+### Authentication and User Management
 
-- the APISIX OpenID Connect plugin for identity verification
-- Open Policy Agent (OPA) for fine-grained ingress policy evaluation where deployed
-- workspace-api's internal permission mapping for management API operations
+Workspace authentication is intentionally split between the platform edge, Keycloak, provider-datalab, and workspace-api:
 
-Further details are available in the [DataLab documentation](https://provider-datalab.versioneer.at/), especially the provider-datalab sections on [authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication), [workspace sessions as sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/), and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
+1. The gateway, for example APISIX with OpenID Connect, validates the token signature, issuer, expiration, audience, and other token policy before forwarding a request.
+2. Provider-datalab creates the workspace-local Keycloak resources while reconciling each `Datalab`: a confidential OAuth2 client named after the workspace, workspace groups, the `ws_access`, `ws_admin`, and `ws_api` client roles, role mappings, and an OAuth2 credential Secret for runtime consumers.
+3. Workspace-api receives the already validated bearer token and maps the OAuth2 `resource_access` claim to internal permissions. It does not discover Keycloak resources directly.
+
+Two authorization layers stay separate. Platform-wide actions use the `admin` role on the central `workspace-api` client. Workspace-local actions use the generated workspace client, for example `ws-alice`, where human users receive `ws_access` or `ws_admin` through groups.
+
+The generated workspace client is confidential and has a service account. Provider-datalab publishes runtime OAuth2 credentials as `<datalab>-oauth2-client` with `client_id` and `client_secret` keys. That Secret is a workspace machine credential, and the service account receives only `ws_api`. In the current workspace-api permission map, `ws_api` grants only `VIEW_BUCKET_CREDENTIALS`; it does not grant browser login, session visibility, member management, bucket management, or store management. Browser and Datalab UI policy should therefore require `ws_access` or `ws_admin`, while automation endpoints can require `ws_api` where machine access is intended.
+
+For the complete token contract, including human and client-credentials token examples, see [IAM Integration](docs/design/iam-integration.md). For the backend authorization contract, see the Workspace API README on [authentication and authorization](https://github.com/EOEPCA/rm-workspace-api/?tab=readme-ov-file#authentication-and-authorization). Provider-datalab documents the underlying [authentication patterns](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication) and [workspace session security](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/).
 
 ## Getting Started with Live Code
 

@@ -1,48 +1,79 @@
 # IAM Integration
 
-The Workspace Building Block (BB) provides a unified and secure access model that connects **Keycloak-based identity management**, **object storage authorization**, and **ingress-level enforcement** into one cohesive system.  It ensures that both users and workloads can seamlessly and securely access workspace resources — including Datalabs, storage buckets, and shared services — using centrally managed identities and declarative policies.
+The Workspace Building Block (BB) combines three access layers:
 
-## Key Principles
+- Keycloak identities, clients, groups, and client roles.
+- Workspace-api authorization based on token claims.
+- Storage credentials and bucket policies owned by each workspace.
 
-- **Full Keycloak Integration:**  
-  Each workspace is represented as a first-class entity within Keycloak.  
-  Workspace-specific Keycloak clients, roles, and groups are created automatically during provisioning, ensuring end-to-end access management for the Workspace UI, Datalab, and APIs.
+The important boundary is that authentication happens before requests reach workspace-api. A gateway such as APISIX validates OpenID Connect tokens and forwards only authenticated requests. Workspace-api then reads the forwarded token claims and converts them into explicit workspace permissions.
 
-- **Automated Membership and Role Management:**  
-  Adding or removing workspace members automatically updates Keycloak group membership and role assignments. These changes take effect immediately, ensuring that workspace access reflects the current membership state at all times.
+## End-to-End Flow
 
-- **Unified Principal for Storage Access:**  
-  Each workspace has a corresponding **storage principal** (e.g., S3 user or service account) in the configured backend (MinIO, AWS S3, or OTC OBS).  
-  This principal owns the workspace’s buckets, and all workspace members share its credentials — securely injected into their runtime environments through Kubernetes Secrets.  
-  This design ensures that all users and workloads within a workspace operate under the same “workspace identity” when accessing object storage.
+1. A workspace is created through workspace-api or another Kubernetes-native workflow.
+2. The Workspace pipeline creates provider-storage and provider-datalab resources.
+3. Provider-datalab reconciles the `Datalab` and creates the workspace-local Keycloak resources.
+4. Human users authenticate through the platform OAuth2/OIDC flow and receive workspace roles in `resource_access`.
+5. Workspace-local automation can request a client-credentials token from the generated confidential workspace client.
+6. The gateway validates token policy, including signature, issuer, expiration, and audience, then forwards the request.
+7. Workspace-api maps `resource_access` roles to internal permissions.
 
-## Workspace-Level IAM Entities
+## Keycloak Resources
 
-When a workspace is provisioned, the following Keycloak entities are automatically created and configured:
+Provider-datalab creates these Keycloak objects for each workspace-backed `Datalab`.
 
-**Keycloak Client**
+| Object | Example | Purpose |
+| --- | --- | --- |
+| Confidential OAuth2 client | `ws-alice` | Represents the workspace in tokens, supports browser authorization code login, and supports client-credentials automation. |
+| User group | `ws-alice` | Grants regular workspace access to human members. |
+| Admin group | `ws-alice-admin` | Grants workspace administration to selected human members. |
+| Client roles | `ws_access`, `ws_admin`, `ws_api` | Express workspace-local authority in OAuth2 `resource_access`. |
+| Runtime OAuth2 Secret | `ws-alice-oauth2-client` | Publishes generated client credentials to runtime consumers with `client_id` and `client_secret` keys. |
+| Service-account role binding | `ws_api` | Gives the generated client service account only machine/API authority. |
 
-  - Created per workspace (e.g., `ws-alice`)
-  - Named after the workspace so it can appear as a key in OAuth2 `resource_access`
-  - Used for OpenID Connect authentication at ingress level
-  - Defines the client roles `ws_access` and `ws_admin`, which authorize requests to workspace endpoints
+The client is intentionally configured as a confidential client:
 
-**Keycloak Group**
+- `accessType: CONFIDENTIAL`
+- `serviceAccountsEnabled: true`
+- `fullScopeAllowed: false`
+- `standardFlowEnabled: true`
+- `implicitFlowEnabled: false`
+- `directAccessGrantsEnabled: false`
+- `oauth2DeviceAuthorizationGrantEnabled: false`
 
-  - Mirrors the workspace name (e.g., `ws-alice`)
-  - Group membership defines access to the Workspace UI and Datalab
-  - The workspace owner is automatically added to the group as the initial member
+The generated client secret is a workspace machine credential. Provider-datalab reads the provider-keycloak connection Secret in the `Datalab` claim namespace and projects the supported runtime contract as `<datalab>-oauth2-client` in the runtime workshop namespace. Readers of that runtime Secret can mint client-credentials tokens for the workspace, so access to the Secret must follow the same trust boundary as other workspace automation credentials.
 
-Provider-datalab creates these Keycloak objects while reconciling the `Datalab` Crossplane XR. Adding or removing users from the workspace group dynamically updates their access to the UI, API, and Datalab without manual operator intervention.
+## Role Model
+
+Workspace roles are deliberately separated by principal type.
+
+| Role | Assigned to | Workspace-api permissions | Intended use |
+| --- | --- | --- | --- |
+| `ws_access` | Workspace user group | `VIEW_BUCKET_CREDENTIALS`, `VIEW_MEMBERS`, `VIEW_BUCKETS`, `VIEW_STORES`, `VIEW_SESSIONS` | Human read and session visibility. |
+| `ws_admin` | Workspace admin group | All `ws_access` permissions plus `MANAGE_MEMBERS`, `MANAGE_BUCKETS`, `MANAGE_STORES`, `MANAGE_SESSIONS` | Human workspace administration. |
+| `ws_api` | Generated client service account | `VIEW_BUCKET_CREDENTIALS` only | Workspace-local machine/API access from client-credentials tokens. |
+| `admin` on `workspace-api` | Platform operator | Wildcard workspace administration | Platform-wide Workspace API administration. |
+
+The generated client service account receives only `ws_api`. It is not assigned `ws_access` or `ws_admin`. Human groups receive `ws_access` or `ws_admin`; they should not receive `ws_api` unless an environment intentionally wants human browser tokens to carry machine/API authority.
+
+Role scope mappings are an allowlist, not an assignment. Provider-datalab adds explicit role mappers because `fullScopeAllowed` is disabled, but a token still contains only the roles assigned to the requesting user or service account.
 
 ## Workspace API Token Contract
 
-Workspace-api does not discover Keycloak clients directly. It receives the already validated bearer token from the gateway and derives workspace permissions from the OAuth2 `resource_access` claim.
+Workspace-api does not discover Keycloak clients directly. It receives the already validated bearer token from the gateway and derives workspace permissions from claims:
 
-A user with access to two workspaces receives a token shape like:
+- `aud` must contain the Workspace API audience expected by the backend, by default `workspace-api`.
+- `preferred_username` identifies the caller for request context.
+- `resource_access` maps client ids to roles.
+- `workspace-api:admin` grants platform-wide administration.
+- each non-`workspace-api` `resource_access` key is interpreted as a workspace name.
+
+A human user token can contain workspace roles for every workspace the user may access:
 
 ```json
 {
+  "aud": ["workspace-api"],
+  "azp": "workspace-api",
   "preferred_username": "alice",
   "resource_access": {
     "ws-alice": {
@@ -55,14 +86,25 @@ A user with access to two workspaces receives a token shape like:
 }
 ```
 
-Workspace-api interprets this as follows:
+A client-credentials token uses the same workspace client id but represents the generated Keycloak service-account user, not a human workspace member:
 
-- each non-`workspace-api` `resource_access` key is a workspace name
-- `ws_access` grants workspace view permissions
-- `ws_admin` grants workspace view and management permissions
-- `workspace-api` with role `admin` grants platform-wide administration
+```json
+{
+  "aud": ["workspace-api"],
+  "azp": "ws-alice",
+  "sub": "<keycloak-service-account-user-id>",
+  "preferred_username": "service-account-ws-alice",
+  "resource_access": {
+    "ws-alice": {
+      "roles": ["ws_api"]
+    }
+  }
+}
+```
 
-This connects the automatically generated provider-datalab Keycloak client (`ws-alice`, `ws-bob`, and so on) with workspace-api's management authorization model. Endpoints such as `GET /workspaces` can therefore list the caller's explicit workspace grants directly from the token, while individual workspace operations still check the mapped internal permissions.
+The token audience is a deployment contract. When workspace-local client-credentials tokens must call Workspace API, configure the generated workspace client to emit the Workspace API audience, for example with provider-datalab `EnvironmentConfig.data.iam.extraAudiences`, and configure the central Workspace API OAuth client and gateway with the same audience policy. A token intended only for the workspace runtime must not be accepted by the Workspace API gateway.
+
+Policies must not treat client-credentials tokens as browser logins. UI and interactive Datalab routes should require `ws_access` or `ws_admin`. Automation routes can require `ws_api` where machine access is intended.
 
 ## Storage-Level IAM Entities
 
@@ -82,19 +124,36 @@ When a bucket is shared between workspaces:
 
 ## Ingress Protection and Authorization
 
-Access to workspace endpoints (UI, API, and Datalab) is protected at the ingress layer following the common **EOEPCA IAM concepts**.  The Workspace BB leverages **APISix** ingress configuration combined with **Open Policy Agent (OPA)** policies to enforce both authentication and fine-grained authorization.  
+Access to workspace endpoints is enforced at the ingress layer, not inside the application. Common edge mechanisms such as APISIX OpenID Connect can validate tokens and automatically work with the workspace-local Keycloak entities that provider-datalab creates, including the `ws-xxx` confidential client, client roles, and group bindings.
 
-- The APISix **OIDC plugin** validates user tokens via Keycloak and ensures only authenticated users can reach workspace endpoints.  
-- The **OPA plugin** enforces declarative access rules defined in policy repositories (e.g., `eoepca/iam-policies`), controlling which users or roles can access which workspaces.  
-- These policies are managed in a **GitOps-compatible** way, enabling version-controlled and auditable authorization configurations across environments.
+- APISIX OIDC validates user and client-credentials tokens via Keycloak before traffic reaches workspace-api or Datalab sessions.
+- OPA or equivalent policy layers can then distinguish human roles from `ws_api` machine tokens.
+- `auth.type: delegated` means authentication and authorization are attached by the surrounding platform; it is not an unauthenticated mode.
+- Direct OIDC ingress integrations can reuse the generated workspace client and the runtime `<datalab>-oauth2-client` Secret, while shared ingress patterns such as an external `oauth2-proxy` can keep their own central client model.
 
-This approach seamlessly ties ingress-level access control to the same Keycloak clients and groups that govern workspace membership, ensuring uniform and transparent access enforcement.
+## Egress Policy Model
+
+Egress is handled as a layered set of Kubernetes `NetworkPolicy` resources. This is not a replacement for the cluster network plugin: the cluster still needs a CNI that enforces NetworkPolicy, such as Cilium or Calico.
+
+The generated policy set is additive:
+
+- start with `deny-egress`
+- always add `allow-namespace-egress`
+- add `allow-internal-egress` for operator-whitelisted services in other namespaces
+- add `allow-dns-egress` and `allow-external-egress` when `defaults.security.externalEgress` is enabled
+
+Those final DNS and external-egress policies read their CIDR allowlist and blacklist from the central `EnvironmentConfig`, so operators define the general whitelist and optional blacklist once per environment. The `internalEgress` default controls whether the internal cross-namespace allow policy is rendered.
+
+This keeps the policy intent simple: cross-namespace traffic is blocked by default, platform operators explicitly whitelist the few services that should remain reachable, and broad external egress is only opened when the environment config says so. For the exact generated network-policy semantics, see the provider-datalab [installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/) and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
 
 ## Credentials Management and Future Enhancements
 
 - **Automatic Credential Injection:**  
   Storage credentials are securely mounted into all Datalab sessions and workloads via Kubernetes Secrets.  
   Users and services can immediately access workspace buckets without manually handling access keys.
+
+- **Workspace Client Secret:**
+  The confidential workspace OAuth2 client secret is projected into the runtime workshop namespace as `<datalab>-oauth2-client` with `client_id` and `client_secret` keys. It is intentionally available as a workspace machine credential for client-credentials automation. Rotate it when workspace trust changes, and keep `ws_api` narrowly scoped so leaked or copied credentials do not imply human or admin authority.
 
 - **Credential Rollover (Planned):**  
   Future releases will support periodic credential rotation and lifecycle management to improve security and compliance.

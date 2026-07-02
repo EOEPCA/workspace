@@ -2,12 +2,12 @@ globalAnnotations: {}
 
 storage:
   name: storage-minio
-  package: ghcr.io/versioneer-tech/provider-storage/minio:0.2.1
+  package: ghcr.io/versioneer-tech/provider-storage/minio:0.2.2
   annotations: {}
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.9.0
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.9.2
   annotations: {}
 
 environmentconfig:
@@ -15,6 +15,7 @@ environmentconfig:
   annotations: {}
   iam:
     realm: ""
+    extraAudiences: []
   ingress:
     class: ""
     domain: ""
@@ -31,7 +32,11 @@ environmentconfig:
   storageClasses:
     allowed: []
   network:
+    externalEgressCIDRs: []
     serviceCIDR: ""
+    podCIDRs: []
+    blacklistIPs: []
+    excludePolicies: []
   packages: []
   auth:
     type: ""
@@ -44,6 +49,8 @@ environmentconfig:
       policy: ""
       kubernetesAccess: ""
       kubernetesRole: ""
+      externalEgress: ""
+      internalEgress: ""
   database: 
     gateway:
       parentName: ""

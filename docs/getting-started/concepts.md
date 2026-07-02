@@ -12,7 +12,9 @@ These pieces are reconciled through Crossplane compositions so the desired works
 
 ## Access Model
 
-Authentication is centralized through Keycloak/OIDC. Workspace membership gives users access to their Datalab, while storage permissions are handled at bucket level.
+Authentication is centralized through Keycloak/OIDC and enforced at the platform edge before requests reach workspace-api or Datalab sessions.
+
+Workspace membership controls access to the Workspace UI and Datalab. Storage authorization stays separate and is enforced at bucket policy level. For the detailed Keycloak clients, roles, token claims, and machine-credential contract, see [IAM Integration](../design/iam-integration.md).
 
 Bucket access is intentionally simple:
 
