@@ -13,10 +13,11 @@ The important boundary is that authentication happens before requests reach work
 1. A workspace is created through workspace-api or another Kubernetes-native workflow.
 2. The Workspace pipeline creates provider-storage and provider-datalab resources.
 3. Provider-datalab reconciles the `Datalab` and creates the workspace-local Keycloak resources.
-4. Human users authenticate through the platform OAuth2/OIDC flow and receive workspace roles in `resource_access`.
+4. Human users authenticate through the platform OAuth2/OIDC flow. In shared Workspace UI and Datalab session ingress deployments, the gateway uses the central `workspace-api` client for browser login, and the resulting token carries workspace roles in `resource_access`.
 5. Workspace-local automation can request a client-credentials token from the generated confidential workspace client.
-6. The gateway validates token policy, including signature, issuer, expiration, and audience, then forwards the request.
-7. Workspace-api maps `resource_access` roles to internal permissions.
+6. Externally exposed services that belong to one workspace can use the generated workspace client and roles as their local access boundary.
+7. The gateway and its attached policy layers validate token policy, including signature, issuer, expiration, and audience, then forward the request.
+8. Workspace-api maps `resource_access` roles to internal permissions.
 
 ## Keycloak Resources
 
@@ -24,14 +25,14 @@ Provider-datalab creates these Keycloak objects for each workspace-backed `Datal
 
 | Object | Example | Purpose |
 | --- | --- | --- |
-| Confidential OAuth2 client | `ws-alice` | Represents the workspace in tokens, supports browser authorization code login, and supports client-credentials automation. |
+| Confidential OAuth2 client | `ws-alice` | Represents the workspace as a role namespace in `resource_access` and supports client-credentials automation. It is not the shared browser ingress client in central gateway deployments. |
 | User group | `ws-alice` | Grants regular workspace access to human members. |
 | Admin group | `ws-alice-admin` | Grants workspace administration to selected human members. |
 | Client roles | `ws_access`, `ws_admin`, `ws_api` | Express workspace-local authority in OAuth2 `resource_access`. |
 | Runtime OAuth2 Secret | `ws-alice-oauth2-client` | Publishes generated client credentials to runtime consumers with `client_id` and `client_secret` keys. |
 | Service-account role binding | `ws_api` | Gives the generated client service account only machine/API authority. |
 
-The client is intentionally configured as a confidential client:
+The generated workspace client is intentionally configured as a confidential client:
 
 - `accessType: CONFIDENTIAL`
 - `serviceAccountsEnabled: true`
@@ -41,7 +42,20 @@ The client is intentionally configured as a confidential client:
 - `directAccessGrantsEnabled: false`
 - `oauth2DeviceAuthorizationGrantEnabled: false`
 
-The generated client secret is a workspace machine credential. Provider-datalab reads the provider-keycloak connection Secret in the `Datalab` claim namespace and projects the supported runtime contract as `<datalab>-oauth2-client` in the runtime workshop namespace. Readers of that runtime Secret can mint client-credentials tokens for the workspace, so access to the Secret must follow the same trust boundary as other workspace automation credentials.
+The generated client secret is a workspace machine credential. Provider-datalab reads the provider-keycloak connection Secret in the `Datalab` claim namespace and projects the supported runtime contract as `<datalab>-oauth2-client` in the runtime workshop namespace. Readers of that runtime Secret can mint client-credentials tokens for the workspace, so access to the Secret must follow the same trust boundary as other workspace automation credentials. Shared browser ingress should use the central Workspace client instead of this runtime Secret, otherwise browser tokens are issued for the workspace client and policy must explicitly accept that different `azp`.
+
+## Why Each Workspace Has Its Own Client
+
+The generated `ws-*` client is the workspace's machine identity and role namespace. It is separate from the central Workspace browser client on purpose:
+
+- A central client such as `workspace-api` is a good fit for shared browser entry points because users log in once and can receive roles for several workspaces in one token.
+- A generated workspace client such as `ws-bob` is a good fit for machine-to-machine traffic because its service account represents exactly one workspace.
+- The client id is also the `resource_access` namespace for workspace-local roles, so policies can decide on `resource_access.ws-bob.roles` without discovering Keycloak resources at request time.
+- The runtime `<datalab>-oauth2-client` Secret gives workloads a scoped credential. Anyone who can read it can mint a token as the workspace service account, so its permissions must stay narrower than human workspace access.
+
+In the current Workspace API permission map, this machine token is intentionally limited: `ws_api` can view workspace bucket credentials, but it cannot manage members, buckets, stores, sessions, or act as an interactive browser user. This lets a Datalab workload retrieve the workspace details it needs without turning the runtime Secret into a human or administrator credential.
+
+The same client can also be reused by workspace-owned services that are exposed outside the runtime namespace, for example through an Ingress, Gateway API route, or TLSRoute. In that pattern, the service belongs to `ws-bob`, so the edge policy can require a token for the `ws-bob` client or roles under `resource_access.ws-bob`. That is a different use case from the shared Workspace UI and session ingress, where a central browser client plus `ws_access` / `ws_admin` checks is usually the cleaner contract.
 
 ## Role Model
 
@@ -68,7 +82,7 @@ Workspace-api does not discover Keycloak clients directly. It receives the alrea
 - `workspace-api:admin` grants platform-wide administration.
 - each non-`workspace-api` `resource_access` key is interpreted as a workspace name.
 
-A human user token can contain workspace roles for every workspace the user may access:
+A human user token issued for the central Workspace client can contain workspace roles for every workspace the user may access:
 
 ```json
 {
@@ -124,12 +138,11 @@ When a bucket is shared between workspaces:
 
 ## Ingress Protection and Authorization
 
-Access to workspace endpoints is enforced at the ingress layer, not inside the application. Common edge mechanisms such as APISIX OpenID Connect can validate tokens and automatically work with the workspace-local Keycloak entities that provider-datalab creates, including the `ws-xxx` confidential client, client roles, and group bindings.
+Access to workspace endpoints is enforced at the ingress layer, not inside the application. `auth.type: delegated` means authentication and authorization are attached by the surrounding platform; it is not an unauthenticated mode.
 
-- APISIX OIDC validates user and client-credentials tokens via Keycloak before traffic reaches workspace-api or Datalab sessions.
-- OPA or equivalent policy layers can then distinguish human roles from `ws_api` machine tokens.
-- `auth.type: delegated` means authentication and authorization are attached by the surrounding platform; it is not an unauthenticated mode.
-- Direct OIDC ingress integrations can reuse the generated workspace client and the runtime `<datalab>-oauth2-client` Secret, while shared ingress patterns such as an external `oauth2-proxy` can keep their own central client model.
+For shared Workspace UI and Datalab session ingress, use the central browser client and authorize concrete workspace access from `resource_access.<workspace>.roles`. Browser routes should require human `ws_access` or `ws_admin`; `ws_api` is for machine/API access and should not grant interactive access.
+
+Per-workspace OIDC clients are still useful for services that intentionally belong to one workspace. In that pattern, an exposed service owned by `ws-bob` can require the `ws-bob` client or roles under `resource_access.ws-bob`, using the generated runtime credential and role model as its local boundary.
 
 ## Egress Policy Model
 

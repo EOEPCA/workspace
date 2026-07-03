@@ -182,17 +182,13 @@ For the ingress and egress policy model, including `allow-internal-egress` and t
 
 ### Authentication and User Management
 
-Workspace authentication is intentionally split between the platform edge, Keycloak, provider-datalab, and workspace-api:
+Workspace authentication is intentionally split between the platform edge, Keycloak, provider-datalab, and workspace-api.
 
-1. The gateway, for example APISIX with OpenID Connect, validates the token signature, issuer, expiration, audience, and other token policy before forwarding a request.
-2. Provider-datalab creates the workspace-local Keycloak resources while reconciling each `Datalab`: a confidential OAuth2 client named after the workspace, workspace groups, the `ws_access`, `ws_admin`, and `ws_api` client roles, role mappings, and an OAuth2 credential Secret for runtime consumers.
-3. Workspace-api receives the already validated bearer token and maps the OAuth2 `resource_access` claim to internal permissions. It does not discover Keycloak resources directly.
+For shared Workspace UI and Datalab session ingress, the platform gateway should use a central browser OAuth2/OIDC client such as `workspace-api`. Concrete workspace authorization still comes from roles under the generated workspace client in `resource_access`, for example `resource_access.ws-alice.roles`.
 
-Two authorization layers stay separate. Platform-wide actions use the `admin` role on the central `workspace-api` client. Workspace-local actions use the generated workspace client, for example `ws-alice`, where human users receive `ws_access` or `ws_admin` through groups.
+Provider-datalab creates those workspace-local Keycloak resources while reconciling each `Datalab`: groups, roles, a confidential `ws-*` client, and a runtime `<datalab>-oauth2-client` Secret for machine-to-machine use. The generated client can call selected workspace-scoped APIs and can also protect services owned by that workspace, while browser and Datalab UI access should require human `ws_access` or `ws_admin` roles.
 
-The generated workspace client is confidential and has a service account. Provider-datalab publishes runtime OAuth2 credentials as `<datalab>-oauth2-client` with `client_id` and `client_secret` keys. That Secret is a workspace machine credential, and the service account receives only `ws_api`. In the current workspace-api permission map, `ws_api` grants only `VIEW_BUCKET_CREDENTIALS`; it does not grant browser login, session visibility, member management, bucket management, or store management. Browser and Datalab UI policy should therefore require `ws_access` or `ws_admin`, while automation endpoints can require `ws_api` where machine access is intended.
-
-For the complete token contract, including human and client-credentials token examples, see [IAM Integration](docs/design/iam-integration.md). For the backend authorization contract, see the Workspace API README on [authentication and authorization](https://github.com/EOEPCA/rm-workspace-api/?tab=readme-ov-file#authentication-and-authorization). Provider-datalab documents the underlying [authentication patterns](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication) and [workspace session security](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/).
+For the full access model, token examples, `ws_api` limits, and ingress policy guidance, see [IAM Integration](docs/design/iam-integration.md). For the backend authorization contract, see the Workspace API README on [authentication and authorization](https://github.com/EOEPCA/rm-workspace-api/?tab=readme-ov-file#authentication-and-authorization). Provider-datalab documents the underlying [authentication patterns](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication) and [workspace session security](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/).
 
 ## Getting Started with Live Code
 
