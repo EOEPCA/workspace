@@ -7,7 +7,7 @@ storage:
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.9.2
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.9.3
   annotations: {}
 
 environmentconfig:
@@ -33,6 +33,7 @@ environmentconfig:
     allowed: []
   network:
     externalEgressCIDRs: []
+    internalEgress: []
     serviceCIDR: ""
     podCIDRs: []
     blacklistIPs: []
@@ -45,12 +46,13 @@ environmentconfig:
       memory: ""
       storage: ""
       budget: ""
+    overallQuota:
+      storage: ""
     security:
       policy: ""
       kubernetesAccess: ""
       kubernetesRole: ""
       externalEgress: ""
-      internalEgress: ""
   database: 
     gateway:
       parentName: ""

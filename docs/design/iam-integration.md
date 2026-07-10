@@ -152,10 +152,10 @@ The generated policy set is additive:
 
 - start with `deny-egress`
 - always add `allow-namespace-egress`
-- add `allow-internal-egress` for operator-whitelisted services in other namespaces
+- add `allow-internal-egress` when `network.internalEgress` lists operator-whitelisted services in other namespaces
 - add `allow-dns-egress` and `allow-external-egress` when `defaults.security.externalEgress` is enabled
 
-Those final DNS and external-egress policies read their CIDR allowlist and blacklist from the central `EnvironmentConfig`, so operators define the general whitelist and optional blacklist once per environment. The `internalEgress` default controls whether the internal cross-namespace allow policy is rendered.
+Those final DNS and external-egress policies read their CIDR allowlist and blacklist from the central `EnvironmentConfig`, so operators define the general whitelist and optional blacklist once per environment. The `network.internalEgress` list defines the namespace, Pod selector, and ports for each cross-namespace exception; when the list is empty, the internal policy is omitted.
 
 This keeps the policy intent simple: cross-namespace traffic is blocked by default, platform operators explicitly whitelist the few services that should remain reachable, and broad external egress is only opened when the environment config says so. For the exact generated network-policy semantics, see the provider-datalab [installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/) and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
 

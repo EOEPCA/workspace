@@ -36,6 +36,10 @@ data:
     externalEgressCIDRs:
 {{- toYaml . | nindent 6 }}
     {{- end }}
+    {{- with .Values.environmentconfig.network.internalEgress }}
+    internalEgress:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
     serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}
     {{- with .Values.environmentconfig.network.podCIDRs }}
     podCIDRs:
@@ -73,17 +77,28 @@ data:
       {{- $_ := set $quota $k $v }}
     {{- end }}
   {{- end }}
+  {{- $overallQuota := dict }}
+  {{- range $k, $v := ($defaults.overallQuota | default dict) }}
+    {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
+      {{- $_ := set $overallQuota $k $v }}
+    {{- end }}
+  {{- end }}
   {{- $security := dict }}
   {{- range $k, $v := ($defaults.security | default dict) }}
     {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
       {{- $_ := set $security $k $v }}
     {{- end }}
   {{- end }}
-  {{- if or $quota $security }}
+  {{- if or $quota (or $overallQuota $security) }}
   defaults:
     {{- if $quota }}
     quota:
 {{- toYaml $quota | nindent 6 }}
+    {{- end }}
+
+    {{- if $overallQuota }}
+    overallQuota:
+{{- toYaml $overallQuota | nindent 6 }}
     {{- end }}
 
     {{- if $security }}
