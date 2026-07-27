@@ -10,6 +10,7 @@ nav:
     - Getting Started:
       - getting-started/quickstart.md
       - getting-started/concepts.md
+      - getting-started/cng-resource-registration.ipynb
       - getting-started/operator-view.ipynb
       - getting-started/user-view.ipynb
     - Design:

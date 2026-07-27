@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cng-stac-api-init
+  labels:
+    app: cng-stac-api
+data:
+  pull.py: |
+    import os
+
+    import stacpkg.oci as stacpkg_oci
+
+
+    os.environ["ORAS_USER"] = os.environ["REGISTRY_USERNAME"]
+    os.environ["ORAS_PASS"] = os.environ["REGISTRY_PASSWORD"]
+    stacpkg_oci.pull_package(
+        os.environ["OCI_REFERENCE"],
+        "/data",
+        auth_backend="basic",
+    )

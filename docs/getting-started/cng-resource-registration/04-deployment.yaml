@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cng-stac-api
+  labels:
+    app: cng-stac-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cng-stac-api
+  template:
+    metadata:
+      labels:
+        app: cng-stac-api
+    spec:
+      initContainers:
+        - name: pull-stac-package
+          image: python@sha256:4c2cf9917bd1cbacc5e9b07320025bdb7cdf2df7b0ceaccb55e9dd7e30987419
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - >-
+              python -m pip install --no-cache-dir
+              'stacpkg==0.1.4'
+              'oras==0.2.42'
+              && exec python /scripts/pull.py
+          env:
+            - name: REGISTRY_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: cng-stac-api-registry
+                  key: host
+            - name: REGISTRY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cng-stac-api-registry
+                  key: username
+            - name: REGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cng-stac-api-registry
+                  key: password
+            - name: OCI_REFERENCE
+              valueFrom:
+                secretKeyRef:
+                  name: cng-stac-api-registry
+                  key: reference
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: init-script
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: api
+          image: python@sha256:4c2cf9917bd1cbacc5e9b07320025bdb7cdf2df7b0ceaccb55e9dd7e30987419
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - >-
+              python -m pip install --no-cache-dir
+              'stac-fastapi-geoparquet[serve]==0.0.6'
+              'stac-fastapi-api==6.2.0'
+              'stac-fastapi-extensions==6.2.0'
+              'stac-fastapi-types==6.2.0'
+              'fastapi==0.128.0'
+              'starlette==0.50.0'
+              'pydantic==2.12.5'
+              'pydantic-settings==2.12.0'
+              'uvicorn==0.40.0'
+              'geojson-pydantic==2.1.0'
+              'stac-pydantic==3.4.0'
+              'rustac==0.9.3'
+              'obstore==0.8.2'
+              && exec python -m uvicorn
+              stac_fastapi.geoparquet.main:app
+              --host 0.0.0.0
+              --port 8000
+          env:
+            - name: STAC_FASTAPI_COLLECTIONS_HREF
+              value: /data/collections.json
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: init-script
+          configMap:
+            name: cng-stac-api-init
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
