@@ -2,12 +2,12 @@ globalAnnotations: {}
 
 storage:
   name: storage-minio
-  package: ghcr.io/versioneer-tech/provider-storage/minio:0.2.2
+  package: ghcr.io/versioneer-tech/provider-storage/minio:0.3.1
   annotations: {}
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.9.4
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.10.0
   annotations: {}
 
 environmentconfig:
@@ -15,11 +15,16 @@ environmentconfig:
   annotations: {}
   iam:
     realm: ""
+    namespace: ""
+    issuerURL: ""
+    internalURL: ""
     extraAudiences: []
   ingress:
+    enabled: false
     class: ""
     domain: ""
     secret: ""
+    annotations: {}
   storage:
     endpoint: ""
     forcePathStyle: true

@@ -2,15 +2,23 @@
 data:
   iam:
     realm: {{ .Values.environmentconfig.iam.realm | default "" | quote }}
+    namespace: {{ .Values.environmentconfig.iam.namespace | default "" | quote }}
+    issuerURL: {{ .Values.environmentconfig.iam.issuerURL | default "" | quote }}
+    internalURL: {{ .Values.environmentconfig.iam.internalURL | default "" | quote }}
     {{- with .Values.environmentconfig.iam.extraAudiences }}
     extraAudiences:
 {{- toYaml . | nindent 6 }}
     {{- end }}
 
   ingress:
+    enabled: {{ .Values.environmentconfig.ingress.enabled | default false }}
     class: {{ .Values.environmentconfig.ingress.class | default "" | quote }}
     domain: {{ .Values.environmentconfig.ingress.domain | default "" | quote }}
     secret: {{ .Values.environmentconfig.ingress.secret | default "" | quote }}
+    {{- with .Values.environmentconfig.ingress.annotations }}
+    annotations:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
 
   storage:
     endpoint: {{ .Values.environmentconfig.storage.endpoint | default "" | quote }}

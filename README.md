@@ -58,7 +58,7 @@ Other providers can be used interchangeably, e.g. to use AWS S3, OTC OBS, or sim
 
 Each workspace includes a **Datalab**, a VSCode Server instance deployed into a Kubernetes namespace or a dynamically created vCluster.  
 
-A datalab is preconfigured with workspace-specific storage credentials, allowing seamless integration with data-access libraries such as [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) and equipped with commonly used command-line tools like [AWS CLI](https://aws.amazon.com/cli/) and [rclone](https://rclone.org/). Together, this ready-made setup provides immediate access to workspace data for analysis, automation, and large-scale file transfers. In addition, the browser-based interface enables interactive data exploration through a unified file abstraction layer. This file abstraction is established via CSI drivers, enabling data to be mounted as volumes or accessed through higher-level tooling.  These integrations further support advanced capabilities such as packaging related data objects or sharing individual assets via presigned URLs.
+A datalab is preconfigured with workspace-specific storage credentials, allowing seamless integration with data-access libraries such as [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) and commonly used command-line tools such as [AWS CLI](https://aws.amazon.com/cli/) and [rclone](https://rclone.org/). The Data application provides browser-based object storage navigation and supports packaging related data objects or sharing assets through presigned URLs.
 
 See: [Workspace Documentation](https://eoepca.readthedocs.io/projects/workspace/)
 
@@ -79,10 +79,6 @@ The target cluster must also provide:
 
 Keep the detailed runtime policy model in the provider-datalab documentation: [authentication](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#authentication), [workspace sessions as sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/), and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
 
-### Workspace Dependency – CSI Rclone
-
-No specific configuration values are required for this chart.
-
 ### Workspace Dependency – Educates
 
 | Key | Type | Description |
@@ -98,10 +94,15 @@ No specific configuration values are required for this chart.
 |-----|------|-------------|
 | `environmentconfig.name` | string | EnvironmentConfig name used by matching Storage and Datalab resources. Default: `datalab`. |
 | `environmentconfig.iam.realm` | string | Keycloak realm name for Workspace authentication. |
+| `environmentconfig.iam.namespace` | string | Namespace of Keycloak Pods allowed by the permanent Data ingress OAuth sidecar. Provider default: `keycloak`. |
+| `environmentconfig.iam.issuerURL` | string | External Keycloak realm issuer URL used for browser-facing OAuth discovery. |
+| `environmentconfig.iam.internalURL` | string | Internal Keycloak realm URL used by the OAuth sidecar inside the cluster. |
 | `environmentconfig.iam.extraAudiences` | array | Extra token audiences for generated workspace clients, for example `workspace-api`. |
+| `environmentconfig.ingress.enabled` | bool | Create one permanent OAuth-protected Data ingress per Datalab. Default: `false`. |
 | `environmentconfig.ingress.class` | string | Ingress class to use (e.g., `nginx`). |
 | `environmentconfig.ingress.domain` | string | Base domain for Workspace UIs and services. |
 | `environmentconfig.ingress.secret` | string | TLS secret for Workspace ingresses. |
+| `environmentconfig.ingress.annotations` | object | Optional controller-specific annotations for permanent Data ingresses. |
 | `environmentconfig.storage.endpoint` | string | S3-compatible endpoint (e.g., `https://minio.develop.eoepca.org`). |
 | `environmentconfig.storage.forcePathStyle` | bool | Use path-style addressing (`true` for MinIO/OTC). |
 | `environmentconfig.storage.provider` | string | Storage provider label (`MinIO`, `AWS`, `Other`, etc.). |
@@ -141,9 +142,13 @@ Example:
 environmentconfig:
   iam:
     realm: eoepca
+    namespace: iam
+    issuerURL: https://identity.example.org/realms/eoepca
+    internalURL: http://keycloak-service.iam.svc/realms/eoepca
     extraAudiences:
       - workspace-api
   ingress:
+    enabled: true
     class: nginx
     domain: ws.example.org
     secret: workspace-tls

@@ -16,7 +16,7 @@ At its core, the Workspace BB is composed of three tightly integrated subsystems
 **Runtime Management** — handled by the [provider-datalab](https://provider-datalab.versioneer.at), which builds on the [educates.dev](https://educates.dev) project to create isolated compute environments either as Kubernetes namespaces or as [vClusters](https://www.vcluster.com/) for enhanced multi-tenancy and isolation.  
    
    - Each datalab hosts one or more user-facing applications such as VSCode Server or web-based terminal and browser interfaces.  
-   - Datalabs automatically connect to workspace-specific storage, mounting buckets via [CSI Rclone](https://github.com/versioneer-tech/csi-rclone) into the file system and preloading common command-line tools (`awscli`, `rclone`, `boto3`).  
+   - Datalabs receive workspace-specific S3 credentials and common command-line tools (`awscli`, `rclone`, `boto3`) for direct object storage access.
    - This design ensures immediate, persistent, and secure access to datasets — supporting both exploratory workflows and automated pipelines.  
    - Users can extend Datalabs by deploying additional Kubernetes-native services such as databases, dashboards, or custom data processors.
 
@@ -40,7 +40,7 @@ Each workspace is therefore not a fixed allocation but a composable graph of man
 
 ## Runtime and Storage Integration
 
-A key design goal of the Workspace BB is data proximity and transparent access. Every datalab automatically receives credentials for the storage resources within its workspace scope. Using CSI Rclone, these buckets are mounted as file systems inside the containerized environment, providing familiar navigation and manipulation of data.  
+A key design goal of the Workspace BB is data proximity and transparent access. Every datalab automatically receives credentials for the storage resources within its workspace scope. Workloads use the S3 API directly, while the Data application provides browser-based navigation and manipulation of objects.
 
 The integrated file browser in the Datalab UI allows:
 
@@ -48,7 +48,7 @@ The integrated file browser in the Datalab UI allows:
 - Preview of text, imagery, and EO product assets  
 - Instant data sharing via presigned URLs  
 
-By exposing data through both object APIs and filesystem mounts, users can fluidly transition between interactive analysis, batch computation, and automated packaging workflows — without reconfiguring credentials or access paths.
+This object API access lets users move between interactive analysis, batch computation, and automated packaging workflows without reconfiguring credentials.
 
 ## IAM and Policy Enforcement
 

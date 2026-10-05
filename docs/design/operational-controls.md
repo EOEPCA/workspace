@@ -2,7 +2,7 @@
 
 ## Session Mode
 
-If **sessions** are not generally *disabled* via the corresponding session mode flag, the **Workspace Building Block (BB)** provides isolated, user-facing compute environments (*Datalabs*) running on top of a shared Kubernetes host cluster.  These sessions can be either *long-running* or *started on-demand* (in so called `Auto` session mode), with background jobs automatically shutting down inactive sessions according to configurable criteria.  Both modes maintain persistent access to user files, configurations, and mounted object storage, ensuring seamless continuity between session restarts.
+If **sessions** are not generally *disabled* via the corresponding session mode flag, the **Workspace Building Block (BB)** provides isolated, user-facing compute environments (*Datalabs*) running on top of a shared Kubernetes host cluster.  These sessions can be either *long-running* or *started on-demand* (in so called `Auto` session mode), with background jobs automatically shutting down inactive sessions according to configurable criteria.  Both modes maintain persistent access to user files, configurations, and object storage, ensuring seamless continuity between session restarts.
 
 Each workspace represents a logical boundary for a team or project and includes its own compute, storage, and access configuration.  While users are free to execute arbitrary code, deploy additional components through the Kubernetes API (e.g., via `kubectl`), or interact with data via networked storage and APIs, platform operators must ensure that this flexibility remains **secure**, **resource-efficient**, and **compliant** with operational policies.  
 
@@ -44,5 +44,6 @@ Ingress routing should be handled centrally at the host-cluster level (not withi
 - Persistent volumes are used for:
 
   - Control plane state (vCluster metadata)  
-  - User home directories and shared data (`ReadWriteMany` PVCs)  
-  - Object storage integration via [CSI Rclone](https://github.com/versioneer-tech/csi-rclone)
+  - User home directories and shared data (`ReadWriteMany` PVCs)
+
+- Object storage is accessed through the S3 API with workspace-specific credentials.
