@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cng-stac-api
+  labels:
+    app: cng-stac-api
+spec:
+  selector:
+    app: cng-stac-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
