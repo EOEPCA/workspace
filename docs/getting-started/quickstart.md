@@ -1,41 +1,25 @@
 # Quickstart
 
-This guide walks through a fictive end-to-end scenario to be executed on the `eoepca-demo` Kubernetes cluster to demonstrate the capabilities of the **Workspace** Building Block (BB). It highlights the roles of different personas — **operator**, **manager**, and **user** — and covers workspace creation, member management, data sharing on Object **Storage**, and collaborative use of the runtime in so called **Datalabs**.
+Create a workspace for Frank, share data with his team, and run MLflow and a STAC API in the Datalab.
 
-## Environment Assumptions
+## Environment assumptions
 
-- **Object Storage:** MinIO (S3 compatible). Alternatives (AWS S3, OTC OBS, …) work the same.
-- **Session Mode:** `Auto` (on-demand start/stop). `AlwaysOn` also works for this guide.
-- **Isolation Mode:** `useVcluster=true` (workspace-scoped vcluster). Namespace mode would also work here.
-- **Users in Keycloak:** `alice`, `bob`, `eric`, `frank`; platform operator `oscar` (has `admin` role on the Workspace client).
-- **Existing Workspaces:** `ws-alice`, `ws-bob`, `ws-eric`.
+This guide uses the `eoepca-demo` cluster. Set up the [example accounts and permissions](https://github.com/EOEPCA/workspace/tree/main/setup), including the user `frank`, before starting.
 
-## Scenario
+| Setting | Example value |
+| --- | --- |
+| Object storage | MinIO |
+| Session mode | `Auto`; `AlwaysOn` also works |
+| Runtime | vCluster enabled with `vcluster: true`; namespace mode also works |
+| Users | `alice`, `bob`, `eric`, and `frank` |
+| Administrator | `oscar`, with the `admin` role on `workspace-api` |
+| Existing workspaces | `ws-alice`, `ws-bob`, and `ws-eric` |
 
-**Frank** is prototyping a **data-driven AI workflow**. He needs:
+Alice, Bob, and Eric can manage their own workspaces. For another deployment, change the account names, workspace names, service URLs, and OAuth settings.
 
-- A **workspace** with a VS Code like runtime for development and buckets for storage.
-- **Alice** as a collaborator (co-development).
-- Read access to **Eric's** shared reference data.
-- A way to let **Bob** stage curated subsets of large ground-truth data into Frank's workspace.
-- **MLflow** for experiment tracking, with model artifacts stored in Frank’s bucket.
-- A clear **separation of storage buckets**, each potentially holding data ranging from gigabytes to terabytes.
+## 1. Create Frank's workspace
 
-Personas:
-
-- **Oscar** — platform operator, provisions the workspace.
-- **Frank** — workspace owner.
-- **Alice** — collaborator in Frank’s workspace.
-- **Eric** — provides a shared reference bucket.
-- **Bob** — curates large datasets and stages subsets for Frank. He also uses the managed backing services of his workspace, including PostgreSQL, MongoDB, Redis, Qdrant, and a workspace-scoped Docker registry, to keep track of what has been prepared and delivered.
-
-### 1) Oscar: Creating a Workspace for Frank
-
-Oscar sets up a new workspace for Frank using an **HTTP API–driven approach**, enabling seamless integration into the existing workflows of the platform operations team.
-
-> The same setup can alternatively be created directly via the **Kubernetes API** (e.g., using `kubectl`).
-
-After authenticating (e.g., through the **OAuth2 Device Code Flow** to obtain a `TOKEN`; see [Operator View](https://eoepca.readthedocs.io/projects/workspace/en/latest/getting-started/operator-view/)), Oscar initiates the workspace creation request:
+Sign in as Oscar through the [device login in the management notebook](../workspace-management.ipynb). Use the resulting `TOKEN` to create Frank's workspace:
 
 ```bash
 curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
@@ -47,64 +31,51 @@ curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
   }'
 ```
 
-**Expected result:**  
-The API returns a workspace URL such as:
+The API returns the workspace URL:
 
 ```text
 https://workspace-api.develop.eoepca.org/workspaces/ws-frank
 ```
 
-(where `ws-` is the configured prefix for workspace names).
+The configured prefix is `ws-`. Oscar gives the URL to Frank.
 
-Oscar then shares this URL with Frank.
+## 2. Open the workspace
 
-### 2) Frank: Open the Workspace and verify access
+Frank opens the URL and signs in. The dashboard shows `ws-frank`, its S3 credentials, and links to the Datalab and management pages.
 
-1. Frank opens the URL in a browser and logs in.  
-2. The **Workspace Dashboard** displays:
+![Frank's workspace dashboard](../img/q1.png)
 
-   - Workspace details (`ws-frank`)
-   - Default **S3 bucket credentials** (for `ws-frank`)
-   - Links to the **Datalab** and management pages
+## 3. Start the Datalab
 
-![alt text](../img/q1.png)
+Click **Open Datalab**. The session opens a code editor with Terminal, Editor, and Data tabs.
 
-### 3) Frank: Start the Datalab and explore the environment
+![Open the Datalab](../img/q2.png)
 
-1. Click **Open Datalab**.  
-2. After the session starts, Frank sees a familiar **VS Code** interface: **Terminal**, **Editor**, and a **Data** tab.
+![Datalab editor](../img/q3.png)
 
-![alt text](../img/q2.png)
-
-![alt text](../img/q3.png)
-
-**Verify S3 connectivity in Datalab terminal:**
+List the buckets and Frank's objects from the terminal:
 
 ```bash
 aws s3 ls
 aws s3 ls s3://ws-frank --recursive
 ```
 
-![alt text](../img/q4.png)
+![List S3 buckets](../img/q4.png)
 
-![alt text](../img/q5.png)
+![List objects in Frank's bucket](../img/q5.png)
 
-### 4) Frank: Use MLflow in the Datalab environment as Additional Service
+## 4. Run MLflow
 
-Frank wants MLflow for experiment tracking (artifacts to go to `ws-frank`).
-
-**Clone an example project:**
+Frank uses MLflow to track experiments and store model artifacts in `ws-frank`. Clone the example project:
 
 ```bash
 git clone https://github.com/mlflow/mlflow-example
 cd mlflow-example
 ```
 
-![alt text](../img/q6.png)
+![MLflow example project](../img/q6.png)
 
-**Run example project with local MLflow:**
-
-> Note: Frank prefers to use `uv` over conda so he has to convert the environment file
+Convert the Conda dependencies to use `uv`, then run the example locally:
 
 ```bash
 yq eval -o=json '.dependencies[]' conda.yaml | jq -r '
@@ -118,27 +89,23 @@ uv pip install -r requirements.txt
 uv run python train.py
 ```
 
-![alt text](../img/q7.png)
+![Run the training example](../img/q7.png)
 
-That worked successfully, but so far MLflow is only running in a local development shell. Next, it will be deployed as an additional service within the workspace.
+To use a shared MLflow server, apply the manifest from the Provider Datalab [additional services guide](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/). The Datalab already has `kubectl` configured for its cluster.
 
-**Deploy MLflow Server and Run Example Project Again**
+![Deploy MLflow](../img/q8.png)
 
-Since `kubectl` is already preinstalled and configured for the connected Kubernetes cluster, we can simply apply the manifest (for example, the one provided in the [documentation](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/)).
-
-![alt text](../img/q8.png)
-
-Next, **port-forward the MLflow service** so that it appears in the **Ports** tab, allowing direct access to the MLflow UI in the browser.
+Forward the service port and open it from the editor's **Ports** tab:
 
 ```bash
 kubectl port-forward svc/mlflow 5000:5000
 ```
 
-![alt text](../img/q9.png)
+![Forward the MLflow port](../img/q9.png)
 
-![alt text](../img/q10.png)
+![MLflow in the browser](../img/q10.png)
 
-Now, point to the newly deployed MLflow server and run the example project again:
+Point the training script at that server and run it again:
 
 ```bash
 export MLFLOW_TRACKING_URI="http://localhost:5000"
@@ -146,55 +113,44 @@ export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
 uv run python train.py
 ```
 
-![alt text](../img/q11.png)
+![Train against the shared server](../img/q11.png)
 
-![alt text](../img/q12.png)
+![MLflow experiment results](../img/q12.png)
 
+Find the model in Frank's bucket on the **Data** tab. Create a [presigned link](../concepts.md#storage) to share it.
 
-The trained model is  stored as an **MLflow artifact** in a bucket within **Frank’s workspace**. Frank can also navigate to the **Data** tab of the Datalab environment, locate the artifacts, and share specific files — for example, the `.pkl` file with the model — via a **presigned URL**.  This allows others to download the (potentially large) ML model directly from the bucket using a **temporary access link**, without requiring permanent credentials.
+![Share a model artifact](../img/q13.png)
 
-![alt text](../img/q13.png)
+## 5. Set up buckets and team access
 
-Confident that the Datalab can support his prototype development, Frank now turns to planning how best to structure storage and manage access.
+Frank creates two more buckets:
 
-### 5) Frank: Prepare storage layout for collaboration
+- `ws-frank-stagein` for data that Bob prepares.
+- `ws-frank-publish` for finished datasets.
 
-Frank begins by creating two additional buckets to organize data exchange and publication:
+![Create buckets](../img/q15.png)
 
-- `ws-frank-stagein` — to be used by **Bob** to stage curated data subsets (e.g., filtered by geometry or time).  
-- `ws-frank-publish` — used by **Frank** himself to store and share finalized datasets with others.
+Frank adds Alice as a member of `ws-frank`. She can open the workspace, view its credentials, and work in the shared Datalab.
 
-![alt text](../img/q15.png)
+![Add Alice to the workspace](../img/q16.png)
 
-Frank then adds **Alice** as a member of `ws-frank`, granting her access to all workspace resources.
+Frank selects **Request Access** for `ws-eric-shared`. Eric approves the request, and Frank can then use his existing workspace credentials to read the reference data.
 
-![alt text](../img/q16.png)
+![Request access to Eric's bucket](../img/q17.png)
 
-With these permissions in place, **Alice** can now open **Frank’s workspace**, view the necessary credentials, and collaborate with him in the shared Datalab environment.
+Bob requests write access to `ws-frank-stagein`. Once Frank approves it, Bob can upload data with his own workspace credentials.
 
-Next, **Frank** requests access to `ws-eric-shared` to use Eric’s reference data.
+![Approve Bob's bucket access](../img/q18.png)
 
-- In the **Workspace UI**, he selects **Request Access** for the desired bucket.  
-- **Eric** then **approves** the request.  
-- Once approved, **Frank** can access `ws-eric-shared` seamlessly using his existing credentials.
+## 6. Use managed services
 
-![alt text](../img/q17.png)
+Bob enables backing services in his Datalab configuration. Their connection settings appear on the dashboard.
 
-Frank also notices that **Bob** has submitted a request to access `ws-frank-stagein`. Frank reviews and **approves** the request. From that moment on, **Bob** can access `ws-frank-stagein` seamlessly using his existing credentials — unless **Frank** later decides to **revoke** the permission.
+![Bob's managed services](../img/q19.png)
 
-![alt text](../img/q18.png)
+![Service connection settings](../img/q20.png)
 
-### 6) Bob: Uses managed services for curation and catalog publishing
-
-Bob's Datalab is provisioned with the managed backing services used in the demo workflow. As one workspace configuration, it enables PostgreSQL databases, a MongoDB document store, a Redis cache store, a Qdrant vector store, data buckets, and a small in-session Docker registry for workspace-local container images.
-
-![alt text](../img/q19.png)
-
-Using the service credentials exposed on his dashboard page, Bob can connect applications directly to these services from inside the Datalab. Each backing service follows the same pattern: the workspace creates the service, exposes credentials and connection settings, and keeps the service lifecycle tied to the Datalab configuration.
-
-![alt text](../img/q20.png)
-
-The corresponding Bob Datalab manifest exercises all managed backing storage types used in this example.
+Bob uses this Datalab configuration:
 
 ```yaml
 apiVersion: pkg.internal/v1beta2
@@ -244,11 +200,13 @@ spec:
       backupStorage: 10Gi
 ```
 
-Bob plans to curate selected satellite scenes before staging them for Frank. For this, he first tests the MongoDB document store as a simple place to keep structured scene metadata, processing status, and handover notes.
+### Store scene metadata in MongoDB
 
-The `prod` document store exposes MongoDB connection details as session environment variables. For most application code, `MONGO_PROD_URI` is the easiest option. Split values such as `MONGO_PROD_HOST`, `MONGO_PROD_PORT`, `MONGO_PROD_DATABASE`, `MONGO_PROD_USER`, `MONGO_PROD_PASSWORD`, and `MONGO_PROD_AUTH_SOURCE` are also available when a library expects separate fields.
+Bob uses MongoDB to record scene metadata and processing status before he sends data to Frank.
 
-Bob can validate the MongoDB document store from the Datalab terminal with a short Python script:
+The `prod` document store supplies `MONGO_PROD_URI` in the session environment. Libraries that need separate settings can use `MONGO_PROD_HOST`, `MONGO_PROD_PORT`, `MONGO_PROD_DATABASE`, `MONGO_PROD_USER`, `MONGO_PROD_PASSWORD`, and `MONGO_PROD_AUTH_SOURCE`.
+
+Run this script in the Datalab terminal. It clears the selected collection before inserting two demo records:
 
 ```bash
 cat > mongo_demo.py <<'PY'
@@ -315,15 +273,13 @@ PY
 uv run --with pymongo python mongo_demo.py
 ```
 
-After the script runs, Bob has created a collection, inserted two metadata documents, read them back, deleted one document, and listed the remaining content. The same pattern can be used from a notebook cell by keeping the Python block and omitting the shell wrapper.
+### Start a STAC API
 
-After validating the document workflow, Bob turns to catalog publication. He uses **stac-fastapi-pgstac** to catalog curated datasets and expose them through a STAC API backed by the managed PostgreSQL database. Because he does not need the service running permanently, he starts it **on demand** inside the Datalab only when required.
+Run `stac-fastapi-pgstac` against Bob's managed PostgreSQL database to serve a STAC catalogue.
 
-Each workspace exposes ready-to-use PostgreSQL environment variables for the declared database host. For Bob's `pg0` host and `prod` database, these include `POSTGRES_PG0_HOST`, `POSTGRES_PG0_PORT`, `POSTGRES_PG0_USER`, `POSTGRES_PG0_PASSWORD`, and `POSTGRES_PG0_PROD_URL`. This allows applications to connect immediately without additional configuration. External access from outside of the Kubernetes cluster is also possible where the service supports it.
+For the `pg0` host and `prod` database, the session supplies `POSTGRES_PG0_HOST`, `POSTGRES_PG0_PORT`, `POSTGRES_PG0_USER`, `POSTGRES_PG0_PASSWORD`, and `POSTGRES_PG0_PROD_URL`.
 
-> Note: The external Postgres endpoint is exposed through Envoy, which requires immediate TLS with SNI (direct TLS). The PostgreSQL server and libpq-based clients (e.g. psql, psycopg) fully support this. However, some non-libpq drivers such as asyncpg do not yet implement this negotiation correctly and may fail during connection setup.
-
-First, apply the following manifests to the Kubernetes cluster.
+Create the Service and Deployment:
 
 ```bash
 envsubst <<'EOF' | kubectl apply -f -
@@ -375,7 +331,7 @@ spec:
 EOF
 ```
 
-Now, initialize the database.
+Initialise the database:
 
 ```bash
 kubectl run pgstac-migrate -it --rm \
@@ -389,13 +345,13 @@ kubectl run pgstac-migrate -it --rm \
   --command -- sh -lc 'pypgstac migrate'
 ```
 
-Next, **port-forward the stac-fastapi-pgstac service** so that it appears in the **Ports** tab, allowing direct access to the service in the browser.
+Forward the API port and open it from the editor's **Ports** tab:
 
 ```bash
 kubectl port-forward svc/stac-api 8080:8080
 ```
 
-Now you can open `http://localhost:8080` and browse common endpoints like
+At `http://localhost:8080`, try these endpoints:
 
 ```text
 /collections
@@ -403,37 +359,26 @@ Now you can open `http://localhost:8080` and browse common endpoints like
 /collections/{id}/items
 ```
 
-To cleanup, run
+To remove the API Deployment and Service, run:
 
 ```bash
 kubectl delete deploy stac-api
 kubectl delete svc stac-api
 ```
 
-This keeps the service **ephemeral and cost-efficient** while still benefiting from managed backing services that provide persistence, automated backups where supported, and workspace-local service credentials.
+The managed database remains available after the API is removed.
 
-## Summary
+## Exchange data
 
-With the storage setup in place, everyone now understands where data should reside, and the collaboration begins.
+Frank reads Eric's reference data and sends Bob a `.gpkg` file with the geometry and time range he needs. He can share the file from his bucket with a presigned link.
 
-- **Frank** downloads the necessary reference data from the `ws-eric-shared` bucket to start refining his prototype.  
-- He then shares the **selection criteria** (e.g., geometry and time range) with **Bob** by preparing them online and placing the corresponding `.gpkg` file in his bucket.  
-  Frank can simply send a **presigned URL** to Bob’s team for direct access.  
-- **Bob** subsequently copies the relevant **ground-truth data** into `ws-frank-stagein`.
+Bob selects the ground-truth data and copies it to `ws-frank-stagein`. He can use `aws s3 sync` or `rclone sync` from his Datalab.
 
-> **Note:**  
-> Since **Bob** is also using Workspaces, he can easily perform this transfer using preinstalled tools such as `aws s3 sync` or `rclone sync`, ensuring efficient data movement.
+Alice opens [Frank's workspace](https://workspace-api.develop.eoepca.org/workspaces/ws-frank) and works with him in the Datalab. When the results are ready, Frank copies them from `ws-frank` to `ws-frank-publish`.
 
-- **Alice** continues working collaboratively in the shared **Datalab**, starting her browser session directly from  
-  [https://workspace-api.develop.eoepca.org/workspaces/ws-frank](https://workspace-api.develop.eoepca.org/workspaces/ws-frank).  
+## Storage manifests
 
-- Once the prototype is complete and the first data products are generated, **Frank** synchronizes results from `ws-frank` to `ws-frank-publish`, ensuring a clear separation between **working**, **staging**, and **published** data.
-
-## Bonus Section for Operators
-
-The entire **storage configuration** is captured **declaratively** within the Kubernetes cluster. From there, it is continuously managed by **reconciliation engines** that enforce the desired state and ensure the setup remains consistent with the defined specification.
-
-The scenario-specific **storage manifest** can be found directly after this quickstart, providing operators with a clear view of how the workspace and its associated buckets are provisioned and maintained.
+The bucket setup used above is defined by these Storage resources:
 
 ```yaml
 apiVersion: pkg.internal/v1beta1

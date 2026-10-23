@@ -1,4 +1,11 @@
 {{- define "wp.environmentconfig.data" -}}
+{{- $httpRoute := .Values.environmentconfig.httpRoute | default dict -}}
+{{- if and .Values.environmentconfig.ingress.enabled $httpRoute.enabled -}}
+  {{- fail "Enable only one of environmentconfig.ingress.enabled and environmentconfig.httpRoute.enabled" -}}
+{{- end -}}
+{{- if and $httpRoute.enableS3 (not $httpRoute.enabled) -}}
+  {{- fail "environmentconfig.httpRoute.enableS3 requires environmentconfig.httpRoute.enabled" -}}
+{{- end -}}
 data:
   iam:
     realm: {{ .Values.environmentconfig.iam.realm | default "" | quote }}
@@ -20,9 +27,18 @@ data:
 {{- toYaml . | nindent 6 }}
     {{- end }}
 
+  httpRoute:
+    enabled: {{ $httpRoute.enabled | default false }}
+    enableS3: {{ $httpRoute.enableS3 | default false }}
+    {{- range $key := list "parentName" "parentNamespace" "sectionName" "httpSectionName" }}
+    {{- with get $httpRoute $key }}
+    {{ $key }}: {{ . | quote }}
+    {{- end }}
+    {{- end }}
+
   storage:
     endpoint: {{ .Values.environmentconfig.storage.endpoint | default "" | quote }}
-    force_path_style: {{ toString (default true .Values.environmentconfig.storage.forcePathStyle) | quote }}
+    forcePathStyle: {{ toString .Values.environmentconfig.storage.forcePathStyle | quote }}
     provider: {{ .Values.environmentconfig.storage.provider | default "" | quote }}
     region: {{ .Values.environmentconfig.storage.region | default "" | quote }}
     secretNamespace: {{ .Values.environmentconfig.storage.secretNamespace | default "" | quote }}
@@ -67,17 +83,6 @@ data:
 {{ toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- $auth := dict }}
-  {{- range $k, $v := (.Values.environmentconfig.auth | default dict) }}
-    {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
-      {{- $_ := set $auth $k $v }}
-    {{- end }}
-  {{- end }}
-  {{- if $auth }}
-  auth:
-{{- toYaml $auth | nindent 4 }}
-  {{- end }}
-
   {{- $defaults := .Values.environmentconfig.defaults | default dict }}
   {{- $quota := dict }}
   {{- range $k, $v := ($defaults.quota | default dict) }}
@@ -116,19 +121,19 @@ data:
   {{- end }}
 
   {{- $database := .Values.environmentconfig.database | default dict }}
-  {{- $gateway := dict }}
-  {{- range $k, $v := ($database.gateway | default dict) }}
+  {{- $tlsRoute := dict }}
+  {{- range $k, $v := ($database.tlsRoute | default dict) }}
     {{- if or (kindIs "bool" $v) (ne (toString $v) "") }}
-      {{- $_ := set $gateway $k (toString $v) }}
+      {{- $_ := set $tlsRoute $k (toString $v) }}
     {{- end }}
   {{- end }}
   {{- $storageClassName := get $database "storageClassName" }}
   {{- $backupStorageClassName := get $database "backupStorageClassName" }}
-  {{- if or $gateway (or (or (kindIs "bool" $storageClassName) (ne (toString $storageClassName) "")) (or (kindIs "bool" $backupStorageClassName) (ne (toString $backupStorageClassName) ""))) }}
+  {{- if or $tlsRoute (or (or (kindIs "bool" $storageClassName) (ne (toString $storageClassName) "")) (or (kindIs "bool" $backupStorageClassName) (ne (toString $backupStorageClassName) ""))) }}
   database:
-    {{- if $gateway }}
-    gateway:
-{{- toYaml $gateway | nindent 6 }}
+    {{- if $tlsRoute }}
+    tlsRoute:
+{{- toYaml $tlsRoute | nindent 6 }}
     {{- end }}
 
     {{- if or (kindIs "bool" $storageClassName) (ne (toString $storageClassName) "") }}

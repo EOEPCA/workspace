@@ -2,12 +2,12 @@ globalAnnotations: {}
 
 storage:
   name: storage-minio
-  package: ghcr.io/versioneer-tech/provider-storage/minio:0.3.1
+  package: ghcr.io/versioneer-tech/provider-storage/minio:0.4.0
   annotations: {}
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.10.0
+  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.11.0
   annotations: {}
 
 environmentconfig:
@@ -25,6 +25,13 @@ environmentconfig:
     domain: ""
     secret: ""
     annotations: {}
+  httpRoute:
+    enabled: false
+    enableS3: false
+    parentName: ""
+    parentNamespace: ""
+    sectionName: ""
+    httpSectionName: ""
   storage:
     endpoint: ""
     forcePathStyle: true
@@ -44,8 +51,6 @@ environmentconfig:
     blacklistIPs: []
     excludePolicies: []
   packages: []
-  auth:
-    type: ""
   defaults:
     quota:
       memory: ""
@@ -58,8 +63,8 @@ environmentconfig:
       kubernetesAccess: ""
       kubernetesRole: ""
       externalEgress: ""
-  database: 
-    gateway:
+  database:
+    tlsRoute:
       parentName: ""
       parentNamespace: ""
       sectionName: ""

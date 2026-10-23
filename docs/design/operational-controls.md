@@ -1,49 +1,43 @@
-# Operational Controls
+# Operational controls
 
-## Session Mode
+## Sessions
 
-If **sessions** are not generally *disabled* via the corresponding session mode flag, the **Workspace Building Block (BB)** provides isolated, user-facing compute environments (*Datalabs*) running on top of a shared Kubernetes host cluster.  These sessions can be either *long-running* or *started on-demand* (in so called `Auto` session mode), with background jobs automatically shutting down inactive sessions according to configurable criteria.  Both modes maintain persistent access to user files, configurations, and object storage, ensuring seamless continuity between session restarts.
+In `Auto` mode, sessions start on demand and background jobs stop them when inactive. `AlwaysOn` keeps sessions running. Sessions can also be disabled.
 
-Each workspace represents a logical boundary for a team or project and includes its own compute, storage, and access configuration.  While users are free to execute arbitrary code, deploy additional components through the Kubernetes API (e.g., via `kubectl`), or interact with data via networked storage and APIs, platform operators must ensure that this flexibility remains **secure**, **resource-efficient**, and **compliant** with operational policies.  
+Files on persistent volumes and data in object storage remain after a session stops. Choose the inactivity criteria and storage sizes for the work the team needs to run.
 
-Details on the underlying security model of the Datalab environment are available in the provider-datalab documentation for [workspace sessions as sandboxes](https://provider-datalab.versioneer.at/latest/security/workspace-sessions/) and [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
+## Kubernetes access
 
-## Cluster Exposure
+Namespace mode uses the host cluster's control plane. RBAC and namespace policies limit the user's access.
 
-Workspaces can run either in *namespace mode* (shared host control plane) or in *vCluster mode* (isolated virtual control plane based on [vCluster](https://vcluster.com)).
+In vCluster mode, each started session gets its own Kubernetes control plane. Include its CPU, memory, and state volume when sizing the host cluster.
 
-- In *namespace mode*, workspaces share the host Kubernetes control plane. This mode has minimal overhead and is suited for trusted environments where global RBAC and quotas can be centrally enforced.  
-- In *vCluster mode*, each workspace runs its own k3s-based control plane (API server, controller-manager, scheduler) inside a pod on the host cluster. Users interact with the vCluster as if it were a standalone Kubernetes cluster.
+Use RBAC to limit which resources users can create. Admission policies can block privileged Pods and `hostPath` volumes. `LimitRange` and `ResourceQuota` set namespace limits.
 
-vClusters offer stronger isolation but introduce a modest baseline overhead (~300–500 MiB RAM, 0.1–0.2 vCPU per idle control plane).
+The generated admission policies need Kyverno. See the provider's [sandbox controls](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/) for the policy definitions.
 
-## Deployment Permissions
+## Network access
 
-Controlled through Kubernetes RBAC and namespace-level policies. 
+The cluster network plugin must enforce Kubernetes NetworkPolicy. A connection is allowed if any policy permits it.
 
-- Operators can restrict the creation of `Ingress`, `ClusterRole`, or `ClusterRoleBinding` resources.  
-- Privileged pods or the use of `HostPath` mounts can be blocked.  
-- Resource consumption can be limited through `LimitRange` and `ResourceQuota` definitions on the namespace level, passed through [provider-datalab](https://provider-datalab.versioneer.at/) configuration.
+| Policy | Created when | Purpose |
+| --- | --- | --- |
+| `deny-egress` | Always | Deny outbound traffic unless another policy allows it. |
+| `allow-namespace-egress` | Always | Allow traffic within the namespace. |
+| `allow-internal-egress` | `network.internalEgress` has entries | Allow selected services in other namespaces. |
+| `allow-dns-egress` | `defaults.security.externalEgress` is enabled | Allow DNS traffic under the configured rules. |
+| `allow-external-egress` | `defaults.security.externalEgress` is enabled | Allow the configured external CIDRs. |
 
-## Network Isolation
+Use `network.internalEgress` for exceptions to selected services in other namespaces. Each entry needs a namespace, Pod selector, and ports.
 
-Enforced via **NetworkPolicies** to define allowed communication paths.  
+Set external CIDRs and exclusions in the EnvironmentConfig. Exclude the cluster Service and Pod CIDRs from broad external rules.
 
-- Outbound traffic can be limited.  
-- Cross-workspace pod communication can be blocked to prevent lateral movement.
-- Egress to the public internet can be disabled, except for approved external data sources.  
+The provider-datalab [installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/) describes the generated rules.
 
-Provider-datalab documents the generated NetworkPolicy baseline and Kyverno hardening direction in [sandbox security measures](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/).
+## Ingress
 
-## Ingress and Authentication
+Manage public routes in the host cluster, including routes to vCluster services. Configure Gateway listeners in the [installation values](../getting-started/installation.md#use-a-gateway) and route authentication as described in [IAM integration](iam-integration.md#route-protection).
 
-Ingress routing should be handled centrally at the host-cluster level (not within individual vClusters).  
+## Persistent data
 
-## Data Persistence and Storage
-
-- Persistent volumes are used for:
-
-  - Control plane state (vCluster metadata)  
-  - User home directories and shared data (`ReadWriteMany` PVCs)
-
-- Object storage is accessed through the S3 API with workspace-specific credentials.
+Use persistent volumes for session files and vCluster state. Shared volumes need the configured access mode, such as `ReadWriteMany`. Back up session volumes, object storage, and databases according to their retention requirements.

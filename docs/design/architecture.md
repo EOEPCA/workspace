@@ -1,78 +1,31 @@
 # Architecture
 
-The Workspace Building Block (BB) provides a cohesive and modular environment that unifies **compute**, **storage**, and **tooling** into a single declaratively managed system. Its architecture is Kubernetes-native, built upon [Crossplane](https://crossplane.io), which serves as the foundation for modeling and orchestrating complex service dependencies using Custom Resource Definitions (CRDs) and Compositions.  
+The Workspace API writes `Storage` and `Datalab` resources to Kubernetes. Crossplane compositions create and maintain the resources they describe.
 
-## Architectural Composition
+```mermaid
+flowchart TD
+    UI[Workspace UI] --> API[Workspace API]
+    API --> S[Storage resource]
+    API --> D[Datalab resource]
+    S --> SC[Provider Storage composition]
+    D --> DC[Provider Datalab composition]
+    SC --> B[S3 backend]
+    DC --> E[Educates runtime]
+    DC --> K[Keycloak groups, clients, and roles]
+```
 
-At its core, the Workspace BB is composed of three tightly integrated subsystems:
+## Compositions
 
-**Storage Management** — implemented through the [provider-storage](https://provider-storage.versioneer.at) abstraction, which provisions and manages object storage across multiple backends such as MinIO, AWS S3, and OTC OBS.  
-   
-   - Buckets are represented as Kubernetes CRs (`Storage` objects).  
-   - The reconciliation process automatically provisions S3 buckets, configures access policies (e.g. read-write grants), and returns endpoint and credential data to dependent components such as datalabs or applications.  
-   - Credentials are securely propagated into runtime environments via Kubernetes secrets or environment variables.  
-   - The system supports both local and external S3-compatible endpoints, enabling hybrid storage configurations.
+The compositions use providers for Kubernetes, Helm, Keycloak, and the storage backend. Provider Storage creates buckets, storage identities, policies, and credential Secrets. It supports MinIO, AWS S3, and OTC OBS.
 
-**Runtime Management** — handled by the [provider-datalab](https://provider-datalab.versioneer.at), which builds on the [educates.dev](https://educates.dev) project to create isolated compute environments either as Kubernetes namespaces or as [vClusters](https://www.vcluster.com/) for enhanced multi-tenancy and isolation.  
-   
-   - Each datalab hosts one or more user-facing applications such as VSCode Server or web-based terminal and browser interfaces.  
-   - Datalabs receive workspace-specific S3 credentials and common command-line tools (`awscli`, `rclone`, `boto3`) for direct object storage access.
-   - This design ensures immediate, persistent, and secure access to datasets — supporting both exploratory workflows and automated pipelines.  
-   - Users can extend Datalabs by deploying additional Kubernetes-native services such as databases, dashboards, or custom data processors.
+Provider Datalab creates the Educates environment and the workspace's Keycloak resources. It makes storage credentials available to sessions and manages any backing services configured on the Datalab.
 
-**Orchestration & Interaction Layer** — composed of the [workspace-api](https://github.com/EOEPCA/rm-workspace-api) and the Workspace UI, which form the primary entry point for users and operators.  
-   
-   - The API provides a unified REST interface that translates user actions (e.g., creating a workspace, adding buckets, or launching Datalabs) into declarative CRDs managed by [Crossplane](https://crossplane.io).  
-   - The UI presents these capabilities graphically, enabling users to create and manage storage, grant or revoke bucket access, and invite collaborators.  
-   - Authentication and authorization are delegated to Keycloak, ensuring that each workspace inherits consistent identity, role, and group configurations across all integrated services.
+Crossplane reconciles changes to these resources. Operators can also write the manifests directly or manage them through GitOps. Avoid having the Workspace API and GitOps write the same fields.
 
-## Crossplane as the Control Plane
+## Shared configuration
 
-All orchestration logic is implemented declaratively through [Crossplane](https://crossplane.io) Compositions. Each high-level abstraction — such as Workspace, Storage, or Datalab — is modeled as a Composite Resource (XR) that maps to one or more Managed Resources (MR).
+An `EnvironmentConfig` holds settings used by the compositions: domains, TLS Secret names, storage endpoints, and Keycloak realm URLs. Storage and Datalab resources select it through labels or annotations.
 
-This layered model allows infrastructure and application services to be managed through the same GitOps workflow as any Kubernetes manifest:
+The pipeline chart installs the two composition packages and creates the EnvironmentConfig. See [installation](../getting-started/installation.md) for package selection, values, and environment labels.
 
-- Providers such as [provider-kubernetes](https://marketplace.upbound.io/providers/crossplane-contrib/provider-kubernetes), [provider-helm](https://marketplace.upbound.io/providers/crossplane-contrib/provider-helm), [provider-minio](https://marketplace.upbound.io/providers/crossplane-contrib/provider-minio), and [provider-keycloak](https://marketplace.upbound.io/providers/crossplane-contrib/provider-keycloak) expose declarative APIs for managing external systems.  
-- Compositions define how these providers interact to realize higher-level abstractions (e.g., create a bucket, generate credentials, store them as a secret, and inject them into a datalab).  
-- EnvironmentConfigs define cluster-wide parameters such as ingress domains, TLS secrets, S3 endpoints, and Keycloak realms, ensuring that all Compositions operate within a consistent configuration context.
-
-Each workspace is therefore not a fixed allocation but a composable graph of managed resources — continuously synchronized through Crossplane’s reconciliation loop to ensure desired state alignment.
-
-## Runtime and Storage Integration
-
-A key design goal of the Workspace BB is data proximity and transparent access. Every datalab automatically receives credentials for the storage resources within its workspace scope. Workloads use the S3 API directly, while the Data application provides browser-based navigation and manipulation of objects.
-
-The integrated file browser in the Datalab UI allows:
-
-- Hierarchical navigation of storage buckets  
-- Preview of text, imagery, and EO product assets  
-- Instant data sharing via presigned URLs  
-
-This object API access lets users move between interactive analysis, batch computation, and automated packaging workflows without reconfiguring credentials.
-
-## IAM and Policy Enforcement
-
-Identity and Access Management (IAM) is centralized through Keycloak, ensuring consistent user identity and access policies across the entire platform. Crossplane’s [provider-keycloak](https://marketplace.upbound.io/providers/crossplane-contrib/provider-keycloak) enables the declarative management of users, groups, clients, and roles — functionality dynamically leveraged by the [provider-datalab](https://provider-datalab.versioneer.at) compositions to associate these entities with specific workspaces and runtime environments.  
-
-This approach ensures that collaboration is securely limited to authorized users within designated workspaces, maintaining both security and compliance across all deployments.  
-It also lays the groundwork for future extensions, enabling more granular role-based access control across services and datasets.
-
-## Declarative Workflow
-
-The entire system operates on declarative state entities managed through [Crossplane](https://crossplane.io) compositions. All resources exist natively within Kubernetes and are continuously reconciled, ensuring complete traceability, consistency, and reproducibility across all components.  
-
-Storage, runtime, and IAM elements are defined as Kubernetes manifests and can be orchestrated either by the [workspace-api](https://github.com/EOEPCA/rm-workspace-api) or deployed manually — for instance via direct API calls or GitOps tools such as Flux or ArgoCD.  
-This approach provides full flexibility in how the platform is operated, including hybrid modes where certain entities are managed declaratively through GitOps while others are created dynamically via API interactions.  
-This model is particularly advantageous for static or example setups, which can be easily bootstrapped and maintained using the same declarative principles.
-
-## Motivation for Switch from v1 to v2
-
-The initial **v1** implementation of the Workspace introduced a functional but rigid design that limited operator flexibility, scalability, and usability in collaborative contexts.  
-
-- Each workspace included exactly one bucket and a fixed set of services, preventing customization for specific projects or workloads.  
-- A workspace was implicitly tied to a single user through a naming convention — a team concept did not exist.  
-- Service deployment relied on imperative API calls, making upgrades, versioning, and selective redeployment difficult to automate.  
-- Infrastructure provisioning (e.g., buckets, IAM policies) required operator-specific logic and custom webhook extensions.  
-- Multi-tenancy was limited to namespace isolation, which complicated CRD versioning, RBAC scoping, and cluster-wide policy management.  
-
-The **v2** model resolves these limitations through a declarative workflow based on composable pipelines and continuous reconciliation.  It introduces flexible team membership, optional [vCluster](https://www.vcluster.com/) integration for enhanced multi-tenancy, and a unified GitOps-compatible model — allowing operators and users alike to declaratively define and evolve workspaces, services, and access policies with full transparency and control.
+The platform gateway validates login tokens before forwarding requests to the Workspace API. [IAM integration](iam-integration.md) describes the clients and permissions. [Operational controls](operational-controls.md) covers runtime isolation and network rules.

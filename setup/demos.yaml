@@ -1,0 +1,35 @@
+apiVersion: pkg.internal/v1beta1
+kind: Storage
+metadata:
+  name: ws-demos
+  namespace: workspace
+  annotations:
+    storages.pkg.internal/cloudferro-project-id: ac2f3160e4944b93896b789267d2bf2f
+  labels:
+    storages.pkg.internal/backend: cloudferro
+    storages.pkg.internal/discoverable: "true"
+spec:
+  crossplane:
+    compositionSelector:
+      matchLabels:
+        provider: cloudferro
+  principal: ws-demos
+  buckets:
+    - bucketName: ws-demos
+      discoverable: true
+---
+apiVersion: pkg.internal/v1beta2
+kind: Datalab
+metadata:
+  name: ws-demos
+  namespace: workspace
+  labels:
+    datalabs.pkg.internal/environment: datalab
+spec:
+  users:
+    - achtsnits
+  secretName: ws-demos
+  vcluster: true
+  registry:
+    enabled: true
+    storage: 3Gi

@@ -6,13 +6,14 @@ edit_uri: "edit/main/docs/"
 nav:
   - EOEPCA Documentation: https://eoepca.readthedocs.io/
   - Workspace:
-    - index.md
+    - Overview: index.md
+    - Management: workspace-management.ipynb
+    - Concepts: concepts.md
     - Getting Started:
-      - getting-started/quickstart.md
-      - getting-started/concepts.md
-      - getting-started/cng-resource-registration.ipynb
-      - getting-started/operator-view.ipynb
-      - getting-started/user-view.ipynb
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Vienna imagery with STAC and S3: getting-started/vienna-stac-s3.ipynb
+      - Register STAC metadata: getting-started/cng-resource-registration.ipynb
     - Design:
       - design/architecture.md
       - design/iam-integration.md
@@ -48,6 +49,9 @@ plugins:
   - autorefs
   - mkdocs-jupyter:
       execute: false
+      ignore_h1_titles: true
+      ignore:
+        - notebook_support.py
 
 markdown_extensions:
   - tables
