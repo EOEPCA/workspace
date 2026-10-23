@@ -78,6 +78,8 @@ Datalab key is `datalabs.pkg.internal/environment`.
 
 ## Example values
 
+Use a Gateway with HTTP and HTTPS listeners, a certificate, and permission to accept routes from the Datalab runtime namespaces. The HTTPS listener must terminate TLS. Set its listener names and the IAM URLs below. Workspace session ingress has separate settings.
+
 ```yaml
 environmentconfig:
   iam:
@@ -92,10 +94,17 @@ environmentconfig:
     domain: lab.example.org
   httpRoute:
     enabled: true
+    enableS3: false
     parentName: public
     parentNamespace: gateway
     sectionName: workspaces-https
     httpSectionName: http
+  # Optional listener for external PostgreSQL access.
+  database:
+    tlsRoute:
+      parentName: public
+      parentNamespace: gateway
+      sectionName: postgres
   storage:
     endpoint: https://s3.example.org
     forcePathStyle: true
@@ -137,38 +146,8 @@ environmentconfig:
       externalEgress: true
 ```
 
-See [network access](../design/operational-controls.md#network-access) for the egress rules.
+For external PostgreSQL access, `database.tlsRoute` selects a separate TLS passthrough listener. The Gateway controller must support `TLSRoute` v1.
 
-## Use a Gateway
+Set `httpRoute.enableS3: true` to enable S3 reads for every Data-enabled Datalab in the environment. There is no per-Datalab override. This option needs a Gateway controller that supports HTTPRoute header regular expressions.
 
-Gateway routing is the default: `httpRoute.enabled: true` and `ingress.enabled: false`. Set the Gateway listeners as shown in the example above, along with `iam.issuerURL`, `iam.internalURL`, and `ingress.domain`. Workspace session ingress has separate settings.
-
-For external PostgreSQL access, set the TLS passthrough listener separately:
-
-```yaml
-environmentconfig:
-  database:
-    tlsRoute:
-      parentName: public
-      parentNamespace: gateway
-      sectionName: postgres
-```
-
-The Gateway needs HTTP and HTTPS listeners, a certificate, and permission
-to accept routes from the Datalab runtime namespaces. The HTTPS listener must
-terminate TLS. PostgreSQL uses a separate TLS passthrough listener and requires
-`TLSRoute` v1 support.
-
-`httpRoute.enableS3` enables the S3 endpoint for every Data-enabled Datalab in
-the environment. It has no per-Datalab override. The Gateway controller must
-support HTTPRoute header regular expressions. Permit Gateway traffic into
-the runtime namespace and allow the Data services to reach storage and Keycloak
-under the [network rules](../design/operational-controls.md#network-access).
-
-## Update older values
-
-Rename `environmentconfig.database.gateway` to `environmentconfig.database.tlsRoute`. Remove `environmentconfig.auth`. The chart writes the S3 address setting as `data.storage.forcePathStyle`.
-
-Check the selected packages' dependencies, resource activation policies, ProviderConfigs, and RBAC before updating. Storage needs access to lifecycle ConfigMaps, Jobs, and CronJobs.
-
-Render the chart with your deployment values before updating GitOps. If Argo CD is paused, set the new chart revision before resuming it. Remove `data.auth`, `data.database.gateway`, and `data.storage.force_path_style` from the live EnvironmentConfig if server-side apply leaves them behind.
+Allow Gateway traffic into the runtime namespace and access from the Data services to storage and Keycloak. See [network access](../design/operational-controls.md#network-access) for the egress rules.

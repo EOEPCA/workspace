@@ -62,7 +62,7 @@ The signing names are public identifiers. Access requires a valid token with the
 
 The endpoint supports listing, HEAD, GET, and byte-range GET. Uploads and S3 query-presigned requests are rejected. Objects in `public/` still need authenticated S3 requests; the public share uses its own route.
 
-Operators enable it for the environment with the [Gateway settings](getting-started/installation.md#use-a-gateway). The [Vienna notebook](getting-started/vienna-stac-s3.ipynb) shows public shares, STAC links, presigned downloads, and S3 client setup with automatic token renewal.
+Operators enable it for the environment with the [Gateway settings](getting-started/installation.md#example-values). The [Vienna notebook](getting-started/vienna-stac-s3.ipynb) shows public shares, STAC links, presigned downloads, and S3 client setup with automatic token renewal.
 
 ## Membership
 

@@ -16,7 +16,7 @@ flowchart TD
 
 ## Compositions
 
-The compositions use providers for Kubernetes, Helm, Keycloak, and the storage backend. Provider Storage creates buckets, storage identities, policies, and credential Secrets. It supports MinIO, AWS S3, and OTC OBS.
+The compositions use providers for Kubernetes, Helm, Keycloak, and the storage backend. Provider Storage creates buckets, storage identities, policies, and credential Secrets. It supports MinIO, AWS S3, OTC OBS, OVHcloud, and CloudFerro.
 
 Provider Datalab creates the workspace session environment and the workspace's Keycloak resources. It makes storage credentials available to sessions and manages any backing services configured on the Datalab.
 

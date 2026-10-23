@@ -36,7 +36,7 @@ The provider-datalab [installation guide](https://provider-datalab.versioneer.at
 
 ## Ingress
 
-Manage public routes in the host cluster, including routes to vCluster services. Configure Gateway listeners in the [installation values](../getting-started/installation.md#use-a-gateway) and route authentication as described in [IAM integration](iam-integration.md#route-protection).
+Manage public routes in the host cluster, including routes to vCluster services. Configure Gateway listeners in the [installation values](../getting-started/installation.md#example-values) and route authentication as described in [IAM integration](iam-integration.md#route-protection).
 
 ## Persistent data
 
