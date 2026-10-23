@@ -8,11 +8,11 @@ A workspace gives a team S3 buckets and a Datalab where they can write and run c
   </a>
 </div>
 
-The Datalab opens in your browser. Its editor, terminal, and Data browser use the storage assigned to the workspace.
+The Datalab opens in your browser. Use its editor and terminal to work on code, and the **Data** tab to open PackageR.
 
 <div align="center">
   <a href="img/ui4.png" target="_blank">
-    <img src="img/ui4.png" height="250" alt="Datalab Data browser"/>
+    <img src="img/ui4.png" height="250" alt="PackageR in the Datalab Data tab"/>
   </a>
 </div>
 
