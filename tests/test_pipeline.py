@@ -32,10 +32,10 @@ class PipelineTests(unittest.TestCase):
             if item["kind"] == "EnvironmentConfig"
         )["data"]
 
-    def test_default_exposure_is_disabled(self):
+    def test_default_exposure_uses_gateway(self):
         data = self.environment()
         self.assertIs(data["ingress"]["enabled"], False)
-        self.assertEqual(data["httpRoute"], {"enabled": False, "enableS3": False})
+        self.assertEqual(data["httpRoute"], {"enabled": True, "enableS3": False})
         self.assertNotIn("auth", data)
         self.assertNotIn("database", data)
 
@@ -70,7 +70,7 @@ class PipelineTests(unittest.TestCase):
         self.assertNotIn("gateway", data["database"])
 
     def test_ingress_exposure_still_works(self):
-        data = self.environment({"environmentconfig": {"ingress": {
+        data = self.environment({"environmentconfig": {"httpRoute": {"enabled": False}, "ingress": {
             "enabled": True, "annotations": {"example.org/setting": "value"},
         }}})
         self.assertIs(data["ingress"]["enabled"], True)
@@ -85,7 +85,7 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("Enable only one", result.stderr)
 
     def test_s3_requires_http_route(self):
-        result = render({"environmentconfig": {"httpRoute": {"enableS3": True}}})
+        result = render({"environmentconfig": {"httpRoute": {"enabled": False, "enableS3": True}}})
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("enableS3 requires", result.stderr)
 

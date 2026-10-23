@@ -29,7 +29,7 @@ Users with Kubernetes access can also deploy their own applications from the ter
 
 ## Data access and sharing
 
-[PackageR](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#data-and-sharing) lets you browse workspace storage without starting a compute session. It has a permanent address when the operator enables Data ingress. A running session's **Data** tab opens the same service.
+[PackageR](https://provider-datalab.versioneer.at/latest/how-to-guides/usage_concepts/#data-and-sharing) lets you browse workspace storage without starting a compute session. Its permanent address uses the configured Gateway and hostname. A running session's Data tab opens the same service.
 
 Sign in to PackageR to browse workspace data. Public shares and presigned download links work without a Workspace account.
 
@@ -37,13 +37,11 @@ Sign in to PackageR to browse workspace data. Public shares and presigned downlo
 
 Put files in the `public` folder of the bucket named after the Datalab. For `ws-bob`, that is `s3://ws-bob/public/`. The default public share exposes this folder for browsing and downloads without sign-in. A folder named `public` in another bucket is not automatically shared.
 
-Open the `public` share from **Settings**, or use `/share/public/` on the Data hostname. You can upload files through PackageR when writes are allowed, or with your storage tools. Every file placed in this folder becomes public.
-
-For other folders or files, operators can configure named shares before PackageR starts. Shares can have passwords and expiration dates; see the [sharing guide](https://package-r.versioneer.at/latest/how-to-guides/share-and-preview-data/).
+Open the `public` share from Settings, or use `/share/public/` on the Data hostname. You can upload files through PackageR when writes are allowed, or with your storage tools. Every file placed in this folder becomes public.
 
 ### Presigned download links
 
-Use a presigned URL to send someone a single file. Select the file in PackageR, open **Info**, then select **Show** beside **Presigned URL**.
+Use a presigned URL to send someone a single file. Select the file in PackageR, open Info, then select Show beside Presigned URL.
 
 The link points directly to object storage and works without a Workspace login until it expires. The recipient must be able to reach that storage endpoint. For a public share, its download route can redirect to a fresh presigned URL; share that route when you need a link that outlives one signed URL.
 

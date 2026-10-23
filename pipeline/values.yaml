@@ -26,7 +26,7 @@ environmentconfig:
     secret: ""
     annotations: {}
   httpRoute:
-    enabled: false
+    enabled: true
     enableS3: false
     parentName: ""
     parentNamespace: ""

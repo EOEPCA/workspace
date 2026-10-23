@@ -20,7 +20,7 @@ from dotenv import dotenv_values
 # Only these fields can appear in notebook output.
 PUBLIC_KEYS = (
     "ENVIRONMENT", "OIDC_ISSUER", "EOAPI_CLIENT_ID", "WORKSPACE_CLIENT_ID",
-    "OIDC_SCOPE", "STAC_ENDPOINT", "WORKSPACE_API_ENDPOINT",
+    "OIDC_SCOPE", "STAC_ENDPOINT", "WORKSPACE_API_ENDPOINT", "WORKSPACE_DATA_DOMAIN",
 )
 
 
@@ -67,7 +67,7 @@ def load_config(path, service):
             )
     keys = {
         "eoapi": ("EOAPI_CLIENT_ID", "STAC_ENDPOINT"),
-        "workspace": ("WORKSPACE_CLIENT_ID", "WORKSPACE_API_ENDPOINT"),
+        "workspace": ("WORKSPACE_CLIENT_ID", "WORKSPACE_API_ENDPOINT", "WORKSPACE_DATA_DOMAIN"),
     }[service]
     for key in ("ENVIRONMENT", "OIDC_ISSUER", "OIDC_SCOPE", *keys):
         require_value(config, key)
@@ -147,6 +147,39 @@ def token_via_device(config, service, timeout=300):
         print("Login complete. Tokens remain in kernel memory.")
         return result
     raise TimeoutError("Device login timed out. Start login again.")
+
+
+def refresh_login(config, service, tokens):
+    """Refresh an existing login without another device prompt."""
+    if not tokens.get("refresh_token"):
+        raise ValueError("The login has no refresh token. Enable refresh tokens on the OAuth client.")
+    issuer = config["OIDC_ISSUER"]
+    response = requests.get(f"{issuer}/.well-known/openid-configuration",
+                            timeout=30, allow_redirects=False)
+    response.raise_for_status()
+    metadata = response.json()
+    if metadata.get("issuer") != issuer:
+        raise ValueError("The discovery issuer differs from OIDC_ISSUER.")
+    response = requests.post(require_https(metadata["token_endpoint"]), data={
+        "grant_type": "refresh_token",
+        "client_id": config[f"{service.upper()}_CLIENT_ID"],
+        "refresh_token": tokens["refresh_token"],
+    }, timeout=30, allow_redirects=False)
+    response.raise_for_status()
+    renewed = response.json()
+    if not renewed.get("access_token") or renewed.get("token_type", "").lower() != "bearer":
+        raise RuntimeError("Token renewal returned no Bearer access token.")
+    return {**tokens, **renewed}
+
+
+def workspace_data_url(data_domain, workspace_name):
+    """Build the permanent Data URL from the configured domain."""
+    base = urlsplit(require_https(f"https://{data_domain}"))
+    if base.path:
+        raise ValueError("WORKSPACE_DATA_DOMAIN must be a hostname without a path.")
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", workspace_name):
+        raise ValueError("The workspace name must be a DNS label.")
+    return f"https://{workspace_name}.{base.netloc}"
 
 
 class ApiSession(requests.Session):

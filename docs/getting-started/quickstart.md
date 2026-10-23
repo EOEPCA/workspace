@@ -22,7 +22,7 @@ Alice, Bob, and Eric can manage their own workspaces. For another deployment, ch
 Sign in as Oscar through the [device login in the management notebook](../workspace-management.ipynb). Use the resulting `TOKEN` to create Frank's workspace:
 
 ```bash
-curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
+curl -X POST "https://workspace-api.develop-v2.eoepca.org/workspaces" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -34,7 +34,7 @@ curl -X POST "https://workspace-api.develop.eoepca.org/workspaces" \
 The API returns the workspace URL:
 
 ```text
-https://workspace-api.develop.eoepca.org/workspaces/ws-frank
+https://workspace-api.develop-v2.eoepca.org/workspaces/ws-frank
 ```
 
 The configured prefix is `ws-`. Oscar gives the URL to Frank.
@@ -47,7 +47,7 @@ Frank opens the URL and signs in. The dashboard shows `ws-frank`, its S3 credent
 
 ## 3. Start the Datalab
 
-Click **Open Datalab**. The session opens a code editor with Terminal, Editor, and Data tabs.
+Click Open Datalab. The session opens a code editor with Terminal, Editor, and Data tabs.
 
 ![Open the Datalab](../img/q2.png)
 
@@ -95,7 +95,7 @@ To use a shared MLflow server, apply the manifest from the Provider Datalab [add
 
 ![Deploy MLflow](../img/q8.png)
 
-Forward the service port and open it from the editor's **Ports** tab:
+Forward the service port and open it from the editor's Ports tab:
 
 ```bash
 kubectl port-forward svc/mlflow 5000:5000
@@ -117,7 +117,7 @@ uv run python train.py
 
 ![MLflow experiment results](../img/q12.png)
 
-Find the model in Frank's bucket on the **Data** tab. Create a [presigned link](../concepts.md#storage) to share it.
+Find the model in Frank's bucket on the Data tab. Create a [presigned link](../concepts.md#storage) to share it.
 
 ![Share a model artifact](../img/q13.png)
 
@@ -134,7 +134,7 @@ Frank adds Alice as a member of `ws-frank`. She can open the workspace, view its
 
 ![Add Alice to the workspace](../img/q16.png)
 
-Frank selects **Request Access** for `ws-eric-shared`. Eric approves the request, and Frank can then use his existing workspace credentials to read the reference data.
+Frank selects Request Access for `ws-eric-shared`. Eric approves the request, and Frank can then use his existing workspace credentials to read the reference data.
 
 ![Request access to Eric's bucket](../img/q17.png)
 
@@ -345,7 +345,7 @@ kubectl run pgstac-migrate -it --rm \
   --command -- sh -lc 'pypgstac migrate'
 ```
 
-Forward the API port and open it from the editor's **Ports** tab:
+Forward the API port and open it from the editor's Ports tab:
 
 ```bash
 kubectl port-forward svc/stac-api 8080:8080
@@ -374,7 +374,7 @@ Frank reads Eric's reference data and sends Bob a `.gpkg` file with the geometry
 
 Bob selects the ground-truth data and copies it to `ws-frank-stagein`. He can use `aws s3 sync` or `rclone sync` from his Datalab.
 
-Alice opens [Frank's workspace](https://workspace-api.develop.eoepca.org/workspaces/ws-frank) and works with him in the Datalab. When the results are ready, Frank copies them from `ws-frank` to `ws-frank-publish`.
+Alice opens Frank's workspace and works with him in the Datalab. When the results are ready, Frank copies them from `ws-frank` to `ws-frank-publish`.
 
 ## Storage manifests
 

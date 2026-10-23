@@ -10,7 +10,7 @@ flowchart TD
     S --> SC[Provider Storage composition]
     D --> DC[Provider Datalab composition]
     SC --> B[S3 backend]
-    DC --> E[Educates runtime]
+    DC --> E[Workspace sessions]
     DC --> K[Keycloak groups, clients, and roles]
 ```
 
@@ -18,7 +18,7 @@ flowchart TD
 
 The compositions use providers for Kubernetes, Helm, Keycloak, and the storage backend. Provider Storage creates buckets, storage identities, policies, and credential Secrets. It supports MinIO, AWS S3, and OTC OBS.
 
-Provider Datalab creates the Educates environment and the workspace's Keycloak resources. It makes storage credentials available to sessions and manages any backing services configured on the Datalab.
+Provider Datalab creates the workspace session environment and the workspace's Keycloak resources. It makes storage credentials available to sessions and manages any backing services configured on the Datalab.
 
 Crossplane reconciles changes to these resources. Operators can also write the manifests directly or manage them through GitOps. Avoid having the Workspace API and GitOps write the same fields.
 

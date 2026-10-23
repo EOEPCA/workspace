@@ -8,13 +8,13 @@ Install Crossplane v2 and the providers and functions required by your Storage a
 
 Install Kyverno and use a network plugin that enforces `NetworkPolicy`. See [operational controls](../design/operational-controls.md) for the runtime limits.
 
-## Educates settings
+## Workspace settings
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `clusterIngressDomain` | string | Base domain for Educates sessions, for example `ngx.develop.eoepca.org`. |
-| `clusterIngressClass` | string | Educates ingress class, for example `nginx`. |
-| `tlsCertificateRef.name` | string | Name of the TLS secret used for Educates ingress. |
+| `clusterIngressDomain` | string | Base domain for workspace sessions, for example `ngx.develop.eoepca.org`. |
+| `clusterIngressClass` | string | workspace session ingress class, for example `nginx`. |
+| `tlsCertificateRef.name` | string | Name of the TLS secret used for workspace session ingress. |
 | `tlsCertificateRef.namespace` | string | Namespace of the TLS secret, for example `workspace`. |
 
 ## Pipeline settings
@@ -30,12 +30,9 @@ Use `datalab.package` and `storage.package` to select other package tags.
 | `environmentconfig.iam.issuerURL` | string | Public Keycloak realm URL for login. |
 | `environmentconfig.iam.internalURL` | string | Keycloak realm URL reachable from the cluster. |
 | `environmentconfig.iam.extraAudiences` | array | Extra token audiences for generated workspace clients, for example `workspace-api`. |
-| `environmentconfig.ingress.enabled` | bool | Create an OAuth-protected Data ingress for each Datalab. Default: `false`. |
-| `environmentconfig.ingress.class` | string | Ingress class, for example `nginx`. |
+| `environmentconfig.ingress.enabled` | bool | Keep `false` for Gateway routing. Default: `false`. |
 | `environmentconfig.ingress.domain` | string | Base domain for Workspace UIs and services. |
-| `environmentconfig.ingress.secret` | string | TLS secret for Workspace ingresses. |
-| `environmentconfig.ingress.annotations` | object | Annotations for Data ingresses. |
-| `environmentconfig.httpRoute.enabled` | bool | Create Data HTTPRoutes. Default: `false`. Use either this option or `ingress.enabled`. |
+| `environmentconfig.httpRoute.enabled` | bool | Create Data HTTPRoutes. Default: `true`. |
 | `environmentconfig.httpRoute.enableS3` | bool | Enable the experimental S3 read endpoint on the Data hostname. Requires `httpRoute.enabled`. Default: `false`. |
 | `environmentconfig.httpRoute.parentName` | string | Gateway name for the Data HTTPRoutes. |
 | `environmentconfig.httpRoute.parentNamespace` | string | Namespace of that Gateway. |
@@ -55,7 +52,7 @@ Use `datalab.package` and `storage.package` to select other package tags.
 | `environmentconfig.network.podCIDRs` | array | Cluster Pod CIDRs. |
 | `environmentconfig.network.blacklistIPs` | array | CIDRs excluded from generated external egress, for example metadata endpoints. |
 | `environmentconfig.network.excludePolicies` | array | Generated NetworkPolicy names to skip. |
-| `environmentconfig.packages` | array | Extension packages for Educates sessions. |
+| `environmentconfig.packages` | array | Extension packages for workspace sessions. |
 | `environmentconfig.defaults.quota.memory` | string | Default session memory quota. Provider default: `2Gi`. |
 | `environmentconfig.defaults.quota.storage` | string | Default session PVC size. Provider default: `1Gi`. |
 | `environmentconfig.defaults.quota.budget` | string | Default resource budget, such as `small`, `medium`, or `large`. Provider default: `medium`. |
@@ -91,10 +88,14 @@ environmentconfig:
     extraAudiences:
       - workspace-api
   ingress:
+    enabled: false
+    domain: lab.example.org
+  httpRoute:
     enabled: true
-    class: nginx
-    domain: ws.example.org
-    secret: workspace-tls
+    parentName: public
+    parentNamespace: gateway
+    sectionName: workspaces-https
+    httpSectionName: http
   storage:
     endpoint: https://s3.example.org
     forcePathStyle: true
@@ -140,19 +141,12 @@ See [network access](../design/operational-controls.md#network-access) for the e
 
 ## Use a Gateway
 
-For the permanent Data endpoint, choose either Ingress or HTTPRoutes. To use HTTPRoutes, disable `ingress.enabled` and set the Gateway listeners below. Both options need `iam.issuerURL`, `iam.internalURL`, and `ingress.domain`. Educates session ingress has separate settings.
+Gateway routing is the default: `httpRoute.enabled: true` and `ingress.enabled: false`. Set the Gateway listeners as shown in the example above, along with `iam.issuerURL`, `iam.internalURL`, and `ingress.domain`. Workspace session ingress has separate settings.
+
+For external PostgreSQL access, set the TLS passthrough listener separately:
 
 ```yaml
 environmentconfig:
-  ingress:
-    enabled: false
-  httpRoute:
-    enabled: true
-    enableS3: true
-    parentName: public
-    parentNamespace: gateway
-    sectionName: workspaces-https
-    httpSectionName: http
   database:
     tlsRoute:
       parentName: public

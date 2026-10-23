@@ -93,7 +93,7 @@ For API calls, add the API audience through `EnvironmentConfig.data.iam.extraAud
 
 ## Route protection
 
-The platform gateway must protect the shared Workspace UI and Educates session routes. Check the workspace roles in `resource_access.<workspace>.roles` before forwarding a request.
+The platform gateway must protect the shared Workspace UI and workspace session routes. Check the workspace roles in `resource_access.<workspace>.roles` before forwarding a request.
 
 Provider Datalab supplies OAuth protection for the permanent Data endpoint. Configure its issuer URLs in the [chart values](../getting-started/installation.md).
 

@@ -19,7 +19,6 @@ nav:
       - design/iam-integration.md
       - design/operational-controls.md
     - API References:
-      - Workspace API ↗: https://workspace-api.develop.eoepca.org/docs
       - Storage CRD ↗: https://provider-storage.versioneer.at/latest/reference-guides/api/
       - Datalab CRD ↗: https://provider-datalab.versioneer.at/latest/reference-guides/api/
 
