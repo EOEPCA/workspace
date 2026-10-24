@@ -5,7 +5,8 @@ Helm chart sources, documentation, and examples for the EOEPCA Workspace Buildin
 - [Documentation](https://eoepca.readthedocs.io/projects/workspace/)
 - [Installation and chart settings](docs/getting-started/installation.md)
 - [Quickstart](docs/getting-started/quickstart.md)
-- [Workspace Management notebook](docs/workspace-management.ipynb)
+- [Notebook guide and checked outcomes](docs/usage/notebook-guide.md)
+- [Concepts](docs/concepts.md)
 - [Workspace API source](https://github.com/EOEPCA/rm-workspace-api/)
 
 ## Local checks
@@ -16,7 +17,13 @@ helm template workspace-pipeline pipeline
 uv run --no-project --with pyyaml python -m unittest discover -s tests
 ```
 
-To preview the documentation:
+To build the documentation and check links within it:
+
+```bash
+uv run --no-project --with-requirements docs/requirements.txt mkdocs build --strict
+```
+
+To preview it locally:
 
 ```bash
 uv run --no-project --with-requirements docs/requirements.txt mkdocs serve

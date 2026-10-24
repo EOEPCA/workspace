@@ -7,14 +7,15 @@ nav:
   - EOEPCA Documentation: https://eoepca.readthedocs.io/
   - Workspace:
     - Overview: index.md
-    - Management: workspace-management.ipynb
     - Concepts: concepts.md
     - Getting Started:
-      - Installation: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
-      - Vienna imagery with STAC and S3: getting-started/vienna-stac-s3.ipynb
-      - Register STAC metadata: getting-started/cng-resource-registration.ipynb
-    - Design:
+      - Notebook guide: usage/notebook-guide.md
+      - Workspace Management: workspace-management.ipynb
+      - Vienna imagery with STAC and S3: getting-started/vienna-imagery-with-stac-and-s3.ipynb
+      - Register STAC metadata: getting-started/register-stac-metadata.ipynb
+    - For Operators:
+      - Installation: getting-started/installation.md
       - design/architecture.md
       - design/iam-integration.md
       - design/operational-controls.md
@@ -43,6 +44,9 @@ theme:
 extra_css:
   - css/eoepca.css
 
+hooks:
+  - docs/notebook_links.py
+
 plugins:
   - search
   - autorefs
@@ -51,6 +55,7 @@ plugins:
       ignore_h1_titles: true
       ignore:
         - notebook_support.py
+        - notebook_links.py
 
 markdown_extensions:
   - tables

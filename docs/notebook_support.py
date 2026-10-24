@@ -1,4 +1,4 @@
-"""Support for the EOEPCA demo Workspace Management notebook.
+"""Support for the Workspace notebooks.
 
 Adapted from EOEPCA/demo, demoroot/notebooks/notebook_support.py.
 """
@@ -7,9 +7,14 @@ import base64
 import hashlib
 import io
 import json
+import os
 import re
 import secrets
+import shutil
+import subprocess
+import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlsplit
 
@@ -165,11 +170,26 @@ def refresh_login(config, service, tokens):
         "client_id": config[f"{service.upper()}_CLIENT_ID"],
         "refresh_token": tokens["refresh_token"],
     }, timeout=30, allow_redirects=False)
+    if response.status_code == 400 and response.json().get("error") == "invalid_grant":
+        raise RuntimeError("Login expired. Run the device sign-in cell again.")
     response.raise_for_status()
     renewed = response.json()
     if not renewed.get("access_token") or renewed.get("token_type", "").lower() != "bearer":
         raise RuntimeError("Token renewal returned no Bearer access token.")
     return {**tokens, **renewed}
+
+
+def login_workspace_as(config, username):
+    """Use device login and check the selected account."""
+    import jwt
+
+    print(f"Sign in as {username} in a fresh private browser window.")
+    tokens = token_via_device(config, "workspace")
+    claims = jwt.decode(tokens["access_token"], options={"verify_signature": False})
+    if claims.get("preferred_username") != username:
+        raise ValueError(f"Wrong account. Sign in again as {username}.")
+    print(f"Signed in as {username}.")
+    return tokens
 
 
 def workspace_data_url(data_domain, workspace_name):
@@ -212,6 +232,25 @@ def wait_for_workspace(api, url, headers, timeout=600, interval=10):
             raise RuntimeError(f"Workspace creation stopped with status: {status}.")
         time.sleep(min(interval, max(0, deadline - time.monotonic())))
     raise TimeoutError("Workspace creation did not finish. Check the workspace before you retry.")
+
+
+def wait_for_data(session, data_url, timeout=600, interval=10):
+    """Wait for the public Data route without disabling TLS checks."""
+    deadline = time.monotonic() + timeout
+    print("Waiting for the Data endpoint...")
+    while time.monotonic() < deadline:
+        try:
+            response = session.get(f"{data_url}/share/public/", timeout=15,
+                                   allow_redirects=False)
+            if response.status_code == 200:
+                print("Data endpoint ready.")
+                return
+            if response.status_code not in {404, 502, 503, 504}:
+                raise RuntimeError(f"Data endpoint returned HTTP {response.status_code}.")
+        except (requests.ConnectionError, requests.Timeout):
+            pass
+        time.sleep(min(interval, max(0, deadline - time.monotonic())))
+    raise TimeoutError("Data endpoint did not become ready. Check its route and workloads.")
 
 
 def image_type(content):
@@ -290,3 +329,151 @@ def public_file_url(base_url, filename):
 def verify_download(response, expected_digest):
     if hashlib.sha256(response.content).hexdigest() != expected_digest:
         raise ValueError("The shared file differs from the uploaded file.")
+
+
+@contextmanager
+def aws_cli(endpoint, workspace, token, region="us-east-1"):
+    """Run AWS commands with the workspace device token and temporary settings."""
+    executable = shutil.which("aws")
+    if not executable:
+        raise FileNotFoundError("Install the AWS CLI to run this step.")
+    with tempfile.TemporaryDirectory(prefix="test-") as directory:
+        config = Path(directory) / "config"
+        config.write_text("[default]\ns3 =\n    addressing_style = path\n")
+        environment = {
+            "AWS_CONFIG_FILE": str(config),
+            "AWS_SHARED_CREDENTIALS_FILE": "/dev/null",
+            "AWS_ACCESS_KEY_ID": workspace,
+            "AWS_SECRET_ACCESS_KEY": workspace,
+            "AWS_SESSION_TOKEN": token,
+            "AWS_EC2_METADATA_DISABLED": "true",
+            "AWS_REQUEST_CHECKSUM_CALCULATION": "when_required",
+            "AWS_RESPONSE_CHECKSUM_VALIDATION": "when_required",
+            "AWS_PAGER": "",
+        }
+
+        def command(*arguments):
+            result = subprocess.run(
+                [executable, "--endpoint-url", endpoint, "--region", region, *arguments],
+                env=environment, capture_output=True, text=True,
+            )
+            if result.returncode:
+                raise RuntimeError(f"AWS CLI failed: {result.stderr.strip()}")
+            print(result.stdout.strip())
+
+        try:
+            yield command
+        finally:
+            environment.clear()
+
+
+def require_environment(*names: str) -> None:
+    missing = [name for name in names if not os.getenv(name)]
+    if missing:
+        raise RuntimeError(
+            "Set these runtime settings before running this cell: "
+            f"{', '.join(missing)}"
+        )
+
+
+def run(
+    command: list[str],
+    *,
+    input_text: str | None = None,
+    attempts: int = 1,
+) -> subprocess.CompletedProcess:
+    for attempt in range(1, attempts + 1):
+        try:
+            completed = subprocess.run(
+                command,
+                input=input_text,
+                text=True,
+                check=True,
+                capture_output=True,
+            )
+            break
+        except subprocess.CalledProcessError as error:
+            if attempt < attempts:
+                time.sleep(2 ** (attempt - 1))
+                continue
+            detail = (error.stderr or error.stdout or "").strip()
+            raise RuntimeError(
+                f"Command failed ({' '.join(command)}): {detail}"
+            ) from error
+    if completed.stdout.strip():
+        print(completed.stdout.strip())
+    return completed
+
+
+def pipe(
+    first: list[str],
+    second: list[str],
+    *,
+    input_text: str | None = None,
+) -> None:
+    with subprocess.Popen(
+        first,
+        stdin=subprocess.PIPE if input_text is not None else None,
+        stdout=subprocess.PIPE,
+    ) as producer:
+        assert producer.stdout is not None
+        consumer = subprocess.Popen(
+            second,
+            stdin=producer.stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        producer.stdout.close()
+        if input_text is not None:
+            assert producer.stdin is not None
+            try:
+                producer.stdin.write(input_text.encode("utf-8"))
+            except BrokenPipeError:
+                pass
+            finally:
+                producer.stdin.close()
+        consumer_stdout, consumer_stderr = consumer.communicate()
+        producer_status = producer.wait()
+    if producer_status:
+        raise subprocess.CalledProcessError(producer_status, first)
+    if consumer.returncode:
+        detail = consumer_stderr.decode().strip()
+        raise RuntimeError(f"Command failed ({' '.join(second)}): {detail}")
+    if consumer_stdout:
+        print(consumer_stdout.decode().strip())
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def kubectl_apply(manifest: str, *, attempts: int = 5) -> None:
+    for attempt in range(1, attempts + 1):
+        completed = subprocess.run(
+            ["kubectl", "apply", "-f", "-"],
+            input=manifest,
+            text=True,
+            capture_output=True,
+        )
+        if completed.returncode == 0:
+            print(completed.stdout.strip())
+            return
+        if attempt < attempts:
+            time.sleep(2 ** (attempt - 1))
+    raise RuntimeError(
+        f"kubectl apply failed after {attempts} attempts: "
+        f"{completed.stderr.strip()}"
+    )
+
+
+def render_manifest(template: str, values: dict[str, str]) -> str:
+    rendered = template
+    for name, value in values.items():
+        rendered = rendered.replace(f"{{{{{name}}}}}", json.dumps(value))
+    if "{{" in rendered or "}}" in rendered:
+        raise ValueError("Unresolved manifest template value")
+    return rendered

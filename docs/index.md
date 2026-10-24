@@ -1,21 +1,17 @@
 # Workspace
 
-A workspace gives a team S3 buckets and a Datalab where they can write and run code. Use the Workspace UI to add members, manage buckets, and start a session.
+A workspace gives a team object storage, shared services, and browser sessions for code. Use the dashboard to open storage and sessions. Use the management page to add members, buckets, and services.
 
-<div align="center">
-  <a href="img/ui1.png" target="_blank">
-    <img src="img/ui1.png" height="250" alt="Workspace dashboard"/>
-  </a>
-</div>
+The Datalab has an editor and terminal. Its Data tab opens PackageR, the storage browser. With a permanent Data address, you can browse and share files without starting a compute session.
 
-The Datalab opens in your browser. Use its editor and terminal to work on code, and the Data tab to open PackageR.
+## Start here
 
-<div align="center">
-  <a href="img/ui4.png" target="_blank">
-    <img src="img/ui4.png" height="250" alt="PackageR in the Datalab Data tab"/>
-  </a>
-</div>
+Follow the [quickstart](getting-started/quickstart.md) to create a test workspace and run the three notebooks. The [notebook guide](usage/notebook-guide.md) explains what each example demonstrates and checks.
 
-Follow the [quickstart](getting-started/quickstart.md) to work through a team project. For API calls for operators or end users, open the [Workspace Management notebook](workspace-management.ipynb). The [concepts](concepts.md) page explains buckets, sessions, and membership.
+For an existing workspace, [Concepts](concepts.md) explains storage identities, bucket grants, and public shares, with steps for managing members, buckets, sessions, and services.
 
-To set up a deployment, see [installation](getting-started/installation.md). Operators can set [runtime and network limits](design/operational-controls.md) and configure [login and roles](design/iam-integration.md).
+## Set up the service
+
+Operators can use [installation](getting-started/installation.md) for the charts and shared settings, [IAM integration](design/iam-integration.md) for login and roles, and [operational controls](design/operational-controls.md) for sessions and network access.
+
+The [architecture](design/architecture.md) page shows how the API, Crossplane packages, and runtime services fit together.

@@ -1,31 +1,39 @@
 # Architecture
 
-The Workspace API writes `Storage` and `Datalab` resources to Kubernetes. Crossplane compositions create and maintain the resources they describe.
+The Workspace API manages `Storage` and `Datalab` resources in Kubernetes. Crossplane runs their compositions to create and update storage, identity resources, sessions, and services.
 
 ```mermaid
 flowchart TD
-    UI[Workspace UI] --> API[Workspace API]
+    UI[Workspace dashboard and management] --> API[Workspace API]
     API --> S[Storage resource]
     API --> D[Datalab resource]
-    S --> SC[Provider Storage composition]
-    D --> DC[Provider Datalab composition]
-    SC --> B[S3 backend]
-    DC --> E[Workspace sessions]
-    DC --> K[Keycloak groups, clients, and roles]
+    S --> PS[Provider Storage]
+    PS --> B[S3 buckets and storage identities]
+    D --> PD[Provider Datalab]
+    PD --> IAM[Keycloak clients, groups, and roles]
+    PD --> DATA[Shared Data service]
+    PD --> SESSION[Named Datalab sessions]
+    PD --> STORES[Optional managed stores]
 ```
 
-## Compositions
+## Storage and runtime
 
-The compositions use providers for Kubernetes, Helm, Keycloak, and the storage backend. Provider Storage creates buckets, storage identities, policies, and credential Secrets. It supports MinIO, AWS S3, OTC OBS, OVHcloud, and CloudFerro.
+Provider Storage creates buckets, storage identities, policies, and credential Secrets. Backend compositions support MinIO, AWS S3, OTC OBS, OVHcloud, and CloudFerro.
 
-Provider Datalab creates the workspace session environment and the workspace's Keycloak resources. It makes storage credentials available to sessions and manages any backing services configured on the Datalab.
+Provider Datalab uses those storage credentials. It creates the shared Data service, requested stores, and the declared sessions. A session has its own home volume and can have a virtual Kubernetes control plane. Shared Data and managed stores can run while sessions are stopped.
 
-Crossplane reconciles changes to these resources. Operators can also write the manifests directly or manage them through GitOps. Avoid having the Workspace API and GitOps write the same fields.
+The API and UI run as separate components from the composition packages. The pipeline chart installs the Storage and Datalab packages and their shared configuration. It does not deploy the Workspace API or UI.
 
 ## Shared configuration
 
-An `EnvironmentConfig` holds settings used by the compositions: domains, TLS Secret names, storage endpoints, and Keycloak realm URLs. Storage and Datalab resources select it through labels or annotations.
+An `EnvironmentConfig` holds the domain, IAM, storage, network, and default resource settings used by the compositions. A resource selects it with its environment annotation or label.
 
-The pipeline chart installs the two composition packages and creates the EnvironmentConfig. See [installation](../getting-started/installation.md) for package selection, values, and environment labels.
+The pipeline chart creates one EnvironmentConfig, named `datalab` by default. Educates has separate installation values for the session ingress domain, class, and TLS Secret. Those values must match the Datalab environment settings. See [installation](../getting-started/installation.md).
 
-The platform gateway validates login tokens before forwarding requests to the Workspace API. [IAM integration](iam-integration.md) describes the clients and permissions. [Operational controls](operational-controls.md) covers runtime isolation and network rules.
+Crossplane updates resources from the declared configuration. An operator can use GitOps or the Workspace API to manage that configuration. Assign each field to one writer so the API and GitOps do not replace each other's changes.
+
+## Request paths
+
+The platform gateway protects the Workspace API and browser session routes. The permanent Data endpoint has its own OAuth protection. Public shares and authenticated Data S3 reads use separate routes on the Data hostname.
+
+Workloads created inside a vCluster still run on the host cluster. The host controls their network access, admission rules, and public routes. [IAM integration](iam-integration.md) describes token checks; [operational controls](operational-controls.md) describes the Workspace settings.

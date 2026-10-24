@@ -1,43 +1,54 @@
 # Operational controls
 
+Workspace settings control session resources and access. The platform operator manages the host cluster, public routing, and storage services.
+
 ## Sessions
 
-In `Auto` mode, sessions start on demand and background jobs stop them when inactive. `AlwaysOn` keeps sessions running. Sessions can also be disabled.
+The Workspace API's `SESSION_MODE` sets the initial default session for a new workspace:
 
-Files on persistent volumes and data in object storage remain after a session stops. Choose the inactivity criteria and storage sizes for the work the team needs to run.
+| Value | Initial state |
+| --- | --- |
+| `auto` | Declare `default` as `stopped`; opening its Datalab link starts it. |
+| `on` | Declare `default` as `started`. |
+| `off` | Do not declare a default session. |
+
+Automatic shutdown needs an operator job or policy. The API does not stop idle sessions by itself.
+
+A stopped session keeps its home PVC. Object storage and shared Data or database services have separate lifecycles. Set `spec.quota` for session memory, volume size, and budget. `spec.overallQuota.storage` limits requested PVC storage in the Datalab environment namespace; it does not cover object storage or PVCs in other namespaces.
 
 ## Kubernetes access
 
-Namespace mode uses the host cluster's control plane. RBAC and namespace policies limit the user's access.
+Namespace mode uses the host control plane and a session namespace role. In vCluster mode, each started session gets a virtual Kubernetes control plane. Its workloads still use host-cluster nodes and remain subject to host policies.
 
-In vCluster mode, each started session gets its own Kubernetes control plane. Include its CPU, memory, and state volume when sizing the host cluster.
-
-Use RBAC to limit which resources users can create. Admission policies can block privileged Pods and `hostPath` volumes. `LimitRange` and `ResourceQuota` set namespace limits.
-
-The generated admission policies need Kyverno. See the provider's [sandbox controls](https://provider-datalab.versioneer.at/latest/security/sandbox-controls/) for the policy definitions.
+Use `spec.security` to select the Pod security level, Kubernetes token access, namespace role, and external egress. Omitted fields use `EnvironmentConfig.data.defaults.security`, then provider defaults. Configure the host's admission policies and resource limits separately.
 
 ## Network access
 
-The cluster network plugin must enforce Kubernetes NetworkPolicy. A connection is allowed if any policy permits it.
+The network plugin must enforce Kubernetes NetworkPolicy. Policies add their allowed connections together.
 
-| Policy | Created when | Purpose |
+| Generated policy | Created when | Allows |
 | --- | --- | --- |
-| `deny-egress` | Always | Deny outbound traffic unless another policy allows it. |
-| `allow-namespace-egress` | Always | Allow traffic within the namespace. |
-| `allow-internal-egress` | `network.internalEgress` has entries | Allow selected services in other namespaces. |
-| `allow-dns-egress` | `defaults.security.externalEgress` is enabled | Allow DNS traffic under the configured rules. |
-| `allow-external-egress` | `defaults.security.externalEgress` is enabled | Allow the configured external CIDRs. |
+| `deny-egress` | By default | No outbound traffic on its own. |
+| `allow-namespace-egress` | By default | Pods in the same runtime namespace. |
+| `allow-vcluster-egress` | vCluster is enabled | The session's virtual API. |
+| `allow-dns-egress` | External egress, vCluster, or Data is enabled | Cluster DNS. |
+| `allow-external-egress` | External egress is enabled and external CIDRs are set | The configured external CIDRs, with exclusions. |
+| `allow-internal-egress` | Valid `network.internalEgress` entries exist | Selected Pods and ports in other namespaces. |
 
-Use `network.internalEgress` for exceptions to selected services in other namespaces. Each entry needs a namespace, Pod selector, and ports.
+The per-Datalab `spec.security.externalEgress` setting overrides the environment default. An empty external CIDR list creates no broad external allow rule.
 
-Set external CIDRs and exclusions in the EnvironmentConfig. Exclude the cluster Service and Pod CIDRs from broad external rules.
+Set the cluster Service and Pod CIDRs and any blocked ranges in the EnvironmentConfig. The provider excludes them from broad external rules. Use `network.internalEgress` for selected storage, identity, and other platform services.
 
-The provider-datalab [installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/) describes the generated rules.
+`network.excludePolicies` can omit generated policies by name. Data services also have their own policies. Check the policies actually installed in each namespace when testing a connection.
 
-## Ingress
+## Data and public routes
 
-Manage public routes in the host cluster, including routes to vCluster services. Configure Gateway listeners in the [installation values](../getting-started/installation.md#example-values) and route authentication as described in [IAM integration](iam-integration.md#route-protection).
+`spec.data.enabled` defaults to `true` and cannot change after Datalab creation. Set it when creating the resource. `spec.data.readOnlyMount` controls Data browser permissions; storage IAM still controls object access. The optional Data S3 endpoint is always read only.
+
+Manage public routes in the host cluster. For a permanent Data address, the public load balancer must reach the selected Gateway listener, and that listener must terminate TLS. Storage can be ready before the Data workload and its route are ready.
+
+See [installation](../getting-started/installation.md#example-values) for routing values and [IAM integration](iam-integration.md#route-protection) for authentication.
 
 ## Persistent data
 
-Use persistent volumes for session files and vCluster state. Shared volumes need the configured access mode, such as `ReadWriteMany`. Back up session volumes, object storage, and databases according to their retention requirements.
+Session files use PVCs; datasets use object storage; managed stores have their own volumes. Stopping a session keeps its home volume. See [Operations](https://eoepca.readthedocs.io/projects/operations/) for backups, retention, host security, and platform recovery.

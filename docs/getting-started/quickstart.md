@@ -1,490 +1,91 @@
 # Quickstart
 
-Create a workspace for Frank, share data with his team, and run MLflow and a STAC API in the Datalab.
+Create a test workspace, publish images, and serve STAC metadata. Use the same workspace for all three notebooks.
 
 ## Environment assumptions
 
-This guide uses the `eoepca-demo` cluster. Set up the [example accounts and permissions](https://github.com/EOEPCA/workspace/tree/main/setup), including the user `frank`, before starting.
+These examples use `eoepca-demo`. The repository includes public service settings in `eoepca-demo.env` and a three-Item sample in `docs/catalog.v1.parquet`.
 
-| Setting | Example value |
+| Requirement | Used for |
 | --- | --- |
-| Object storage | MinIO |
-| Session mode | `Auto`; `AlwaysOn` also works |
-| Runtime | vCluster enabled with `vcluster: true`; namespace mode also works |
-| Users | `alice`, `bob`, `eric`, and `frank` |
-| Administrator | `oscar`, with the `admin` role on `workspace-api` |
-| Existing workspaces | `ws-alice`, `ws-bob`, and `ws-eric` |
+| `alice` and `oscar` accounts | Alice owns the workspace; Oscar has the `workspace-api` platform `admin` role and creates it. |
+| Storage and a permanent Data address | Upload files, browse public shares, and download data. |
+| Data S3 endpoint enabled | Run the authenticated S3 and AWS CLI steps. |
+| Datalab with vCluster and registry | Run the STAC registration notebook. |
 
-Alice, Bob, and Eric can manage their own workspaces. For another deployment, change the account names, workspace names, service URLs, and OAuth settings.
+An operator sets up the [accounts and roles](https://github.com/EOEPCA/workspace/tree/main/setup) and [installs Workspace](installation.md). For another deployment, change the service settings and account names.
 
-## 1. Create Frank's workspace
+## 1. Create a workspace
 
-Sign in as Oscar through the [device login in the management notebook](../workspace-management.ipynb). Use the resulting `TOKEN` to create Frank's workspace:
+From the repository root:
 
 ```bash
-curl -X POST "https://workspace-api.develop-v2.eoepca.org/workspaces" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "preferred_name": "frank",
-    "default_owner": "frank"
-  }'
+uv sync
+uv run jupyter lab docs/workspace-management.ipynb
 ```
 
-The API returns the workspace URL:
+Run [Workspace Management](../workspace-management.ipynb). Sign in as Alice with device login, then as Oscar when the notebook asks for an administrator.
 
-```text
-https://workspace-api.develop-v2.eoepca.org/workspaces/ws-frank
+The notebook creates `ws-test-<UTC timestamp>`, waits for storage, and refreshes Alice's token to load her workspace roles. Copy the printed workspace name for the other notebooks.
+
+The API returns a name, for example:
+
+```json
+{"name": "ws-test-20261024071434"}
 ```
 
-The configured prefix is `ws-`. Oscar gives the URL to Frank.
+The dashboard address is `WORKSPACE_API_ENDPOINT/<workspace-name>`. The API adds the configured `ws-` prefix to the preferred name.
 
 ## 2. Open the workspace
 
-Frank opens the URL and signs in. The dashboard shows `ws-frank`, its S3 credentials, and links to the Datalab and management pages.
+Open the dashboard link as Alice. It shows the storage connection and available sessions. Open a Datalab session to use its editor, terminal, and Data tab.
 
-![Frank's workspace dashboard](../img/q1.png)
+[![Alice's workspace dashboard, with storage status, her membership, and the workspace bucket](../img/quickstart/dashboard.png)](../img/quickstart/dashboard.png)
 
-## 3. Start the Datalab
+In on-demand mode, opening a stopped session starts it. Storage and the permanent Data service can be available before the session starts. The notebook waits separately for storage and the public Data route.
 
-Click Open Datalab. The session opens a code editor with Terminal, Editor, and Data tabs.
+Use **Management → Sessions** to check the `default` session:
 
-![Open the Datalab](../img/q2.png)
+[![Sessions tab showing the default Datalab session in the started state](../img/quickstart/sessions.png)](../img/quickstart/sessions.png)
 
-![Datalab editor](../img/q3.png)
+Workspace Management uploads the sample catalogue and six preview images. It checks each image through an expiring S3 link, then through a permanent public-share link. Both downloads must match the uploaded bytes.
 
-List the buckets and Frank's objects from the terminal:
+## 3. Publish and read satellite images
 
-```bash
-aws s3 ls
-aws s3 ls s3://ws-frank --recursive
-```
+Open [Vienna imagery with STAC and S3](vienna-imagery-with-stac-and-s3.ipynb) and enter the workspace name from step 1.
 
-![List S3 buckets](../img/q4.png)
+The notebook:
 
-![List objects in Frank's bucket](../img/q5.png)
+1. Crops three Sentinel-2 images over Vienna and creates previews.
+2. Uploads those files and a STAC GeoParquet catalogue.
+3. Reads the published STAC items and public image links.
+4. Uses device login for authenticated S3 reads and the AWS CLI.
+5. Checks a byte-range read and compares download checksums.
 
-## 4. Run MLflow
+Existing objects with matching checksums are kept. A different file at the same key stops the upload.
 
-Frank uses MLflow to track experiments and store model artifacts in `ws-frank`. Clone the example project:
+Open `/share/public/` on the Data hostname to browse the published files:
 
-```bash
-git clone https://github.com/mlflow/mlflow-example
-cd mlflow-example
-```
+[![Public Data browser showing the Vienna image folder and STAC catalogue](../img/quickstart/public-data.png)](../img/quickstart/public-data.png)
 
-![MLflow example project](../img/q6.png)
+## 4. Register metadata without copying the rasters
 
-Convert the Conda dependencies to use `uv`, then run the example locally:
+Start the workspace's `default` Datalab session. Open [Register STAC metadata](register-stac-metadata.ipynb) in that session and set its workspace name as described there.
 
-```bash
-yq eval -o=json '.dependencies[]' conda.yaml | jq -r '
-  if type=="string" then .
-  elif has("pip") then .pip[]
-  else empty end
-' > requirements.txt
+The notebook selects three STAC items from DLR's Geoservice, builds an OCI metadata package, and starts a STAC API in the session's vCluster. It checks the package after each transfer. The raster files remain at the source.
 
-uv venv
-uv pip install -r requirements.txt
-uv run python train.py
-```
+The notebooks leave the workspace, uploaded files, and OCI package available for inspection.
 
-![Run the training example](../img/q7.png)
+## 5. Work with a team
 
-To use a shared MLflow server, apply the manifest from the Provider Datalab [additional services guide](https://provider-datalab.versioneer.at/latest/how-to-guides/additional_services/). The Datalab already has `kubectl` configured for its cluster.
+Use the management page to add members and manage bucket access. Members use the workspace's storage identity. To use a bucket owned by another workspace, request access and have its owner approve the grant.
 
-![Deploy MLflow](../img/q8.png)
+[![Members tab showing Alice as the workspace owner](../img/quickstart/members.png)](../img/quickstart/members.png)
 
-Forward the service port and open it from the editor's Ports tab:
-
-```bash
-kubectl port-forward svc/mlflow 5000:5000
-```
-
-![Forward the MLflow port](../img/q9.png)
-
-![MLflow in the browser](../img/q10.png)
-
-Point the training script at that server and run it again:
-
-```bash
-export MLFLOW_TRACKING_URI="http://localhost:5000"
-export MLFLOW_EXPERIMENT_NAME="frank-experiment-1"
-uv run python train.py
-```
-
-![Train against the shared server](../img/q11.png)
-
-![MLflow experiment results](../img/q12.png)
-
-Find the model in Frank's bucket on the Data tab. Create a [presigned link](../concepts.md#storage) to share it.
-
-![Share a model artifact](../img/q13.png)
-
-## 5. Set up buckets and team access
-
-Frank creates two more buckets:
-
-- `ws-frank-stagein` for data that Bob prepares.
-- `ws-frank-publish` for finished datasets.
-
-![Create buckets](../img/q15.png)
-
-Frank adds Alice as a member of `ws-frank`. She can open the workspace, view its credentials, and work in the shared Datalab.
-
-![Add Alice to the workspace](../img/q16.png)
-
-Frank selects Request Access for `ws-eric-shared`. Eric approves the request, and Frank can then use his existing workspace credentials to read the reference data.
-
-![Request access to Eric's bucket](../img/q17.png)
-
-Bob requests write access to `ws-frank-stagein`. Once Frank approves it, Bob can upload data with his own workspace credentials.
-
-![Approve Bob's bucket access](../img/q18.png)
+See [Concepts](../concepts.md) for the access model and steps for managing members, bucket grants, and sessions.
 
 ## 6. Use managed services
 
-Bob enables backing services in his Datalab configuration. Their connection settings appear on the dashboard.
+A workspace can request PostgreSQL, MongoDB, Redis, or Qdrant when the platform has the required operators. Use the **Stores** tab when these services are available. Their connection settings appear on the dashboard and in new Datalab sessions.
 
-![Bob's managed services](../img/q19.png)
-
-![Service connection settings](../img/q20.png)
-
-Bob uses this Datalab configuration:
-
-```yaml
-apiVersion: pkg.internal/v1beta2
-kind: Datalab
-metadata:
-  name: ws-bob
-  namespace: workspace
-  labels:
-    datalabs.pkg.internal/environment: datalab
-spec:
-  users:
-    - bob
-    - alice
-  userOverrides:
-    alice:
-      grantedAt: "2025-10-15T08:08:53.953000+00:00"
-      role: user
-  secretName: ws-bob
-  sessions:
-    - name: default
-      state: started
-  vcluster: true
-  data:
-    enabled: true
-  quota:
-    memory: 18Gi
-    storage: 10Gi
-    budget: x-large
-  registry:
-    enabled: true
-    storage: 3Gi
-  documentStores:
-    prod:
-      storage: 1Gi
-  cacheStores:
-    prod:
-      storage: 1Gi
-  vectorStores:
-    prod:
-      storage: 1Gi
-  databases:
-    pg0:
-      names:
-        - dev
-        - prod
-      storage: 1Gi
-      backupStorage: 10Gi
-```
-
-### Store scene metadata in MongoDB
-
-Bob uses MongoDB to record scene metadata and processing status before he sends data to Frank.
-
-The `prod` document store supplies `MONGO_PROD_URI` in the session environment. Libraries that need separate settings can use `MONGO_PROD_HOST`, `MONGO_PROD_PORT`, `MONGO_PROD_DATABASE`, `MONGO_PROD_USER`, `MONGO_PROD_PASSWORD`, and `MONGO_PROD_AUTH_SOURCE`.
-
-Run this script in the Datalab terminal. It clears the selected collection before inserting two demo records:
-
-```bash
-cat > mongo_demo.py <<'PY'
-import logging
-import os
-from datetime import datetime, timezone
-
-from pymongo import MongoClient
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
-log = logging.getLogger("mongo-demo")
-
-mongo_uri = os.environ["MONGO_PROD_URI"]
-database_name = os.getenv("MONGO_PROD_DATABASE", "prod")
-collection_name = os.getenv("MONGO_COLLECTION", "curation_demo")
-
-log.info("connecting to MongoDB database=%s collection=%s", database_name, collection_name)
-
-with MongoClient(mongo_uri) as client:
-    db = client[database_name]
-
-    if collection_name not in db.list_collection_names():
-        db.create_collection(collection_name)
-        log.info("created collection %s", collection_name)
-    else:
-        log.info("collection %s already exists", collection_name)
-
-    collection = db[collection_name]
-    collection.delete_many({})
-    log.info("cleared previous demo documents")
-
-    documents = [
-        {
-            "_id": "scene-a",
-            "workspace": "ws-bob",
-            "status": "prepared",
-            "created_at": datetime.now(timezone.utc),
-        },
-        {
-            "_id": "scene-b",
-            "workspace": "ws-bob",
-            "status": "queued",
-            "created_at": datetime.now(timezone.utc),
-        },
-    ]
-
-    result = collection.insert_many(documents)
-    log.info("inserted %s documents: %s", len(result.inserted_ids), result.inserted_ids)
-
-    for item in collection.find({}, {"_id": 1, "workspace": 1, "status": 1}).sort("_id"):
-        log.info("found document: %s", item)
-
-    delete_result = collection.delete_one({"_id": "scene-b"})
-    log.info("deleted %s document with _id=scene-b", delete_result.deleted_count)
-
-    remaining = list(collection.find({}, {"_id": 1, "workspace": 1, "status": 1}).sort("_id"))
-    log.info("remaining documents: %s", remaining)
-PY
-
-uv run --with pymongo python mongo_demo.py
-```
-
-### Start a STAC API
-
-Run `stac-fastapi-pgstac` against Bob's managed PostgreSQL database to serve a STAC catalogue.
-
-For the `pg0` host and `prod` database, the session supplies `POSTGRES_PG0_HOST`, `POSTGRES_PG0_PORT`, `POSTGRES_PG0_USER`, `POSTGRES_PG0_PASSWORD`, and `POSTGRES_PG0_PROD_URL`.
-
-Create the Service and Deployment:
-
-```bash
-envsubst <<'EOF' | kubectl apply -f -
-apiVersion: v1
-kind: Service
-metadata:
-  name: stac-api
-spec:
-  selector:
-    app: stac-api
-  ports:
-    - name: http
-      port: 8080
-      targetPort: 8080
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: stac-api
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: stac-api
-  template:
-    metadata:
-      labels:
-        app: stac-api
-    spec:
-      containers:
-        - name: api
-          image: ghcr.io/stac-utils/stac-fastapi-pgstac:6.2.0
-          ports:
-            - containerPort: 8080
-          env:
-            - name: PGHOST
-              value: ${POSTGRES_PG0_HOST}
-            - name: PGPORT
-              value: "${POSTGRES_PG0_PORT}"
-            - name: PGDATABASE
-              value: prod
-            - name: PGUSER
-              value: ${POSTGRES_PG0_USER}
-            - name: PGPASSWORD
-              value: ${POSTGRES_PG0_PASSWORD}
-          resources:
-            requests: { cpu: "100m", memory: "256Mi" }
-            limits:   { cpu: "500m", memory: "1Gi" }
-EOF
-```
-
-Initialise the database:
-
-```bash
-kubectl run pgstac-migrate -it --rm \
-  --image=ghcr.io/stac-utils/pgstac-pypgstac:v0.9.8 \
-  --restart=Never \
-  --env="PGHOST=${POSTGRES_PG0_HOST}" \
-  --env="PGPORT=${POSTGRES_PG0_PORT}" \
-  --env="PGDATABASE=prod" \
-  --env="PGUSER=${POSTGRES_PG0_USER}" \
-  --env="PGPASSWORD=${POSTGRES_PG0_PASSWORD}" \
-  --command -- sh -lc 'pypgstac migrate'
-```
-
-Forward the API port and open it from the editor's Ports tab:
-
-```bash
-kubectl port-forward svc/stac-api 8080:8080
-```
-
-At `http://localhost:8080`, try these endpoints:
-
-```text
-/collections
-/search
-/collections/{id}/items
-```
-
-To remove the API Deployment and Service, run:
-
-```bash
-kubectl delete deploy stac-api
-kubectl delete svc stac-api
-```
-
-The managed database remains available after the API is removed.
-
-## Exchange data
-
-Frank reads Eric's reference data and sends Bob a `.gpkg` file with the geometry and time range he needs. He can share the file from his bucket with a presigned link.
-
-Bob selects the ground-truth data and copies it to `ws-frank-stagein`. He can use `aws s3 sync` or `rclone sync` from his Datalab.
-
-Alice opens Frank's workspace and works with him in the Datalab. When the results are ready, Frank copies them from `ws-frank` to `ws-frank-publish`.
-
-## Storage manifests
-
-The bucket setup used above is defined by these Storage resources:
-
-```yaml
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-alice
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: ws-alice
-  credentialsRollover:
-    interval: weekly
-    maxToKeep: 2
-  buckets:
-    - bucketName: ws-alice
-      discoverable: true
-    - bucketName: ws-alice-2
-      discoverable: true
-    - bucketName: ws-alice-3
-      discoverable: true
-  bucketAccessGrants:
-    - bucketName: ws-alice-3
-      grantee: ws-eric
-      permission: ReadWrite
-      grantedAt: "2025-10-14T08:09:10.817000+00:00"
-  bucketAccessRequests:
-    - bucketName: ws-eric-shared
-      reason: requesting access
-      requestedAt: "2025-10-19T13:25:59.655000+00:00"
----
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-bob
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: ws-bob
-  buckets:
-    - bucketName: ws-bob
-      discoverable: true
-      lifecycleRules:
-        - target: tmp/*
-          mode: Delete
-          minAge: 12h
-        - target: scratch/*
-          mode: Notify
-          minAge: 1w
-  bucketAccessRequests:
-    - bucketName: ws-frank-stagein
-      reason: requesting access
-      requestedAt: "2025-10-20T14:00:05.494000+00:00"
----
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-eric
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: ws-eric
-  buckets:
-    - bucketName: ws-eric
-      discoverable: true
-    - bucketName: ws-eric-shared
-      discoverable: true
-  bucketAccessGrants:
-    - bucketName: ws-eric-shared
-      grantee: ws-alice
-      permission: ReadWrite
-      grantedAt: "2025-10-19T13:28:45.636000+00:00"
-    - bucketName: ws-eric-shared
-      grantee: ws-frank
-      permission: ReadWrite
-      grantedAt: "2025-10-20T14:32:22.153000+00:00"
-  bucketAccessRequests:
-    - bucketName: ws-alice-3
-      reason: requesting access
-      requestedAt: "2025-10-14T08:08:53.953000+00:00"
----
-apiVersion: pkg.internal/v1beta1
-kind: Storage
-metadata:
-  name: ws-frank
-  namespace: workspace
-  labels:
-    storages.pkg.internal/environment: datalab
-spec:
-  principal: ws-frank
-  buckets:
-    - bucketName: ws-frank
-      discoverable: true
-    - bucketName: ws-frank-stagein
-      discoverable: true
-    - bucketName: ws-frank-publish
-      discoverable: true
-  bucketAccessGrants:
-    - bucketName: ws-frank-stagein
-      grantee: ws-bob
-      permission: ReadWrite
-      grantedAt: "2025-10-20T14:01:49.246000+00:00"
-  bucketAccessRequests:
-    - bucketName: ws-eric-shared
-      reason: requesting access
-      requestedAt: "2025-10-20T14:32:10.939000+00:00"
-```
+For operator configuration and application examples, see [Add a managed service](../concepts.md#add-a-managed-service).

@@ -1,87 +1,122 @@
 # Install and configure Workspace
 
-The Helm charts are available in [GitHub Packages](https://github.com/orgs/EOEPCA/packages?tab=packages&q=workspace).
+Install the runtime, provider dependencies, composition packages, and API in that order. Use your platform's GitOps process for a shared cluster.
 
 ## Prerequisites
 
-Install Crossplane v2 and the providers and functions required by your Storage and Datalab packages first. The pipeline chart uses `skipDependencyResolution: true`; it does not install package dependencies.
+The platform needs Crossplane v2, Keycloak, object storage, an ingress controller, and a network plugin that enforces NetworkPolicy. Install the providers, functions, namespaced ProviderConfigs, and RBAC required by the selected Storage and Datalab packages.
 
-Install Kyverno and use a network plugin that enforces `NetworkPolicy`. See [operational controls](../design/operational-controls.md) for the runtime limits.
+Install Educates before creating Datalabs. The selected Educates base or ingress policies can also require Kyverno. Provider Datalab passes security settings to Educates; it does not create a complete host security policy.
 
-## Workspace settings
+Optional PostgreSQL, MongoDB, Redis, and Qdrant stores need their operators installed first. The [Provider Datalab installation guide](https://github.com/versioneer-tech/provider-datalab/blob/main/docs/how-to-guides/installation.md) lists these dependencies.
 
-| Key | Type | Description |
-|-----|------|-------------|
-| `clusterIngressDomain` | string | Base domain for workspace sessions, for example `ngx.develop.eoepca.org`. |
-| `clusterIngressClass` | string | workspace session ingress class, for example `nginx`. |
-| `tlsCertificateRef.name` | string | Name of the TLS secret used for workspace session ingress. |
-| `tlsCertificateRef.namespace` | string | Namespace of the TLS secret, for example `workspace`. |
+## Charts and API
 
-## Pipeline settings
+This repository publishes charts in [GitHub Packages](https://github.com/orgs/EOEPCA/packages?tab=packages&q=workspace):
 
-The chart defaults to Provider Datalab `0.11.0` and Provider Storage `0.4.0`.
-Use `datalab.package` and `storage.package` to select other package tags.
+| Component | What it installs |
+| --- | --- |
+| Educates dependency chart | The session runtime. Its input is `dependencies/input.yaml`. |
+| `workspace-pipeline` | The Storage and Datalab configuration packages and one EnvironmentConfig. |
 
-| Key | Type | Description |
-|-----|------|-------------|
-| `environmentconfig.name` | string | EnvironmentConfig name for Storage and Datalab resources. Default: `datalab`. |
-| `environmentconfig.iam.realm` | string | Keycloak realm name for Workspace authentication. |
-| `environmentconfig.iam.namespace` | string | Keycloak namespace for the Data endpoint's OAuth proxy. Provider default: `keycloak`. |
-| `environmentconfig.iam.issuerURL` | string | Public Keycloak realm URL for login. |
-| `environmentconfig.iam.internalURL` | string | Keycloak realm URL reachable from the cluster. |
-| `environmentconfig.iam.extraAudiences` | array | Extra token audiences for generated workspace clients, for example `workspace-api`. |
-| `environmentconfig.ingress.enabled` | bool | Keep `false` for Gateway routing. Default: `false`. |
-| `environmentconfig.ingress.domain` | string | Base domain for Workspace UIs and services. |
-| `environmentconfig.httpRoute.enabled` | bool | Create Data HTTPRoutes. Default: `true`. |
-| `environmentconfig.httpRoute.enableS3` | bool | Enable the experimental S3 read endpoint on the Data hostname. Requires `httpRoute.enabled`. Default: `false`. |
-| `environmentconfig.httpRoute.parentName` | string | Gateway name for the Data HTTPRoutes. |
-| `environmentconfig.httpRoute.parentNamespace` | string | Namespace of that Gateway. |
-| `environmentconfig.httpRoute.sectionName` | string | HTTPS listener that terminates TLS for Data HTTPRoutes. |
-| `environmentconfig.httpRoute.httpSectionName` | string | HTTP listener for the HTTPS redirect route. |
-| `environmentconfig.storage.endpoint` | string | S3 endpoint, for example `https://minio.develop.eoepca.org`. |
-| `environmentconfig.storage.forcePathStyle` | bool | Use path-style S3 addresses. Default: `true`. Rendered as `data.storage.forcePathStyle`. |
-| `environmentconfig.storage.provider` | string | Storage provider label, for example `MinIO`, `AWS`, or `Other`. |
-| `environmentconfig.storage.region` | string | Storage region. |
-| `environmentconfig.storage.secretNamespace` | string | Namespace where Datalabs read storage credential Secrets. |
-| `environmentconfig.storage.type` | string | Storage type (`s3`). |
-| `environmentconfig.storage.lifecycle.schedule` | string | Cron schedule for storage lifecycle jobs. Provider default: `17 2 * * *`. |
-| `environmentconfig.storageClasses.allowed` | array | Allowed StorageClasses for Datalab session PVCs. Empty allows any requested class. |
-| `environmentconfig.network.externalEgressCIDRs` | array | Allowed external CIDRs for Datalab sessions. See the example below. |
-| `environmentconfig.network.internalEgress` | array | Namespaces, Pod selectors, and ports that Datalab workloads can reach. |
-| `environmentconfig.network.serviceCIDR` | string | Cluster Service CIDR to exclude from external egress. |
-| `environmentconfig.network.podCIDRs` | array | Cluster Pod CIDRs. |
-| `environmentconfig.network.blacklistIPs` | array | CIDRs excluded from generated external egress, for example metadata endpoints. |
-| `environmentconfig.network.excludePolicies` | array | Generated NetworkPolicy names to skip. |
-| `environmentconfig.packages` | array | Extension packages for workspace sessions. |
-| `environmentconfig.defaults.quota.memory` | string | Default session memory quota. Provider default: `2Gi`. |
-| `environmentconfig.defaults.quota.storage` | string | Default session PVC size. Provider default: `1Gi`. |
-| `environmentconfig.defaults.quota.budget` | string | Default resource budget, such as `small`, `medium`, or `large`. Provider default: `medium`. |
-| `environmentconfig.defaults.overallQuota.storage` | string | Total requested PVC storage per Datalab environment namespace. Provider default: `100Gi`. |
-| `environmentconfig.defaults.security.policy` | string | Default Pod Security Standard level for Datalab sessions (`restricted`, `baseline`, or `privileged`). Default: `baseline`. |
-| `environmentconfig.defaults.security.kubernetesAccess` | bool | Give sessions Kubernetes API access. Default: `true`. |
-| `environmentconfig.defaults.security.kubernetesRole` | string | Default session namespace RBAC role (`admin`, `edit`, or `view`). Default: `edit`. |
-| `environmentconfig.defaults.security.externalEgress` | bool | Allow sessions to use the configured external egress rules. |
-| `environmentconfig.database.tlsRoute.parentName` | string | Gateway name for the optional PostgreSQL `TLSRoute`. |
-| `environmentconfig.database.tlsRoute.parentNamespace` | string | Namespace of that Gateway. |
-| `environmentconfig.database.tlsRoute.sectionName` | string | Gateway listener for PostgreSQL TLS passthrough. |
-| `environmentconfig.database.storageClassName` | string | PostgreSQL volume StorageClass. Empty uses the cluster default. |
-| `environmentconfig.database.backupStorageClassName` | string | Backup StorageClass, where the PostgreSQL operator supports it. Empty uses the cluster default. |
-| `environmentconfig.mongodb.storageClassName` | string | MongoDB StorageClass. Empty uses the cluster default. |
-| `environmentconfig.redis.storageClassName` | string | Redis StorageClass. Empty uses the cluster default. |
-| `environmentconfig.qdrant.storageClassName` | string | Qdrant StorageClass. Empty uses the cluster default. |
+Deploy the Workspace API and UI separately. Their [source repository](https://github.com/EOEPCA/rm-workspace-api/) describes API configuration.
 
-The chart creates one EnvironmentConfig, named `datalab` by default. Set
-`storages.pkg.internal/environment: datalab` on Storage resources that share it,
-as in the [example manifests](https://github.com/EOEPCA/workspace/blob/main/setup/examples.yaml). Without this label or annotation, the MinIO
-composition selects an EnvironmentConfig named `storage`. The corresponding
-Datalab key is `datalabs.pkg.internal/environment`.
+The pipeline uses `skipDependencyResolution: true`. It does not install the packages' providers or functions. Check the exact package pins in `pipeline/values.yaml`; set `storage.package` and `datalab.package` to change them. A deployed environment can use different pins from this checkout.
+
+From this checkout, save the values below as `workspace-values.yaml`, replace the example domains and network ranges, then install the pipeline:
+
+```bash
+helm upgrade --install workspace-pipeline ./pipeline \
+  --namespace workspace --create-namespace \
+  --values workspace-values.yaml
+```
+
+Check package health before creating a workspace:
+
+```bash
+kubectl get configurations.pkg.crossplane.io
+kubectl get providers.pkg.crossplane.io
+kubectl get functions.pkg.crossplane.io
+```
+
+## Educates runtime values
+
+These values configure the Educates dependency chart, rather than the pipeline chart. Use the same domain, ingress class, and certificate in the Datalab environment configuration.
+
+| Key | Purpose |
+| --- | --- |
+| `clusterIngressDomain` | Session domain, such as `lab.example.org`. |
+| `clusterIngressClass` | Session ingress controller, such as `apisix` or `nginx`. |
+| `tlsCertificateRef.name` | TLS Secret used for session hosts. |
+| `tlsCertificateRef.namespace` | Namespace containing that TLS Secret. |
+
+## Pipeline environment values
+
+The keys below are under `environmentconfig` in Helm values. The chart writes them into `EnvironmentConfig.data`. Empty default fields leave the provider to choose its fallback. The Datalab resource can override session resource and security defaults.
+
+### Identity and routing
+
+| Key | Purpose |
+| --- | --- |
+| `name` | EnvironmentConfig name. Chart default: `datalab`. |
+| `iam.realm` | Keycloak realm. |
+| `iam.namespace` | Keycloak namespace. |
+| `iam.issuerURL` | Public realm URL used for login. |
+| `iam.internalURL` | Realm URL reachable from the cluster. |
+| `iam.extraAudiences` | Extra audiences for generated workspace-client tokens, such as `workspace-api`. |
+| `ingress.enabled` | Use an Ingress for permanent Data access. Chart default: `false`. |
+| `ingress.class`, `ingress.domain`, `ingress.secret` | Ingress controller, workspace domain, and TLS Secret name. The domain is also used by Data HTTPRoutes. |
+| `ingress.annotations` | Ingress controller settings. |
+| `httpRoute.enabled` | Use Gateway API for permanent Data access. Chart default: `true`. |
+| `httpRoute.enableS3` | Enable experimental S3 reads. Chart default: `false`. Requires HTTPRoute access. |
+| `httpRoute.parentName`, `httpRoute.parentNamespace` | Gateway name and namespace. |
+| `httpRoute.sectionName` | HTTPS listener that terminates TLS for Data. |
+| `httpRoute.httpSectionName` | HTTP listener for the HTTPS redirect route. |
+
+For a permanent Data address, enable exactly one of `ingress.enabled` and `httpRoute.enabled`. With both disabled, Data uses session ingress. Enabling both stops reconciliation. The public load balancer must send traffic to the selected controller or Gateway.
+
+### Storage and services
+
+| Key | Purpose |
+| --- | --- |
+| `storage.endpoint`, `storage.region` | Backing S3 endpoint and region. |
+| `storage.forcePathStyle` | Path-style S3 addresses. Chart default: `true`; written as a string for the provider. |
+| `storage.provider`, `storage.type` | Storage provider label and type. Type defaults to `s3`. |
+| `storage.secretNamespace` | Namespace where Datalabs read their input storage Secrets. |
+| `storage.lifecycle.schedule` | Storage lifecycle-job cron schedule. Provider fallback: `17 2 * * *`. |
+| `storageClasses.allowed` | Session PVC classes. An unlisted requested class falls back to the first entry. An empty list allows the requested or cluster default class. |
+| `database.storageClassName`, `database.backupStorageClassName` | PostgreSQL data and backup classes, where supported by its operator. |
+| `database.tlsRoute.parentName`, `database.tlsRoute.parentNamespace`, `database.tlsRoute.sectionName` | Gateway listener for optional external PostgreSQL access. |
+| `mongodb.storageClassName`, `redis.storageClassName`, `qdrant.storageClassName` | Managed-store volume classes. Empty uses the cluster default. |
+| `packages` | Extension packages for sessions. |
+
+### Resources and network
+
+| Key | Purpose |
+| --- | --- |
+| `defaults.quota.memory` | Session memory. Provider fallback: `2Gi`. |
+| `defaults.quota.storage` | Session home-volume size. Provider fallback: `1Gi`. |
+| `defaults.quota.budget` | Educates resource budget. Provider fallback: `medium`. |
+| `defaults.overallQuota.storage` | Total PVC requests in the Datalab environment namespace. Provider fallback: `100Gi`. |
+| `defaults.security.policy` | Pod security level: `restricted`, `baseline`, or `privileged`. Provider fallback: `baseline`. |
+| `defaults.security.kubernetesAccess` | Supply a Kubernetes service account token. Provider fallback: `true`. |
+| `defaults.security.kubernetesRole` | Namespace role: `view`, `edit`, or `admin`. Provider fallback: `edit`. |
+| `defaults.security.externalEgress` | Enable the configured external rules. Provider fallback: `true`. |
+| `network.externalEgressCIDRs` | External ranges allowed when external egress is enabled. An empty list creates no broad external allow rule. |
+| `network.internalEgress` | Allowed namespaces, Pod selectors, and ports for internal services. |
+| `network.serviceCIDR`, `network.podCIDRs` | Cluster address ranges excluded from broad external rules. |
+| `network.blacklistIPs` | Other ranges excluded from broad external rules, such as metadata endpoints. |
+| `network.excludePolicies` | Generated NetworkPolicy names to omit. |
+
+See [operational controls](../design/operational-controls.md) for how these settings affect sessions and Data.
 
 ## Example values
 
-Use a Gateway with HTTP and HTTPS listeners, a certificate, and permission to accept routes from the Datalab runtime namespaces. The HTTPS listener must terminate TLS. Set its listener names and the IAM URLs below. Workspace session ingress has separate settings.
+This example uses Gateway API for Data. Its HTTPS listener needs a certificate for `*.lab.example.org` and must accept routes from Datalab runtime namespaces. S3 reads also need support for HTTPRoute header regular expressions.
 
 ```yaml
 environmentconfig:
+  name: datalab
   iam:
     realm: eoepca
     namespace: iam
@@ -91,37 +126,27 @@ environmentconfig:
       - workspace-api
   ingress:
     enabled: false
+    class: apisix
     domain: lab.example.org
+    secret: workspace-tls
   httpRoute:
     enabled: true
-    enableS3: false
+    enableS3: true
     parentName: public
     parentNamespace: gateway
     sectionName: workspaces-https
     httpSectionName: http
-  # Optional listener for external PostgreSQL access.
-  database:
-    tlsRoute:
-      parentName: public
-      parentNamespace: gateway
-      sectionName: postgres
   storage:
     endpoint: https://s3.example.org
     forcePathStyle: true
     provider: Other
-    region: eoepca
+    region: us-east-1
     secretNamespace: workspace
     type: s3
-  storageClasses:
-    allowed:
-      - fast-rwx
-      - standard-rwx
   network:
-    # Allow external IPv4 and IPv6 traffic when externalEgress is enabled.
     externalEgressCIDRs:
       - 0.0.0.0/0
       - ::/0
-    # Allow access to this service in another namespace.
     internalEgress:
       - namespace: platform-services
         podSelector:
@@ -146,8 +171,22 @@ environmentconfig:
       externalEgress: true
 ```
 
-For external PostgreSQL access, `database.tlsRoute` selects a separate TLS passthrough listener. The Gateway controller must support `TLSRoute` v1.
+`httpRoute.enableS3` applies to all Data-enabled Datalabs in this environment. There is no per-Datalab S3 override. It controls the read-only Data endpoint; backing storage retains its own permissions.
 
-Set `httpRoute.enableS3: true` to enable S3 reads for every Data-enabled Datalab in the environment. There is no per-Datalab override. This option needs a Gateway controller that supports HTTPRoute header regular expressions.
+For external PostgreSQL, configure a separate TLS-passthrough listener through `database.tlsRoute`. The Gateway controller must serve `TLSRoute` v1 and support direct PostgreSQL TLS with SNI.
 
-Allow Gateway traffic into the runtime namespace and access from the Data services to storage and Keycloak. See [network access](../design/operational-controls.md#network-access) for the egress rules.
+## Select the environment
+
+The chart creates one EnvironmentConfig named `datalab` by default. A manually created Storage resource can select it with:
+
+```yaml
+metadata:
+  labels:
+    storages.pkg.internal/environment: datalab
+```
+
+Without an environment annotation or label, the MinIO composition selects `storage`. The Datalab key is `datalabs.pkg.internal/environment`. The Workspace API uses its `PROVIDER_ENVIRONMENT` setting for resources it creates; its default is `datalab`.
+
+## Verify the user path
+
+Create a test workspace with [Workspace Management](../workspace-management.ipynb). Check storage and Data separately, then run [Vienna](vienna-imagery-with-stac-and-s3.ipynb) for public and S3 downloads. Use [STAC registration](register-stac-metadata.ipynb) to check the session registry and vCluster.
