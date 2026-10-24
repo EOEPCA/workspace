@@ -1,0 +1,20 @@
+// Render: dot -Tsvg data-flow.dot -o data-flow.svg
+// Notebook image: dot -Tpng -Gdpi=150 data-flow.dot -o data-flow.png
+digraph data_flow {
+    graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.5, ranksep=0.45];
+    node [shape=box, style="rounded,filled", fillcolor="#eff6ff",
+          color="#475569", fontname="DejaVu Sans", fontsize=12, margin="0.18,0.12"];
+    edge [color="#475569", fontname="DejaVu Sans", fontsize=10, arrowsize=0.8];
+
+    source [label="DLR's Geoservice\nSTAC items"];
+    package [label="GeoParquet\nmetadata package"];
+    registry [label="Workspace\nOCI registry"];
+    api [label="STAC API\nin the vCluster"];
+    rasters [label="Raster files\nat DLR's Geoservice", fillcolor="#f0fdf4"];
+
+    source -> package [label="Select three items"];
+    package -> registry [label="Push package"];
+    registry -> api [label="Pull by digest"];
+    { rank=same; api; rasters; }
+    api -> rasters [style=dashed, label="Source asset URLs", constraint=false];
+}
