@@ -46,6 +46,7 @@ environmentconfig:
   network:
     externalEgressCIDRs: []
     internalEgress: []
+    internalIngress: []
     serviceCIDR: ""
     podCIDRs: []
     blacklistIPs: []

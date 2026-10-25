@@ -104,6 +104,7 @@ For a permanent Data address, enable exactly one of `ingress.enabled` and `httpR
 | `defaults.security.externalEgress` | Enable the configured external rules. Provider fallback: `true`. |
 | `network.externalEgressCIDRs` | External ranges allowed when external egress is enabled. An empty list creates no broad external allow rule. |
 | `network.internalEgress` | Allowed namespaces, Pod selectors, and ports for internal services. |
+| `network.internalIngress` | Allowed source namespaces, Pod selectors, and destination ports. Use `targetPodSelector` to select destination Pods. |
 | `network.serviceCIDR`, `network.podCIDRs` | Cluster address ranges excluded from broad external rules. |
 | `network.blacklistIPs` | Other ranges excluded from broad external rules, such as metadata endpoints. |
 | `network.excludePolicies` | Generated NetworkPolicy names to omit. |

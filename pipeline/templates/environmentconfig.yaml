@@ -64,6 +64,10 @@ data:
     internalEgress:
 {{- toYaml . | nindent 6 }}
     {{- end }}
+    {{- with .Values.environmentconfig.network.internalIngress }}
+    internalIngress:
+{{- toYaml . | nindent 6 }}
+    {{- end }}
     serviceCIDR: {{ .Values.environmentconfig.network.serviceCIDR | default "" | quote }}
     {{- with .Values.environmentconfig.network.podCIDRs }}
     podCIDRs:
