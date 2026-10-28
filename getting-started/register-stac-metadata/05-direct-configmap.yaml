@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cng-stac-direct-config
+  labels:
+    app: cng-stac-direct
+data:
+  collections.json: {{REMOTE_COLLECTIONS_JSON}}
+  load.py: {{INDEX_LOADER_SCRIPT}}

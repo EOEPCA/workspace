@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cng-stac-api-init
+  labels:
+    app: cng-stac-api
+data:
+  pull.py: {{OCI_PULL_SCRIPT}}

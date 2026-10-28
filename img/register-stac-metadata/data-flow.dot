@@ -1,0 +1,48 @@
+// Render: dot -Tsvg data-flow.dot -o data-flow.svg
+digraph data_flow {
+    graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.3, ranksep=0.4,
+           fontname="DejaVu Sans", fontsize=12, compound=true, newrank=true];
+    node [shape=box, style="rounded,filled", fillcolor="#eff6ff",
+          color="#475569", fontname="DejaVu Sans", fontsize=11, margin="0.16,0.12"];
+    edge [color="#475569", fontname="DejaVu Sans", fontsize=10, arrowsize=0.7];
+
+    subgraph cluster_publish {
+        label="Flow 1: Publish and search\nSteps 2–6";
+        color="#93c5fd";
+        style="rounded";
+        prepare [label="DLR GeoService STAC endpoint\nClip three observations\naround Vienna"];
+        published [label="Portolan: create metadata and upload\nWorkspace bucket: published/\nAssets and item table", fillcolor="#f0fdf4"];
+        private_api [label="First STAC API in Datalab\nLoad private S3 item table\nSearch with private S3 asset links"];
+        prepare -> published -> private_api;
+    }
+
+    subgraph cluster_relocate {
+        label="Flow 2: Relocate and share\nSteps 7–9";
+        color="#86efac";
+        style="rounded";
+        relocate [label="stacpkg relocation: copy assets\nKeep the published/ source files"];
+        public [label="Same workspace bucket: public/\nSet stable HTTP asset links", fillcolor="#f0fdf4"];
+        catalogue [label="PackageR: existing Data service\nRead public/catalog.parquet\nServe catalogue to STAC Browser\nPublic HTTP asset downloads"];
+        public_api [label="Update the first STAC API\nLoad public HTTP item table\nSearch with public HTTP asset links"];
+        relocate -> public;
+        public -> catalogue;
+        public -> public_api;
+        catalogue -> public_api [style=invis];
+    }
+
+    subgraph cluster_package {
+        label="Flow 3: Package and deploy\nSteps 10–11";
+        color="#c4b5fd";
+        style="rounded";
+        package [label="stacpkg: build metadata package\nItem table, asset lock, collections\nImage bytes stay in the bucket"];
+        registry [label="Push artifact to workspace\nOCI registry; verify digest"];
+        init [label="Second API's init container\nPull metadata package by digest"];
+        oci_api [label="Second STAC API\nRead local metadata and search\nReuse public HTTP asset links"];
+        package -> registry -> init -> oci_api;
+    }
+
+    { rank=same; prepare; relocate; package; }
+    published -> relocate [constraint=false, label="Source assets\nand metadata"];
+    public -> package [constraint=false, label="Metadata\nand links only"];
+    private_api -> public_api [style=dashed, constraint=false, label="Same API"];
+}
