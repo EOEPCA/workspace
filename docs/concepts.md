@@ -109,7 +109,7 @@ Put a STAC GeoParquet file at `public/catalog.parquet` to publish a catalogue th
 
 Start with the [Vienna notebook](getting-started/vienna-imagery-with-stac-and-s3.ipynb) to publish satellite images and let other people download them. It crops three images, adds descriptions for the cropped area, and checks public and authenticated S3 downloads.
 
-Use the [registration notebook](getting-started/register-stac-metadata.ipynb) to upload with Portolan under `published/`, demonstrate API search, then use stacpkg relocation to copy the assets under `public/` in the same workspace bucket. The source files stay in place. PackageR serves the public catalogue through the existing Data service, with HTTP asset links for browser access. The final scenario pushes a metadata package to the workspace OCI container registry as an artifact. A second API reads the package by digest, so a team can deploy the same catalogue again. The [notebook guide](usage/notebook-guide.md#process-data-and-add-search) compares these views and their setup.
+The [registration notebook](getting-started/register-stac-metadata.ipynb) has three flows. Flow 1 uploads with Portolan under `published/` and demonstrates API search. Flow 2 uses stacpkg relocation to copy the assets under `public/` in the same workspace bucket. The source files stay in place. PackageR serves the public catalogue through the existing Data service, with HTTP asset links for browser access. Flow 3 pushes a metadata package to the workspace OCI container registry as an artifact. A second API reads the package by digest, so a team can deploy the same catalogue again. The [notebook guide](usage/notebook-guide.md#process-data-and-add-search) compares these views and their setup.
 
 ### S3 clients
 
