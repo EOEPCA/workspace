@@ -6,7 +6,7 @@ Open a Datalab session for its editor and terminal. Use its Data tab to browse s
 
 ## Start here
 
-Follow the [quickstart](getting-started/quickstart.md) to create a test workspace, publish satellite images, and read them through public links and S3 clients. The STAC registration example uses Portolan for uploads and adds APIs for search by area and date.
+Follow the [quickstart](getting-started/quickstart.md) to create a test workspace, publish satellite images, and read them through public links and S3 clients. The STAC registration example uses Portolan for uploads, stacpkg relocation to copy assets to the public folder in the same workspace bucket, and APIs for search by area and date. Its final scenario deploys a catalogue from an OCI metadata package by digest.
 
 Use the [notebook guide](usage/notebook-guide.md) to choose an example and check what it needs before you run it.
 

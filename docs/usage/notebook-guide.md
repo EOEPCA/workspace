@@ -22,9 +22,9 @@ Use Vienna to learn how someone else will read your results. It crops three Sent
 
 ## Process data and add search
 
-Use STAC registration to prepare recent data for applications that need to search by area and date. It selects three recent usable Sentinel-5P cloud fraction observations from DLR and clips them around Vienna. Portolan creates the metadata and uploads the files under `published/`. A first vCluster API demonstrates search over those Items through a port-forward.
+Use STAC registration to prepare recent data for applications that need to search by area and date. It selects three recent usable Sentinel-5P cloud fraction observations from the DLR GeoService STAC endpoint and clips them around Vienna. Portolan creates the metadata and uploads the files under `published/`. A first vCluster API demonstrates search over those Items through a port-forward.
 
-stacpkg then copies the assets under `public/` and keeps the source files. The public metadata uses PackageR HTTP download routes as primary asset links, with public S3 locations as alternates. The first API restarts with this metadata. MoreGeo STAC Browser previews PackageR's public catalogue, which is reachable from the user's browser.
+A second scenario uses stacpkg relocation to copy the assets from `published/` to `public/` in the same workspace bucket and keeps the source files. The public metadata uses PackageR HTTP download routes as primary asset links, with public S3 locations as alternates. The first API restarts with this metadata. PackageR serves the public catalogue dynamically through the existing Data service. MoreGeo STAC Browser previews this catalogue in the user's browser.
 
 | How readers get the metadata | When to use it |
 | --- | --- |
@@ -32,7 +32,7 @@ stacpkg then copies the assets under `public/` and keeps the source files. The p
 | The first vCluster API fetches and verifies the uploaded GeoParquet at startup. | Demonstrate search first with private `published/` S3 asset links, then with relocated public HTTP links. |
 | A separate STAC API reads an OCI package pulled by an init container. | Start an API with a known copy of the metadata. The package digest fixes that copy until you deploy a new digest. |
 
-The OCI package contains the relocated public metadata and asset links. Image bytes stay in workspace storage. Both API deployments run in the session's vCluster and need that session to stay running. The permanent Data service and its PackageR catalogue have a separate lifecycle.
+The final scenario bundles the relocated public metadata and asset links into a package and pushes it to the workspace OCI container registry as an artifact. The second API pulls the package by digest, so a team can deploy the same catalogue again. Image bytes stay in workspace storage. Both API deployments run in the session's vCluster and need that session to stay running. The permanent Data service and its PackageR catalogue have a separate lifecycle.
 
 Each run selects three recent usable observations. It adds them to the shared catalogue and keeps older published data. It does not set up a schedule or delete old observations.
 
