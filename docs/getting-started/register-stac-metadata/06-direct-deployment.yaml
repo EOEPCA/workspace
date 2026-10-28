@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cng-stac-direct
+  labels:
+    app: cng-stac-direct
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cng-stac-direct
+  template:
+    metadata:
+      labels:
+        app: cng-stac-direct
+      annotations:
+        stac-index-sha256: {{INDEX_SHA256}}
+    spec:
+      containers:
+        - name: api
+          image: python@sha256:4c2cf9917bd1cbacc5e9b07320025bdb7cdf2df7b0ceaccb55e9dd7e30987419
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - >-
+              python -m pip install --no-cache-dir
+              'stac-fastapi-geoparquet[serve]==0.0.6'
+              'stac-fastapi-api==6.2.0'
+              'stac-fastapi-extensions==6.2.0'
+              'stac-fastapi-types==6.2.0'
+              'fastapi==0.128.0'
+              'starlette==0.50.0'
+              'pydantic==2.12.5'
+              'pydantic-settings==2.12.0'
+              'uvicorn==0.40.0'
+              'geojson-pydantic==2.1.0'
+              'stac-pydantic==3.4.0'
+              'rustac==0.9.3'
+              'obstore==0.8.2'
+              'boto3==1.43.117'
+              'requests==2.34.2'
+              && python /config/load.py
+              && unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+              && exec python -m uvicorn
+              stac_fastapi.geoparquet.main:app
+              --host 0.0.0.0
+              --port 8000
+              --root-path "${ROOT_PATH}"
+          env:
+            - name: STAC_FASTAPI_COLLECTIONS_HREF
+              value: /config/collections.json
+            - name: INDEX_HREF
+              value: {{INDEX_HREF}}
+            - name: INDEX_SHA256
+              value: {{INDEX_SHA256}}
+            - name: ROOT_PATH
+              value: {{DIRECT_ROOT_PATH}}
+          envFrom: {{STORAGE_ENV_FROM}}
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: cng-stac-direct-config
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

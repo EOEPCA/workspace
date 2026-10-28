@@ -1,10 +1,12 @@
 # Concepts
 
+Use workspace storage to keep a team's datasets in one place. Add members to work with those files, grant another workspace access to a bucket, or publish results for readers without an account. Sessions and managed services give the team tools to process that data.
+
 Open your workspace dashboard and select **Management** to manage members, buckets, sessions, and services. The available tabs and actions depend on your [workspace role](design/iam-integration.md#roles).
 
 ## Storage
 
-A `Storage` resource defines buckets, a storage identity, access requests, grants, and lifecycle rules. Workspace members use that identity and its bucket permissions.
+A `Storage` resource defines buckets, a storage identity, access requests, grants, and lifecycle rules. Workspace members use that identity and its bucket permissions. A bucket grant lets another workspace use selected data with its own credentials, so teams can share a dataset without copying it.
 
 A discoverable bucket can appear in another workspace's access-request list. Its owner still has to approve access. The receiving workspace then uses its own storage credentials to reach the bucket.
 
@@ -42,7 +44,7 @@ Use `ReadOnly` for a reader. The [permission table](#storage) describes each lev
 
 ## Datalabs and sessions
 
-A `Datalab` resource defines the team's users, sessions, and shared services. Each named session has an editor, terminal, and persistent home volume. Stopping the session keeps that volume.
+A `Datalab` resource defines the team's users, sessions, and shared services. Start a session when you need an editor, a terminal, or a place to run code. Each named session has a persistent home volume, so you can stop it and keep your files for the next run.
 
 Sessions share the workspace's storage identity and managed services. A session can use a host-cluster namespace or its own virtual Kubernetes control plane. See [operational controls](design/operational-controls.md) for the settings.
 
@@ -56,7 +58,7 @@ Shared storage, Data, and managed databases have separate lifecycles. See [sessi
 
 ## Managed services
 
-PostgreSQL, MongoDB, Redis, and Qdrant need their operators installed in the platform. A registry can provide a session endpoint for container images and OCI packages.
+Use a managed service when your code needs a database, cache, or vector store shared within the workspace. PostgreSQL, MongoDB, Redis, and Qdrant need their operators installed in the platform. A registry can store container images and OCI packages for use by session workloads.
 
 ### Add a managed service
 
@@ -101,9 +103,13 @@ A public-share download route can redirect to a fresh presigned URL. Share that 
 
 ### STAC catalogues
 
-A public share can expose a `catalog.parquet` file with STAC items. Its asset paths are relative to the share folder. PackageR supplies public asset links when it serves the items.
+Use STAC to describe when data was collected, which area it covers, and where to download its files. Applications can read these descriptions to choose the data they need.
 
-The [Vienna notebook](getting-started/vienna-imagery-with-stac-and-s3.ipynb) publishes images and a catalogue together. The [registration notebook](getting-started/register-stac-metadata.ipynb) instead packages source metadata in OCI and serves it through a STAC API. The [notebook guide](usage/notebook-guide.md) compares the two workflows.
+Put a STAC GeoParquet file at `public/catalog.parquet` to publish a catalogue through the existing Data service. PackageR reads it when someone requests the catalogue and builds Collection and Item responses with public asset links. Relative asset paths resolve within the share folder.
+
+Start with the [Vienna notebook](getting-started/vienna-imagery-with-stac-and-s3.ipynb) to publish satellite images and let other people download them. It crops three images, adds descriptions for the cropped area, and checks public and authenticated S3 downloads.
+
+Use the [registration notebook](getting-started/register-stac-metadata.ipynb) to upload with Portolan under `published/`, demonstrate API search, then copy the assets with stacpkg under `public/`. Public metadata uses PackageR HTTP asset links for browser access. A second API reads an OCI metadata package fixed to a digest. The [notebook guide](usage/notebook-guide.md#process-data-and-add-search) compares these views and their setup.
 
 ### S3 clients
 
@@ -122,9 +128,56 @@ The endpoint supports bucket and object listing, HEAD, GET, and byte-range GET. 
 
 Operators enable S3 through the [Gateway settings](getting-started/installation.md#example-values). The Vienna notebook refreshes its device login before the S3 and AWS CLI steps and checks the downloaded files by SHA-256.
 
+#### Automatic token renewal
+
+For service access, use `scripts/s3-credentials.py` as an AWS `credential_process`. The script returns the signing values, an OAuth access token, and its expiry time. AWS CLI and Boto3 can run it again when they need fresh credentials. See the [AWS process credential documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html).
+
+Run these commands from the repository root. Install Python and AWS CLI first. Replace the workspace name, Data URL, and Keycloak realm URL with your service settings. The workspace OAuth client must have the audience and role described above.
+
+```bash
+aws configure set region us-east-1 --profile ws-alice
+aws configure set endpoint_url https://ws-alice.lab.example.org --profile ws-alice
+aws configure set s3.addressing_style path --profile ws-alice
+aws configure set credential_process \
+  "python3 \"$PWD/scripts/s3-credentials.py\" --tenant ws-alice --issuer https://keycloak.example.org/realms/eoepca" \
+  --profile ws-alice
+```
+
+These commands add a profile to `~/.aws/config`. The process command uses the script's absolute path. It belongs in the config file; do not copy the returned token into `~/.aws/credentials`. The resulting profile has this form:
+
+```ini
+[profile ws-alice]
+region = us-east-1
+endpoint_url = https://ws-alice.lab.example.org
+credential_process = python3 "/absolute/path/to/workspace/scripts/s3-credentials.py" --tenant ws-alice --issuer https://keycloak.example.org/realms/eoepca
+s3 =
+    addressing_style = path
+```
+
+Enter the OAuth client secret once for the current terminal. The hidden prompt keeps it out of shell history. The helper reads `CLIENT_SECRET` when AWS starts it.
+
+```bash
+CLIENT_SECRET="$(python3 -c 'import getpass; print(getpass.getpass("OAuth client secret: "))')"
+export CLIENT_SECRET
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+aws s3 ls s3://ws-alice/ --profile ws-alice
+```
+
+Boto3 can use the same profile from a process started in that terminal:
+
+```python
+import boto3
+
+session = boto3.Session(profile_name="ws-alice")
+s3 = session.client("s3")
+objects = s3.list_objects_v2(Bucket="ws-alice", MaxKeys=10)
+```
+
+Keep `CLIENT_SECRET` available while these clients run so the helper can get new tokens. Run `unset CLIENT_SECRET` when you finish. This profile provides read-only access through the Data endpoint. Use the registration notebook for uploads to backing storage.
+
 ## Membership
 
-A workspace role controls dashboard and management actions. Members who can view storage credentials use the workspace's full storage policy, including its existing bucket grants.
+Add members so colleagues can use the workspace's data and services. A workspace role controls dashboard and management actions. Members who can view storage credentials use the workspace's full storage policy, including its existing bucket grants.
 
 The owner of another workspace approves any additional bucket grant. See [IAM roles](design/iam-integration.md#roles) for the management permissions.
 

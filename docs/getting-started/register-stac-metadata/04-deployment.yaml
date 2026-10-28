@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: cng-stac-api
+      annotations:
+        stac-package-reference: {{OCI_REFERENCE}}
     spec:
       initContainers:
         - name: pull-stac-package
@@ -23,7 +25,7 @@ spec:
           args:
             - >-
               python -m pip install --no-cache-dir
-              'stacpkg==0.1.4'
+              'stacpkg==0.2.0'
               'oras==0.2.42'
               && exec python /scripts/pull.py
           env:
@@ -94,9 +96,9 @@ spec:
               --root-path "${ROOT_PATH}"
           env:
             - name: STAC_FASTAPI_COLLECTIONS_HREF
-              value: /data/collections.json
+              value: /data/package/collections.json
             - name: ROOT_PATH
-              value: /proxy/8000
+              value: {{OCI_ROOT_PATH}}
           ports:
             - name: http
               containerPort: 8000

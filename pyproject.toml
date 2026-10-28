@@ -11,14 +11,16 @@ dependencies = [
   "python-dotenv>=1.2.1",
   "boto3",
   "rasterio",
+  "shapely",
   "stac-geoparquet",
   "pillow",
   "pyarrow",
-  "stacpkg==0.1.4",
+  "stacpkg==0.2.0",
   "pystac-client>=0.9,<1",
   "requests>=2.32,<3",
   "pystac>=1.14,<2",
   "oras==0.2.42",
+  "portolan-cli==0.8.0",
 ]
 
 [project.optional-dependencies]

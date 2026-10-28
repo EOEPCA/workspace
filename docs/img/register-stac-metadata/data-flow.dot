@@ -1,20 +1,28 @@
 // Render: dot -Tsvg data-flow.dot -o data-flow.svg
-// Notebook image: dot -Tpng -Gdpi=150 data-flow.dot -o data-flow.png
 digraph data_flow {
-    graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.5, ranksep=0.45];
+    graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.4, ranksep=0.4];
     node [shape=box, style="rounded,filled", fillcolor="#eff6ff",
           color="#475569", fontname="DejaVu Sans", fontsize=12, margin="0.18,0.12"];
     edge [color="#475569", fontname="DejaVu Sans", fontsize=10, arrowsize=0.8];
 
-    source [label="DLR's Geoservice\nSTAC items"];
-    package [label="GeoParquet\nmetadata package"];
-    registry [label="Workspace\nOCI registry"];
-    api [label="STAC API\nin the vCluster"];
-    rasters [label="Raster files\nat DLR's Geoservice", fillcolor="#f0fdf4"];
-
-    source -> package [label="Select three items"];
-    package -> registry [label="Push package"];
-    registry -> api [label="Pull by digest"];
-    { rank=same; api; rasters; }
-    api -> rasters [style=dashed, label="Source asset URLs", constraint=false];
+    prepare [label="Clip three DLR observations around Vienna\nPortolan: create STAC metadata"];
+    published [label="Portolan: upload via backing S3\npublished/ assets and metadata", fillcolor="#f0fdf4"];
+    relocate [label="stacpkg: copy assets via backing S3\nfrom published/ to public/\nKeep the source files"];
+    public [label="Public assets and metadata\nStable PackageR HTTP asset links", fillcolor="#f0fdf4"];
+    catalogue [label="Update public/catalog.parquet\nPackageR catalogue → STAC Browser"];
+    downloads [label="PackageR HTTP download route\nRedirect → presigned object-storage URL"];
+    subgraph cluster_api {
+        label="First STAC API in the session vCluster";
+        fontname="DejaVu Sans";
+        color="#94a3b8";
+        style="rounded,dashed";
+        private_api [label="Search private published metadata\nAssets use S3 links"];
+        public_api [label="Update API to read public metadata\nSearch results use stable HTTP links"];
+        private_api -> public_api [style=dashed, label="Update after relocation"];
+    }
+    prepare -> published -> relocate -> public;
+    published -> private_api [label="Private S3 item table"];
+    public -> public_api [label="Public HTTP item table"];
+    public -> catalogue;
+    public -> downloads;
 }

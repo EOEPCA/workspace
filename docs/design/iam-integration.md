@@ -1,10 +1,10 @@
 # IAM integration
 
-Keycloak client roles control access to Workspace API operations and browser routes. Storage policies control S3 object access.
+People need to sign in to manage a workspace. Jobs need access that works without a person at a browser. Keycloak provides both user tokens and service-account tokens; workspace roles determine which API actions each caller can use. Storage policies control S3 object access.
 
 ## Login and workspace clients
 
-Use a central public client, such as `workspace-api`, for user login to the API, UI, and shared session routes. For the notebooks, enable Device Authorization Grant and S256 PKCE on this client. A user signs in once and receives the roles for their workspaces.
+Use a central public client, such as `workspace-api`, for user login to the API, UI, and shared session routes. For Workspace Management and the Vienna notebook, enable Device Authorization Grant and S256 PKCE on this client. A user signs in once and receives the roles for their workspaces.
 
 Provider Datalab creates a separate confidential client for each workspace. Its ID matches the Datalab name. It enables service accounts and browser login, limits role scope, and disables implicit, password, and device grants.
 
@@ -16,7 +16,7 @@ Provider Datalab creates a separate confidential client for each workspace. Its 
 | Admin group | `ws-alice-admin` | Assign `ws_admin`. |
 | Runtime Secret | `ws-alice-oauth2-client` | Supply `client_id` and `client_secret` to services. |
 
-The runtime Secret is a machine credential. A caller who can read it can request a service-account token for that workspace. Use device login for the interactive notebooks.
+The runtime Secret is a machine credential. A caller who can read it can request a service-account token for that workspace. The STAC registration notebook uses client credentials to show how an upload can run without user login.
 
 ## Roles
 
@@ -61,6 +61,10 @@ The Data S3 endpoint also requires the workspace name in `aud`. See [S3 clients]
 ## Machine access
 
 A client-credentials token identifies the workspace service account. It has `ws_api` under the workspace client roles and a username such as `service-account-ws-alice`.
+
+Use OAuth client credentials for a scheduled upload or a task delegated to another service. The job requests a token with its client ID and secret, calls the Workspace API for storage credentials, and passes those credentials to its upload tool. No workspace team member needs to be present or sign in through a browser. The token needs the API audience and the target workspace's `ws_api` role.
+
+The [STAC registration notebook](../getting-started/register-stac-metadata.ipynb) uses this path for Portolan uploads and stacpkg relocation. The first API's startup Secret supplies storage access until it switches to public HTTP metadata. For a job, replace the prompts with job settings and a client secret from its secret store. OCI publishing uses separate registry credentials.
 
 The API also has `/workspaces/<workspace-name>/token` for callers with `ISSUE_TOKENS` or platform administration. That route returns a workspace machine token. It does not replace user login.
 

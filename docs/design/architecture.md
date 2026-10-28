@@ -1,6 +1,8 @@
 # Architecture
 
-The Workspace API manages `Storage` and `Datalab` resources in Kubernetes. Crossplane runs their compositions to create and update storage, identity resources, sessions, and services.
+A workspace brings together a team's storage, access roles, sessions, and shared services. Users request these through the Workspace API. They can keep published data available while compute sessions are stopped.
+
+The API records the requested configuration as `Storage` and `Datalab` resources in Kubernetes. Crossplane runs their compositions to create and update storage, identity resources, sessions, and services. The diagram shows which component handles each part of a workspace request.
 
 ```mermaid
 flowchart TD
@@ -26,7 +28,7 @@ The API and UI run as separate components from the composition packages. The pip
 
 ## Shared configuration
 
-An `EnvironmentConfig` holds the domain, IAM, storage, network, and default resource settings used by the compositions. A resource selects it with its environment annotation or label.
+Use an `EnvironmentConfig` to apply common platform settings to workspaces. It holds the domain, IAM, storage, network, and default resource settings used by the compositions. A resource selects it with its environment annotation or label.
 
 The pipeline chart creates one EnvironmentConfig, named `datalab` by default. Educates has separate installation values for the session ingress domain, class, and TLS Secret. Those values must match the Datalab environment settings. See [installation](../getting-started/installation.md).
 

@@ -2,7 +2,7 @@
 # Copyright 2026, EOX (https://eox.at) and Versioneer (https://versioneer.at)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Get AWS process credentials with CLIENT_SECRET and the client credentials grant."""
+"""Get temporary S3 credentials with an OAuth client secret."""
 
 import argparse
 import datetime
@@ -51,14 +51,13 @@ def main():
     if not secret:
         parser.error("Set CLIENT_SECRET to the OAuth client secret.")
     try:
-        output = credentials(args.tenant, args.issuer, secret)
+        print(json.dumps(credentials(args.tenant, args.issuer, secret)))
     except urllib.error.HTTPError as error:
-        print(f"IAM token request failed (HTTP {error.code}). Check CLIENT_SECRET and client settings.", file=sys.stderr)
+        print(f"Login failed (HTTP {error.code}). Check the client settings.", file=sys.stderr)
         return 1
     except (OSError, ValueError, KeyError, TypeError, OverflowError):
-        print("Cannot obtain S3 credentials. Check the issuer URL and IAM token response.", file=sys.stderr)
+        print("Cannot get S3 credentials. Check the issuer and client settings.", file=sys.stderr)
         return 1
-    print(json.dumps(output))
     return 0
 
 

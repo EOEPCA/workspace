@@ -245,7 +245,12 @@ def wait_for_data(session, data_url, timeout=600, interval=10):
             if response.status_code == 200:
                 print("Data endpoint ready.")
                 return
-            if response.status_code not in {404, 502, 503, 504}:
+            # The fallback route can redirect to itself before Data is ready.
+            pending_redirect = (
+                response.status_code in {301, 308}
+                and response.headers.get("Location") == response.url
+            )
+            if not pending_redirect and response.status_code not in {404, 500, 502, 503, 504}:
                 raise RuntimeError(f"Data endpoint returned HTTP {response.status_code}.")
         except (requests.ConnectionError, requests.Timeout):
             pass
@@ -474,6 +479,6 @@ def render_manifest(template: str, values: dict[str, str]) -> str:
     rendered = template
     for name, value in values.items():
         rendered = rendered.replace(f"{{{{{name}}}}}", json.dumps(value))
-    if "{{" in rendered or "}}" in rendered:
+    if re.search(r"\{\{[A-Z_][A-Z0-9_]*\}\}", rendered):
         raise ValueError("Unresolved manifest template value")
     return rendered

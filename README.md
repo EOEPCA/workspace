@@ -1,11 +1,15 @@
 # Workspace
 
-Helm chart sources, documentation, and examples for the EOEPCA Workspace Building Block.
+The EOEPCA Workspace Building Block gives a team a place to store data, run code, and share results. Team members use the same storage and can request browser sessions and managed services. A permanent Data address keeps published files available when compute sessions stop.
+
+The notebooks take you from an empty workspace to public satellite images and searchable STAC metadata. Start with the quickstart to create a workspace. Use the notebook guide to choose an example for public downloads, automated uploads with Portolan, or STAC search.
+
+This repository contains the Helm charts, documentation, and examples. Deploy the Workspace API and UI separately from their source repository.
 
 - [Documentation](https://eoepca.readthedocs.io/projects/workspace/)
 - [Installation and chart settings](docs/getting-started/installation.md)
 - [Quickstart](docs/getting-started/quickstart.md)
-- [Notebook guide and checked outcomes](docs/usage/notebook-guide.md)
+- [Choose a notebook](docs/usage/notebook-guide.md)
 - [Concepts](docs/concepts.md)
 - [Workspace API source](https://github.com/EOEPCA/rm-workspace-api/)
 
@@ -14,7 +18,6 @@ Helm chart sources, documentation, and examples for the EOEPCA Workspace Buildin
 ```bash
 helm lint pipeline
 helm template workspace-pipeline pipeline
-uv run --no-project --with pyyaml python -m unittest discover -s tests
 ```
 
 To build the documentation and check links within it:

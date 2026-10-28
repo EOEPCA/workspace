@@ -1,6 +1,6 @@
 # Install and configure Workspace
 
-Install the runtime, provider dependencies, composition packages, and API in that order. Use your platform's GitOps process for a shared cluster.
+Set up the shared services so teams can create workspaces, store data, and open sessions. Install the runtime, provider dependencies, composition packages, and API in that order. Use your platform's GitOps process for a shared cluster.
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ kubectl get functions.pkg.crossplane.io
 
 ## Educates runtime values
 
-These values configure the Educates dependency chart, rather than the pipeline chart. Use the same domain, ingress class, and certificate in the Datalab environment configuration.
+Educates provides the sessions that users open from their dashboard. These values configure its dependency chart. Set the same domain, ingress class, and certificate in the Datalab environment configuration so session links reach the correct runtime.
 
 | Key | Purpose |
 | --- | --- |
@@ -52,7 +52,7 @@ These values configure the Educates dependency chart, rather than the pipeline c
 
 ## Pipeline environment values
 
-The keys below are under `environmentconfig` in Helm values. The chart writes them into `EnvironmentConfig.data`. Empty default fields leave the provider to choose its fallback. The Datalab resource can override session resource and security defaults.
+Use these values to give workspaces a common storage service, login system, network policy, and set of resource defaults. The keys are under `environmentconfig` in Helm values. The chart writes them into `EnvironmentConfig.data`. Empty default fields leave the provider to choose its fallback. The Datalab resource can override session resource and security defaults.
 
 ### Identity and routing
 
@@ -190,4 +190,6 @@ Without an environment annotation or label, the MinIO composition selects `stora
 
 ## Verify the user path
 
-Create a test workspace with [Workspace Management](../workspace-management.ipynb). Check storage and Data separately, then run [Vienna](vienna-imagery-with-stac-and-s3.ipynb) for public and S3 downloads. Use [STAC registration](register-stac-metadata.ipynb) to check the session registry and vCluster.
+Run the examples to check that users can reach the services you installed. [Workspace Management](../workspace-management.ipynb) creates a test workspace and checks storage and Data separately. This catches a workspace whose storage is ready but whose public address is not.
+
+Use [Vienna](vienna-imagery-with-stac-and-s3.ipynb) to check public downloads and authenticated S3 access. Use [STAC registration](register-stac-metadata.ipynb) to check service-account uploads, registry transfers, and STAC APIs in a session vCluster.

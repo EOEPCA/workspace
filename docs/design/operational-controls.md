@@ -1,10 +1,10 @@
 # Operational controls
 
-Workspace settings control session resources and access. The platform operator manages the host cluster, public routing, and storage services.
+Use these settings to choose when sessions start, how much storage and memory they can request, and which services they can reach. The platform operator manages the host cluster, public routing, and storage services.
 
 ## Sessions
 
-The Workspace API's `SESSION_MODE` sets the initial default session for a new workspace:
+Choose whether a new workspace starts a session immediately, starts one when a user opens it, or has no default session. The Workspace API's `SESSION_MODE` sets this initial state:
 
 | Value | Initial state |
 | --- | --- |
@@ -24,7 +24,7 @@ Use `spec.security` to select the Pod security level, Kubernetes token access, n
 
 ## Network access
 
-The network plugin must enforce Kubernetes NetworkPolicy. Policies add their allowed connections together.
+Allow the connections that session code needs, such as HTTPS to a data provider or access to platform storage. The network plugin must enforce Kubernetes NetworkPolicy. Policies add their allowed connections together.
 
 | Generated policy | Created when | Allows |
 | --- | --- | --- |
@@ -43,7 +43,7 @@ Set the cluster Service and Pod CIDRs and any blocked ranges in the EnvironmentC
 
 ## Data and public routes
 
-`spec.data.enabled` defaults to `true` and cannot change after Datalab creation. Set it when creating the resource. `spec.data.readOnlyMount` controls Data browser permissions; storage IAM still controls object access. The optional Data S3 endpoint is always read only.
+Use a permanent Data address for downloads that must stay available when a compute session stops. `spec.data.enabled` defaults to `true` and cannot change after Datalab creation. Set it when creating the resource. `spec.data.readOnlyMount` controls Data browser permissions; storage IAM still controls object access. The optional Data S3 endpoint is always read only.
 
 Manage public routes in the host cluster. For a permanent Data address, the public load balancer must reach the selected Gateway listener, and that listener must terminate TLS. Storage can be ready before the Data workload and its route are ready.
 
