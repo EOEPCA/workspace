@@ -83,28 +83,22 @@ kind: Datalab
 metadata:
   name: ws-alice
   namespace: workspace
-  labels:
+  annotations:
     datalabs.pkg.internal/environment: datalab
 spec:
   users:
-    - alice  
+    - alice
   secretName: ws-alice
   sessions:
     - name: default
       state: stopped
-  vcluster: true
-  data:
-    readOnlyMount: true
-  registry:
-    enabled: true
-    storage: 3Gi
 ---
 apiVersion: pkg.internal/v1beta2
 kind: Datalab
 metadata:
   name: ws-bob
   namespace: workspace
-  labels:
+  annotations:
     datalabs.pkg.internal/environment: datalab
 spec:
   users:
@@ -118,16 +112,6 @@ spec:
   sessions:
     - name: default
       state: started
-  quota:
-    memory: 18Gi
-    storage: 10Gi
-    budget: x-large
-  vcluster: true
-  data:
-    enabled: true
-  registry:
-    enabled: true
-    storage: 3Gi
   documentStores:
     prod:
       storage: 1Gi
@@ -150,7 +134,7 @@ kind: Datalab
 metadata:
   name: ws-eric
   namespace: workspace
-  labels:
+  annotations:
     datalabs.pkg.internal/environment: datalab
 spec:
   users:
@@ -159,10 +143,3 @@ spec:
   sessions:
     - name: default
       state: stopped
-  security:
-    policy: privileged
-    kubernetesAccess: false
-  vcluster: false
-  registry:
-    enabled: true
-    storage: 3Gi
