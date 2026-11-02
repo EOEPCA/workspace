@@ -8,7 +8,7 @@ The platform needs Crossplane v2, Keycloak, object storage, an ingress controlle
 
 Install Educates before creating Datalabs. The selected Educates base or ingress policies can also require Kyverno. Provider Datalab passes security settings to Educates; it does not create a complete host security policy.
 
-Optional PostgreSQL, MongoDB, Redis, and Qdrant stores need their operators installed first. The [Provider Datalab installation guide](https://github.com/versioneer-tech/provider-datalab/blob/main/docs/how-to-guides/installation.md) lists these dependencies.
+Optional PostgreSQL, MongoDB, Redis, and Qdrant stores need their operators installed first. The [Provider Datalab installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/) lists these dependencies and the environment settings.
 
 ## Charts and API
 
@@ -52,62 +52,15 @@ Educates provides the sessions that users open from their dashboard. These value
 
 ## Pipeline environment values
 
-Use these values to give workspaces a common storage service, login system, network policy, and set of resource defaults. The keys are under `environmentconfig` in Helm values. The chart writes them into `EnvironmentConfig.data`. Empty default fields leave the provider to choose its fallback. The Datalab resource can override session resource and security defaults.
+Set cluster values and overrides under `environmentconfig`. The chart copies all keys except `name` and `annotations` directly into `EnvironmentConfig.data`. Existing paths such as `environmentconfig.iam.realm` stay the same. New provider fields need no chart change. The [Provider Datalab installation guide](https://provider-datalab.versioneer.at/latest/how-to-guides/installation/) lists all EnvironmentConfig values and defaults.
 
-### Identity and routing
-
-| Key | Purpose |
+| Chart key | Purpose |
 | --- | --- |
-| `name` | EnvironmentConfig name. Chart default: `datalab`. |
-| `iam.realm` | Keycloak realm. |
-| `iam.namespace` | Keycloak namespace. |
-| `iam.issuerURL` | Public realm URL used for login. |
-| `iam.internalURL` | Realm URL reachable from the cluster. |
-| `iam.extraAudiences` | Extra audiences for generated workspace-client tokens, such as `workspace-api`. |
-| `ingress.enabled` | Use an Ingress for permanent Data access. Chart default: `false`. |
-| `ingress.class`, `ingress.domain`, `ingress.secret` | Ingress controller, workspace domain, and TLS Secret name. The domain is also used by Data HTTPRoutes. |
-| `ingress.annotations` | Ingress controller settings. |
-| `httpRoute.enabled` | Use Gateway API for permanent Data access. Chart default: `true`. |
-| `httpRoute.enableS3` | Enable experimental S3 reads. Chart default: `false`. Requires HTTPRoute access. |
-| `httpRoute.parentName`, `httpRoute.parentNamespace` | Gateway name and namespace. |
-| `httpRoute.sectionName` | HTTPS listener that terminates TLS for Data. |
-| `httpRoute.httpSectionName` | HTTP listener for the HTTPS redirect route. |
+| `environmentconfig.name` | EnvironmentConfig name. Default: `datalab`. |
+| `environmentconfig.annotations` | Annotations on the EnvironmentConfig resource. |
+| `globalAnnotations` | Annotations shared by the chart resources. |
 
-For a permanent Data address, enable exactly one of `ingress.enabled` and `httpRoute.enabled`. With both disabled, Data uses session ingress. Enabling both stops reconciliation. The public load balancer must send traffic to the selected controller or Gateway.
-
-### Storage and services
-
-| Key | Purpose |
-| --- | --- |
-| `storage.endpoint`, `storage.region` | Backing S3 endpoint and region. |
-| `storage.forcePathStyle` | Path-style S3 addresses. Chart default: `true`; written as a string for the provider. |
-| `storage.provider`, `storage.type` | Storage provider label and type. Type defaults to `s3`. |
-| `storage.secretNamespace` | Namespace where Datalabs read their input storage Secrets. |
-| `storage.lifecycle.schedule` | Storage lifecycle-job cron schedule. Provider fallback: `17 2 * * *`. |
-| `storageClasses.allowed` | Session PVC classes. An unlisted requested class falls back to the first entry. An empty list allows the requested or cluster default class. |
-| `database.storageClassName`, `database.backupStorageClassName` | PostgreSQL data and backup classes, where supported by its operator. |
-| `database.tlsRoute.parentName`, `database.tlsRoute.parentNamespace`, `database.tlsRoute.sectionName` | Gateway listener for optional external PostgreSQL access. |
-| `mongodb.storageClassName`, `redis.storageClassName`, `qdrant.storageClassName` | Managed-store volume classes. Empty uses the cluster default. |
-| `packages` | Extension packages for sessions. |
-
-### Resources and network
-
-| Key | Purpose |
-| --- | --- |
-| `defaults.quota.memory` | Session memory. Provider fallback: `2Gi`. |
-| `defaults.quota.storage` | Session home-volume size. Provider fallback: `1Gi`. |
-| `defaults.quota.budget` | Educates resource budget. Provider fallback: `medium`. |
-| `defaults.overallQuota.storage` | Total PVC requests in the Datalab environment namespace. Provider fallback: `100Gi`. |
-| `defaults.security.policy` | Pod security level: `restricted`, `baseline`, or `privileged`. Provider fallback: `baseline`. |
-| `defaults.security.kubernetesAccess` | Supply a Kubernetes service account token. Provider fallback: `true`. |
-| `defaults.security.kubernetesRole` | Namespace role: `view`, `edit`, or `admin`. Provider fallback: `edit`. |
-| `defaults.security.externalEgress` | Enable the configured external rules. Provider fallback: `true`. |
-| `network.externalEgressCIDRs` | External ranges allowed when external egress is enabled. An empty list creates no broad external allow rule. |
-| `network.internalEgress` | Allowed namespaces, Pod selectors, and ports for internal services. |
-| `network.internalIngress` | Allowed source namespaces, Pod selectors, and destination ports. Use `targetPodSelector` to select destination Pods. |
-| `network.serviceCIDR`, `network.podCIDRs` | Cluster address ranges excluded from broad external rules. |
-| `network.blacklistIPs` | Other ranges excluded from broad external rules, such as metadata endpoints. |
-| `network.excludePolicies` | Generated NetworkPolicy names to omit. |
+Use the provider guide above for field names and defaults. Omit a field to use its provider default. The chart preserves YAML types, explicit `false` values, and empty lists. Use the type required by the provider, such as `storage.forcePathStyle: "true"`.
 
 See [operational controls](../design/operational-controls.md) for how these settings affect sessions and Data.
 
@@ -139,7 +92,7 @@ environmentconfig:
     httpSectionName: http
   storage:
     endpoint: https://s3.example.org
-    forcePathStyle: true
+    forcePathStyle: "true"
     provider: Other
     region: us-east-1
     secretNamespace: workspace
@@ -162,17 +115,7 @@ environmentconfig:
     blacklistIPs:
       - 169.254.169.254/32
       - fd00:ec2::254/128
-  defaults:
-    overallQuota:
-      storage: 100Gi
-    security:
-      policy: baseline
-      kubernetesAccess: true
-      kubernetesRole: edit
-      externalEgress: true
 ```
-
-`httpRoute.enableS3` applies to all Data-enabled Datalabs in this environment. There is no per-Datalab S3 override. It controls the read-only Data endpoint; backing storage retains its own permissions.
 
 For external PostgreSQL, configure a separate TLS-passthrough listener through `database.tlsRoute`. The Gateway controller must serve `TLSRoute` v1 and support direct PostgreSQL TLS with SNI.
 

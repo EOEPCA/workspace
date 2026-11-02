@@ -7,73 +7,11 @@ storage:
 
 datalab:
   name: datalab-educates
-  package: ghcr.io/versioneer-tech/provider-datalab/educates:0.11.0
+  package: ghcr.io/versioneer-tech/provider-datalab:0.12.0
   annotations: {}
 
+# All keys except name and annotations go directly into EnvironmentConfig.data.
+# Set only cluster values and overrides. Omitted fields use provider defaults.
 environmentconfig:
   name: datalab
   annotations: {}
-  iam:
-    realm: ""
-    namespace: ""
-    issuerURL: ""
-    internalURL: ""
-    extraAudiences: []
-  ingress:
-    enabled: false
-    class: ""
-    domain: ""
-    secret: ""
-    annotations: {}
-  httpRoute:
-    enabled: true
-    enableS3: false
-    parentName: ""
-    parentNamespace: ""
-    sectionName: ""
-    httpSectionName: ""
-  storage:
-    endpoint: ""
-    forcePathStyle: true
-    provider: ""
-    region: ""
-    secretNamespace: ""
-    type: s3
-    lifecycle:
-      schedule: ""
-  storageClasses:
-    allowed: []
-  network:
-    externalEgressCIDRs: []
-    internalEgress: []
-    internalIngress: []
-    serviceCIDR: ""
-    podCIDRs: []
-    blacklistIPs: []
-    excludePolicies: []
-  packages: []
-  defaults:
-    quota:
-      memory: ""
-      storage: ""
-      budget: ""
-    overallQuota:
-      storage: ""
-    security:
-      policy: ""
-      kubernetesAccess: ""
-      kubernetesRole: ""
-      externalEgress: ""
-  database:
-    tlsRoute:
-      parentName: ""
-      parentNamespace: ""
-      sectionName: ""
-    storageClassName: ""
-    backupStorageClassName: ""
-  mongodb:
-    storageClassName: ""
-  redis:
-    storageClassName: ""
-  qdrant:
-    storageClassName: ""
