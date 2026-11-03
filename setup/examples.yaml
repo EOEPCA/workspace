@@ -98,9 +98,6 @@ spec:
         - name: cluster-admin
           namespace: "*"
           role: cluster-admin
-  sessions:
-    - name: default
-      state: stopped
 ---
 apiVersion: pkg.internal/v1beta2
 kind: Datalab
@@ -118,20 +115,17 @@ spec:
       grantedAt: "2025-10-15T08:08:53.953000+00:00"
       role: user
   secretName: ws-bob
-  sessions:
-    - name: default
-      state: started
   documentStores:
     prod:
+      type: mongo
       storage: 1Gi
   cacheStores:
     prod:
-      storage: 1Gi
-  vectorStores:
-    prod:
+      type: redis
       storage: 1Gi
   databases:
     pg0:
+      type: postgres
       names:
       - dev
       - prod
@@ -149,6 +143,3 @@ spec:
   users:
     - eric
   secretName: ws-eric
-  sessions:
-    - name: default
-      state: stopped

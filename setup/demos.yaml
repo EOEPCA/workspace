@@ -29,7 +29,12 @@ spec:
   users:
     - achtsnits
   secretName: ws-demos
-  vcluster: true
-  registry:
-    enabled: true
-    storage: 3Gi
+  vclusters:
+    vc0:
+      groups:
+        - name: namespace-demo
+          namespace: demo
+          role: edit
+        - name: cluster-admin
+          namespace: "*"
+          role: cluster-admin
