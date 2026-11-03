@@ -28,8 +28,8 @@ spec:
     firstName: Oscar
     lastName: O
 ---
-apiVersion: group.keycloak.m.crossplane.io/v1alpha1
-kind: Memberships
+apiVersion: user.keycloak.m.crossplane.io/v1alpha1
+kind: Groups
 metadata:
   name: oscar-workspace-admin
   namespace: workspace
@@ -39,7 +39,10 @@ spec:
     kind: ProviderConfig
   forProvider:
     realmId: eoepca
-    groupIdRef:
-      name: workspace-admin
-    members:
-    - oscar
+    userIdRef:
+      name: oscar
+    groupIdsRefs:
+      - name: workspace-admin
+      - name: monitoring-admin
+        namespace: iam-management
+    exhaustive: false

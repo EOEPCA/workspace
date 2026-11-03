@@ -89,6 +89,15 @@ spec:
   users:
     - alice
   secretName: ws-alice
+  vclusters:
+    vc0:
+      groups:
+        - name: namespace-demo
+          namespace: demo
+          role: edit
+        - name: cluster-admin
+          namespace: "*"
+          role: cluster-admin
   sessions:
     - name: default
       state: stopped
