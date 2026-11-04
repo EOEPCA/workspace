@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: xyz
+  namespace: stac-fastapi-pgstac
+spec:
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  containers:
+    - name: psql
+      image: postgres:17
+      stdin: true
+      tty: true
+      command: [psql, --no-psqlrc]
+      env:
+        - name: PGHOST
+          valueFrom:
+            secretKeyRef: {name: managed-postgres, key: host}
+        - name: PGPORT
+          valueFrom:
+            secretKeyRef: {name: managed-postgres, key: port}
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef: {name: managed-postgres, key: user}
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef: {name: managed-postgres, key: password}
+        - {name: PGDATABASE, value: catalog}
+        - {name: PGSSLMODE, value: require}
+        - {name: PGCONNECT_TIMEOUT, value: "10"}
+      resources:
+        requests: {cpu: 25m, memory: 64Mi}
+        limits: {memory: 128Mi}

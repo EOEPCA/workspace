@@ -2,7 +2,7 @@
 
 Create a workspace for a team, publish satellite images, and make the results available to other people and applications. The examples check that readers get the same bytes you uploaded and that the catalogue describes the published files.
 
-Start with Workspace Management if you need a test workspace. Then choose Vienna for public and S3 downloads, or STAC registration for an automated upload and search APIs. The [notebook guide](../usage/notebook-guide.md) helps you choose. You can use the same workspace for all three if it has the services listed below.
+Start with Workspace Management if you need a test workspace. Then choose Vienna for public and S3 downloads, or STAC registration for an automated upload and search APIs. Use [STAC with managed PostgreSQL](stac-fastapi-pgstac.ipynb) to register the supplied three-Item sample in a PgSTAC database. The [notebook guide](../usage/notebook-guide.md) lists the services each example needs.
 
 ## What you need
 
@@ -54,7 +54,7 @@ Workspace Management uploads the sample catalogue and its available preview and 
 
 ## 3. Publish and read satellite images
 
-Open [Vienna imagery with STAC and S3](vienna-imagery-with-stac-and-s3.ipynb) and enter the workspace name from step 1.
+Open [Vienna imagery with STAC and S3](vienna-imagery-with-stac-and-s3.ipynb). Use Alice's existing `ws-alice`, or enter the workspace name from step 1.
 
 Use this example to publish images that other people can inspect and download. The catalogue describes each cropped image, so a reader can find its date, area, and files. The notebook:
 
@@ -72,9 +72,9 @@ Open `/share/public/` on the Data hostname to browse the published files:
 
 ## 4. Publish, relocate, and serve STAC data
 
-Start the target workspace's Datalab session. Open [Register STAC metadata](register-stac-metadata.ipynb) and enter its workspace name when asked. The default is `ws-alice`. To use the test workspace from step 1, change the name and use that workspace's OAuth client and registry credentials.
+Sign in as Bob and open `ws-bob/default` in Workspace Management. Run [Register STAC metadata](register-stac-metadata.ipynb) in that Datalab session. The default workspace is `ws-bob`. The session supplies its kubeconfig and registry settings. Bob signs in for storage access.
 
-The example has three flows. Flow 1 prepares three recent usable Sentinel-5P cloud fraction observations from the DLR GeoService STAC endpoint for use around Vienna. Portolan describes the clips and uploads them under `published/`. A first vCluster STAC API demonstrates search through a port-forward. Flow 2 uses stacpkg relocation to copy the assets from `published/` to `public/` in the same workspace bucket and keeps the source files. The metadata then uses PackageR HTTP asset links. The transfers use storage credentials fetched through OAuth and the Workspace API.
+The example has three flows. Flow 1 prepares three recent usable Sentinel-5P cloud fraction observations from the DLR GeoService STAC endpoint for use around Vienna. Portolan describes the clips and uploads them under `published/`. A first vCluster STAC API demonstrates search through a port-forward. Flow 2 uses stacpkg relocation to copy the assets from `published/` to `public/` in the same workspace bucket and keeps the source files. The metadata then uses PackageR HTTP asset links. The transfers use storage credentials fetched through Bob's login and the Workspace API.
 
 PackageR serves the public catalogue dynamically through the existing Data service. Preview it in MoreGeo STAC Browser and update the first API with the public metadata. Flow 3 pushes a metadata package to the workspace OCI container registry as an artifact. A second API uses an init container to pull it by digest, so a team can deploy the same catalogue again. The [notebook guide](../usage/notebook-guide.md#process-data-and-add-search) compares the views. The APIs need the session to stay running.
 

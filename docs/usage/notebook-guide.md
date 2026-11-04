@@ -5,16 +5,21 @@ Choose a notebook for the task you need to do. Workspace Management sets up a pl
 | Notebook | Use it to | What it checks |
 | --- | --- | --- |
 | [Workspace Management](../workspace-management.ipynb) | Create a test workspace, give its owner access, and share sample files. | Storage is ready, the owner's roles are available, and temporary and public downloads match the uploaded images. |
+| [STAC with managed PostgreSQL](../getting-started/stac-fastapi-pgstac.ipynb) | Run STAC FastAPI PgSTAC in Alice's virtual cluster and register the three-Item sample catalog. | The API uses the managed database. Item listing, pagination, area and date searches, and asset metadata checks pass. |
 | [Vienna imagery with STAC and S3](../getting-started/vienna-imagery-with-stac-and-s3.ipynb) | Crop satellite images and publish them with descriptions that software can read. Try public downloads and authenticated S3 clients. | The STAC items describe the cropped images. Public, S3, and AWS CLI downloads have matching checksums. Byte-range reads return the requested bytes. |
 | [Register STAC metadata](../getting-started/register-stac-metadata.ipynb) | Publish three recent usable Sentinel-5P cloud fraction clips, relocate them for public access, and serve STAC search. | Source and public copies match. The clipped grids, API searches, HTTP downloads, and OCI files are checked. |
 
 ## Choose where to run
 
-Run Workspace Management first if you need a test workspace. Give its printed workspace name to Vienna. STAC registration defaults to `ws-alice`; you can use another workspace if it has the services and credentials listed below.
+Use the existing `ws-alice` and `ws-bob` workspaces, or a workspace with the same services. Run Workspace Management only if you need to create one.
 
-Run Workspace Management and Vienna from this repository with `uv sync` and `uv run jupyter lab`. They read public service settings from `eoepca-demo.env` and use device login for user access. Install the AWS CLI for Vienna's final step.
+Run Vienna from a repository checkout as Alice in `ws-alice`. It needs storage, a Data service, and the AWS CLI. No Kubernetes access is needed.
 
-Run STAC registration in the target workspace's Datalab, with its session vCluster kubeconfig. Enter the workspace name, OAuth client ID, and hidden client secret when asked. The client needs the [machine access](../design/iam-integration.md#machine-access) roles and audience. The helper gets storage credentials from the Workspace API before it uploads. The Datalab supplies registry settings for OCI access; enter them if they are missing.
+Run STAC with managed PostgreSQL as Alice in `ws-alice/vc0`. An operator first sets up the `catalog` database and `managed-postgres` Secret binding from `setup/examples.yaml`. The notebook requests the `demo` kubeconfig through the Workspace API. If the deployed API does not return profiles, Alice must get that profile from the workspace operator and enter its relative file path. The notebook uses a local Kubernetes Service proxy for registration and search.
+
+Run registration in Bob's `ws-bob/default` Datalab session. It uses the session's kubeconfig and registry settings. Bob signs in for workspace storage access. No OAuth client secret is needed.
+
+All three notebooks use public service settings from `eoepca-demo.env`. Tokens and storage credentials stay in kernel memory.
 
 ## Publish images for other people to use
 
@@ -38,6 +43,4 @@ Each run selects three recent usable observations. It adds them to the shared ca
 
 ## Run the upload as a job
 
-To publish new data without opening a notebook, set up a scheduler or another service to run the selection, clipping, and upload steps. Use [OAuth machine access](../design/iam-integration.md#machine-access) for the upload. Supply the workspace name and client ID in the job settings and the client secret through its secret store. Publishing an OCI package also needs registry credentials.
-
-The [quickstart](../getting-started/quickstart.md) gives the steps for all three examples. Run registration to select current observations and produce its images and verification results.
+The registration notebook uses Bob's interactive login. For a scheduled upload, use [OAuth machine access](../design/iam-integration.md#machine-access) and supply secrets through the job's secret store. Registry publication also needs registry credentials.

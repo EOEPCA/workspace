@@ -192,6 +192,20 @@ def login_workspace_as(config, username):
     return tokens
 
 
+def workspace_login(config, username, tokens=None):
+    """Reuse a login only when it belongs to the selected workspace member."""
+    import jwt
+
+    if tokens:
+        claims = jwt.decode(tokens["access_token"], options={"verify_signature": False})
+        if claims.get("preferred_username") == username:
+            try:
+                return refresh_login(config, "workspace", tokens)
+            except (ValueError, RuntimeError):
+                pass
+    return login_workspace_as(config, username)
+
+
 def workspace_data_url(data_domain, workspace_name):
     """Build the permanent Data URL from the configured domain."""
     base = urlsplit(require_https(f"https://{data_domain}"))
@@ -200,6 +214,46 @@ def workspace_data_url(data_domain, workspace_name):
     if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", workspace_name):
         raise ValueError("The workspace name must be a DNS label.")
     return f"https://{workspace_name}.{base.netloc}"
+
+
+def relative_path(path):
+    """Show a local path relative to the notebook directory."""
+    return os.path.relpath(path, Path.cwd())
+
+
+def workspace_kubeconfig(config, workspace, tokens, *, instance, group):
+    """Save a workspace profile, or use a file supplied by the user."""
+    directory = tempfile.TemporaryDirectory(prefix="test-")
+    target = Path(directory.name) / "vc0.kubeconfig"
+    with requests.Session() as session:
+        session.trust_env = False
+        response = session.get(
+            f"{config['WORKSPACE_API_ENDPOINT']}/{workspace}",
+            params={"resolve_connections": "true"},
+            headers={"Authorization": f"Bearer {tokens['access_token']}",
+                     "Accept": "application/json"},
+            timeout=60,
+        )
+        if response.status_code != 200:
+            directory.cleanup()
+            raise RuntimeError(f"Workspace lookup failed (HTTP {response.status_code}).")
+        profiles = response.json().get("datalab", {}).get("vcluster", [])
+    profile = next((value for value in profiles
+                    if value.get("instance") == instance and value.get("group") == group), {})
+    content = profile.get("credentials", {}).get("kubeconfig")
+    if content:
+        target.touch(mode=0o600)
+        target.write_text(content)
+        print(f"Saved the {workspace}/{instance}/{group} profile in a private temporary file.")
+    else:
+        print(f"Ask the workspace operator for the {workspace}/{instance}/{group} kubeconfig.")
+        supplied = Path(input("Relative path to the supplied kubeconfig: ").strip())
+        if supplied.is_absolute() or not supplied.is_file():
+            directory.cleanup()
+            raise ValueError("Enter a relative path to the supplied kubeconfig file.")
+        target.touch(mode=0o600)
+        target.write_bytes(supplied.read_bytes())
+    return directory, target
 
 
 class ApiSession(requests.Session):

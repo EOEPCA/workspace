@@ -28,7 +28,6 @@ metadata:
 spec:
   users:
     - achtsnits
-  secretName: ws-demos
   vclusters:
     vc0:
       groups:

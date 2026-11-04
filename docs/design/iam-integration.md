@@ -68,6 +68,19 @@ The [STAC registration notebook](../getting-started/register-stac-metadata.ipynb
 
 The API also has `/workspaces/<workspace-name>/token` for callers with `ISSUE_TOKENS` or platform administration. That route returns a workspace machine token. It does not replace user login.
 
+## Virtual cluster access
+
+Alice is listed in the Datalab's `spec.users`. As a member, she can retrieve
+the generated `cluster-admin` kubeconfig from the workspace dashboard. Using
+that kubeconfig gives her cluster-admin access to `vc0`. It obtains tokens
+for the profile's Keycloak service account.
+
+An operator can make additional kubeconfig available for download to a
+service user. That account can then use the virtual cluster within the configured namespace.
+Keep such accounts outside Datalab membership, without `ws_access` or
+`ws_admin`. Those workspace roles permit retrieval of every ready profile,
+including `cluster-admin`.
+
 ## Route protection
 
 Protect the shared UI and session routes with the workspace roles in `resource_access`. A service owned by one workspace can use its confidential client and require the expected audience, client ID, and roles.

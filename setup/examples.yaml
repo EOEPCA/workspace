@@ -88,12 +88,23 @@ metadata:
 spec:
   users:
     - alice
-  secretName: ws-alice
+  databases:
+    pg0:
+      type: postgres
+      names:
+        - catalog
+      storage: 1Gi
   vclusters:
     vc0:
+      secretBindings:
+        - type: postgres
+          name: pg0
+          target:
+            namespace: stac-fastapi-pgstac
+            name: managed-postgres
       groups:
-        - name: namespace-demo
-          namespace: demo
+        - name: demo
+          namespace: stac-fastapi-pgstac
           role: edit
         - name: cluster-admin
           namespace: "*"
@@ -114,7 +125,6 @@ spec:
     alice:
       grantedAt: "2025-10-15T08:08:53.953000+00:00"
       role: user
-  secretName: ws-bob
   documentStores:
     prod:
       type: mongo
@@ -142,4 +152,3 @@ metadata:
 spec:
   users:
     - eric
-  secretName: ws-eric

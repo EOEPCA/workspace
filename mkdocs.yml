@@ -12,6 +12,7 @@ nav:
       - Quickstart: getting-started/quickstart.md
       - Notebook guide: usage/notebook-guide.md
       - Workspace Management: workspace-management.ipynb
+      - STAC with managed PostgreSQL: getting-started/stac-fastapi-pgstac.ipynb
       - Vienna imagery with STAC and S3: getting-started/vienna-imagery-with-stac-and-s3.ipynb
       - Register STAC metadata: getting-started/register-stac-metadata.ipynb
     - For Operators:
@@ -56,6 +57,8 @@ plugins:
       ignore:
         - notebook_support.py
         - notebook_links.py
+        - stac-fastapi-pgstac/migrate.py
+        - stac-fastapi-pgstac/app.py
 
 markdown_extensions:
   - tables
