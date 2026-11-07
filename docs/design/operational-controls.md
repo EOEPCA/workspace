@@ -18,7 +18,13 @@ A stopped session keeps its home PVC. Object storage and shared Data or database
 
 ## Kubernetes access
 
-Namespace mode uses the host control plane and a session namespace role. In vCluster mode, each started session gets a virtual Kubernetes control plane. Its workloads still use host-cluster nodes and remain subject to host policies.
+Workspace clusters are declared under `spec.vclusters`. They run independently
+of browser sessions. Administrators can add namespace profiles and download
+kubeconfigs through Workspace API.
+
+Browser sessions can use the host control plane with a session namespace
+role, or their own virtual control plane. Workloads still use host-cluster
+nodes and remain subject to host policies.
 
 Use `spec.security` to select the Pod security level, Kubernetes token access, namespace role, and external egress. Omitted fields use `EnvironmentConfig.data.defaults.security`, then provider defaults. Configure the host's admission policies and resource limits separately.
 
@@ -47,7 +53,7 @@ Use a permanent Data address for downloads that must stay available when a compu
 
 Manage public routes in the host cluster. For a permanent Data address, the public load balancer must reach the selected Gateway listener, and that listener must terminate TLS. Storage can be ready before the Data workload and its route are ready.
 
-See [installation](../getting-started/installation.md#example-values) for routing values and [IAM integration](iam-integration.md#route-protection) for authentication.
+See [environment configuration](../getting-started/installation.md#1-set-the-environment) for routing values and [IAM integration](iam-integration.md#route-protection) for authentication.
 
 ## Persistent data
 

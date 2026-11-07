@@ -14,6 +14,8 @@ flowchart TD
     D --> PD[Provider Datalab]
     PD --> IAM[Keycloak clients, groups, and roles]
     PD --> DATA[Shared Data service]
+    PD --> VC[Workspace virtual Kubernetes clusters]
+    PD --> REG[OCI registry backed by workspace storage]
     PD --> SESSION[Named Datalab sessions]
     PD --> STORES[Optional managed stores]
 ```
@@ -22,7 +24,12 @@ flowchart TD
 
 Provider Storage creates buckets, storage identities, policies, and credential Secrets. Backend compositions support MinIO, AWS S3, OTC OBS, OVHcloud, and CloudFerro.
 
-Provider Datalab uses those storage credentials. It creates the shared Data service, requested stores, and the declared sessions. A session has its own home volume and can have a virtual Kubernetes control plane. Shared Data and managed stores can run while sessions are stopped.
+Provider Datalab uses those storage credentials. It creates Data, the managed
+OCI registry, requested stores, workspace vClusters, and declared browser
+sessions. The registry stores its packages in the workspace bucket. The STAC
+notebooks use clusters configured under `spec.vclusters`; Workspace API
+supplies their kubeconfig profiles. These services run independently of
+browser sessions.
 
 The API and UI run as separate components from the composition packages. The pipeline chart installs the Storage and Datalab packages and their shared configuration. It does not deploy the Workspace API or UI.
 

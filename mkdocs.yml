@@ -10,6 +10,7 @@ nav:
     - Concepts: concepts.md
     - Getting Started:
       - Quickstart: getting-started/quickstart.md
+      - Virtual cluster access: getting-started/vcluster-access.md
       - Notebook guide: usage/notebook-guide.md
       - Workspace Management: workspace-management.ipynb
       - STAC with managed PostgreSQL: getting-started/stac-fastapi-pgstac.ipynb
@@ -59,6 +60,9 @@ plugins:
         - notebook_links.py
         - stac-fastapi-pgstac/migrate.py
         - stac-fastapi-pgstac/app.py
+        - stac-fastapi-pgstac/export.py
+        - register-stac-metadata/app.py
+        - register-stac-metadata/registry.py
 
 markdown_extensions:
   - tables

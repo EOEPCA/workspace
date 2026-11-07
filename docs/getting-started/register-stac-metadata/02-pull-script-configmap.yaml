@@ -5,4 +5,4 @@ metadata:
   labels:
     app: cng-stac-api
 data:
-  pull.py: {{OCI_PULL_SCRIPT}}
+  app.py: {{API_APP_SCRIPT}}

@@ -1,6 +1,6 @@
 # Quickstart
 
-Create a workspace for a team, publish satellite images, and make the results available to other people and applications. The examples check that readers get the same bytes you uploaded and that the catalogue describes the published files.
+Create a workspace, use its virtual cluster and registry, and publish data.
 
 Start with Workspace Management if you need a test workspace. Then choose Vienna for public and S3 downloads, or STAC registration for an automated upload and search APIs. Use [STAC with managed PostgreSQL](stac-fastapi-pgstac.ipynb) to register the supplied three-Item sample in a PgSTAC database. The [notebook guide](../usage/notebook-guide.md) lists the services each example needs.
 
@@ -13,9 +13,9 @@ These examples use `eoepca-demo`. The repository includes public service setting
 | `alice` and `oscar` accounts | Alice owns the workspace; Oscar has the `workspace-api` platform `admin` role and creates it. |
 | Storage and a permanent Data address | Upload files, browse public shares, and download data. |
 | Data S3 endpoint enabled | Run the authenticated S3 and AWS CLI steps. |
-| Datalab with vCluster and registry | Run the STAC registration notebook. |
+| Workspace vCluster with an API kubeconfig profile | Run the STAC API notebooks. Registration deploys its registry in this vCluster. |
 
-An operator sets up the [accounts and roles](https://github.com/EOEPCA/workspace/tree/main/setup) and [installs Workspace](installation.md). For another deployment, change the service settings and account names.
+For a new platform, start with [components and environment configuration](installation.md). An operator sets up the [accounts and roles](https://github.com/EOEPCA/workspace/tree/main/setup). For another deployment, change the service settings and account names.
 
 ## 1. Create a workspace
 
@@ -28,7 +28,13 @@ uv run jupyter lab docs/workspace-management.ipynb
 
 Run [Workspace Management](../workspace-management.ipynb). Sign in as Alice with device login, then as Oscar when the notebook asks for an administrator.
 
-The notebook creates `ws-test-<UTC timestamp>`, waits for storage, and refreshes Alice's token to load her workspace roles. Copy the printed workspace name for the other notebooks.
+The notebook creates `ws-test-<UTC timestamp>`. On this demo, the workspace
+includes storage, a `vc0` virtual cluster, a managed OCI registry, and Data.
+Alice signs in again to obtain her new workspace roles. The notebook shows
+the same HTTP call as the UI to add a namespace profile, exchanges a token
+for that profile, and pushes and pulls a small package with ORAS. Use the
+printed workspace name to run Vienna in this workspace. The STAC API
+notebooks use the preconfigured `ws-alice` services.
 
 The API returns a name, for example:
 
@@ -40,17 +46,16 @@ The dashboard address is `WORKSPACE_API_ENDPOINT/<workspace-name>`. The API adds
 
 ## 2. Open the workspace
 
-Open the dashboard link as Alice. It shows the storage connection and available sessions. Open a Datalab session to use its editor, terminal, and Data tab.
+Open the dashboard link as Alice. Check the storage connection and Data link. Run the notebooks from your repository checkout. The STAC API notebooks download their workspace vCluster profiles through Workspace API.
+
+For kubectl access, follow [Access a workspace virtual cluster](vcluster-access.md).
+It shows device login as Alice, the offline CLI cache, and token exchange for
+a process limited to the `demo` profile. The exchanged token has its own short
+lifetime and no refresh token.
 
 [![Alice's workspace dashboard, with storage status, her membership, and the workspace bucket](../img/quickstart/dashboard.png)](../img/quickstart/dashboard.png)
 
-In on-demand mode, opening a stopped session starts it. Storage and the permanent Data service can be available before the session starts. The notebook waits separately for storage and the public Data route.
-
-Use **Management → Sessions** to check the `default` session:
-
-[![Sessions tab showing the default Datalab session in the started state](../img/quickstart/sessions.png)](../img/quickstart/sessions.png)
-
-Workspace Management uploads the sample catalogue and its available preview and thumbnail images. It checks each uploaded image through an expiring S3 link, then through a permanent public-share link. Both downloads must match the uploaded bytes.
+Workspace Management uploads the sample catalogue and one available preview image. It checks the image through an expiring S3 link and a permanent public-share link. Both downloads must match the uploaded bytes.
 
 ## 3. Publish and read satellite images
 
@@ -64,7 +69,7 @@ Use this example to publish images that other people can inspect and download. T
 4. Uses device login for authenticated S3 reads and the AWS CLI.
 5. Checks a byte-range read and compares download checksums.
 
-Existing objects with matching checksums are kept. A different file at the same key stops the upload.
+Existing image files with matching checksums are kept. A different image at the same key stops the upload. The shared catalogue retains other datasets.
 
 Open `/share/public/` on the Data hostname to browse the published files:
 
@@ -72,13 +77,13 @@ Open `/share/public/` on the Data hostname to browse the published files:
 
 ## 4. Publish, relocate, and serve STAC data
 
-Sign in as Bob and open `ws-bob/default` in Workspace Management. Run [Register STAC metadata](register-stac-metadata.ipynb) in that Datalab session. The default workspace is `ws-bob`. The session supplies its kubeconfig and registry settings. Bob signs in for storage access.
+Run [Register STAC metadata](register-stac-metadata.ipynb) from your checkout. Sign in as Alice. The notebook gets storage credentials and the `ws-alice/vc0/demo` kubeconfig through Workspace API. The [example resources](https://github.com/EOEPCA/workspace/blob/main/setup/examples.yaml) configure that profile and its namespace.
 
-The example has three flows. Flow 1 prepares three recent usable Sentinel-5P cloud fraction observations from the DLR GeoService STAC endpoint for use around Vienna. Portolan describes the clips and uploads them under `published/`. A first vCluster STAC API demonstrates search through a port-forward. Flow 2 uses stacpkg relocation to copy the assets from `published/` to `public/` in the same workspace bucket and keeps the source files. The metadata then uses PackageR HTTP asset links. The transfers use storage credentials fetched through Bob's login and the Workspace API.
+Flow 1 prepares three Sentinel-5P cloud fraction observations from the DLR GeoService STAC endpoint for use around Vienna. Portolan describes the clips and uploads them under `published/`. A first workspace vCluster API demonstrates search through a local Kubernetes Service proxy. Flow 2 copies the assets to `public/` with stacpkg and keeps the source files. The metadata then uses PackageR HTTP asset links.
 
-PackageR serves the public catalogue dynamically through the existing Data service. Preview it in MoreGeo STAC Browser and update the first API with the public metadata. Flow 3 pushes a metadata package to the workspace OCI container registry as an artifact. A second API uses an init container to pull it by digest, so a team can deploy the same catalogue again. The [notebook guide](../usage/notebook-guide.md#process-data-and-add-search) compares the views. The APIs need the session to stay running.
+PackageR serves the public catalogue through the Data service. Preview it in MoreGeo STAC Browser and update the first API with the public metadata. Flow 3 deploys CNCF Distribution inside the workspace vCluster. A publisher Job pushes the metadata package, and a second API pulls it by digest. The [notebook guide](../usage/notebook-guide.md#process-data-and-add-search) compares the views.
 
-Each registration run selects three observations. It keeps older published data and shared catalogue entries. The notebooks leave the workspace, uploaded files, and OCI package available for inspection.
+Each registration run selects three observations. It keeps older published data and shared catalogue entries. The notebooks leave the workspace, uploaded files, and OCI package available for inspection. Registry artifacts stay on its PVC across Pod restarts.
 
 ## 5. Work with a team
 

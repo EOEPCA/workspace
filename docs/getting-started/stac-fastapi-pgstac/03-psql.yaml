@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: xyz
+  name: catalog-query
   namespace: stac-fastapi-pgstac
 spec:
   automountServiceAccountToken: false

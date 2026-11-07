@@ -4,9 +4,12 @@ People need to sign in to manage a workspace. Jobs need access that works withou
 
 ## Login and workspace clients
 
-Use a central public client, such as `workspace-api`, for user login to the API, UI, and shared session routes. For Workspace Management and the Vienna notebook, enable Device Authorization Grant and S256 PKCE on this client. A user signs in once and receives the roles for their workspaces.
+Use a central public client, such as `workspace-api`, for user login to the API, UI, and shared session routes. For the notebooks, enable Device Authorization Grant and S256 PKCE on this client. A user signs in once and receives the roles for their workspaces.
 
-Provider Datalab creates a separate confidential client for each workspace. Its ID matches the Datalab name. It enables service accounts and browser login, limits role scope, and disables implicit, password, and device grants.
+Provider Datalab creates a separate confidential client for each workspace.
+Its ID matches the Datalab name. It enables service accounts, browser login,
+device login, and restricted user-token exchange. It limits role scope and
+disables implicit and password grants.
 
 | Resource | Example | Use |
 | --- | --- | --- |
@@ -14,20 +17,20 @@ Provider Datalab creates a separate confidential client for each workspace. Its 
 | Workspace confidential client | `ws-alice` | Workspace roles and machine tokens. |
 | User group | `ws-alice` | Assign `ws_access`. |
 | Admin group | `ws-alice-admin` | Assign `ws_admin`. |
-| Runtime Secret | `ws-alice-oauth2-client` | Supply `client_id` and `client_secret` to services. |
+| OAuth client Secret | Resolved from `status.oauth2` | Supply the workspace client ID and secret to authorized callers. |
 
-The runtime Secret is a machine credential. A caller who can read it can request a service-account token for that workspace. The STAC registration notebook uses client credentials to show how an upload can run without user login.
+The client secret authenticates the workspace OAuth client. It supports service-account token requests and human device login. The STAC notebooks use Alice's login to obtain their workspace credentials.
 
 ## Roles
 
 | Role | Workspace API access |
 | --- | --- |
-| `ws_access` | View storage credentials, members, buckets, resource usage, stores, and sessions. |
-| `ws_admin` | All user actions; manage members, buckets, stores, and sessions; request machine tokens. |
-| `ws_api` | View workspace storage credentials. Assigned to the workspace client service account. |
+| `ws_access` | View workspace connections, OAuth client credentials, members, buckets, stores, sessions, and vclusters. |
+| `ws_admin` | All user actions; manage members, buckets, stores, sessions, and vclusters; issue workspace tokens. |
+| `ws_api` | Read storage and service connection credentials; no OAuth client credentials. |
 | `admin` on `workspace-api` | Platform administration across workspaces, including workspace creation. |
 
-The resource-usage permission is `VIEW_RESOURCE_USAGE`. The machine-token permission is `ISSUE_TOKENS`; `ws_admin` includes both. The service-account role `ws_api` cannot manage a workspace or open interactive browser routes.
+The token-issuance permission is `ISSUE_TOKENS`; `ws_admin` includes it. The workspace service account has `ws_api` by default. This role cannot manage a workspace or open interactive browser routes.
 
 A workspace role limits management actions. Members with access to the shared storage credentials use the same storage policy. [Bucket grants](../concepts.md#storage) control which other workspace buckets that identity can use.
 
@@ -64,22 +67,35 @@ A client-credentials token identifies the workspace service account. It has `ws_
 
 Use OAuth client credentials for a scheduled upload or a task delegated to another service. The job requests a token with its client ID and secret, calls the Workspace API for storage credentials, and passes those credentials to its upload tool. No workspace team member needs to be present or sign in through a browser. The token needs the API audience and the target workspace's `ws_api` role.
 
-The [STAC registration notebook](../getting-started/register-stac-metadata.ipynb) uses this path for Portolan uploads and stacpkg relocation. The first API's startup Secret supplies storage access until it switches to public HTTP metadata. For a job, replace the prompts with job settings and a client secret from its secret store. OCI publishing uses separate registry credentials.
+The [STAC registration notebook](../getting-started/register-stac-metadata.ipynb) uses Alice's login to obtain storage credentials for Portolan uploads and stacpkg relocation. For a scheduled upload, use the machine-access flow above and get the client secret from the job's secret store. The first API's startup Secret supplies storage access until it switches to public HTTP metadata. The notebook's OCI publisher uses an internal Distribution Service in the workspace vCluster.
 
-The API also has `/workspaces/<workspace-name>/token` for callers with `ISSUE_TOKENS` or platform administration. That route returns a workspace machine token. It does not replace user login.
+The API also has `/workspaces/<workspace-name>/token` for callers with
+`ISSUE_TOKENS` or platform administration. Without `scope`, it returns a
+workspace service-account token with `ws_api`. With configured profile scopes,
+it exchanges the caller's user token for selected profile roles. See
+[delegated access](../getting-started/vcluster-access.md#case-2-delegate-the-demo-profile-to-a-process).
 
 ## Virtual cluster access
 
-Alice is listed in the Datalab's `spec.users`. As a member, she can retrieve
-the generated `cluster-admin` kubeconfig from the workspace dashboard. Using
-that kubeconfig gives her cluster-admin access to `vc0`. It obtains tokens
-for the profile's Keycloak service account.
+The dashboard supplies connection settings separately from caller credentials.
+Provider Datalab automatically grants workspace administrators `ws_admin`
+and each configured instance's built-in vcluster administrator role.
+Alice therefore already has `vcluster_vc0_cluster-admin`. She uses the
+administrator profile for device login with her human identity; no separate
+role assignment is needed. Current profiles request offline access and cache
+the CLI login for up to 30 days, subject to Keycloak offline-session limits.
+Notebook logins through the central public client have a separate lifetime.
 
-An operator can make additional kubeconfig available for download to a
-service user. That account can then use the virtual cluster within the configured namespace.
-Keep such accounts outside Datalab membership, without `ws_access` or
-`ws_admin`. Those workspace roles permit retrieval of every ready profile,
-including `cluster-admin`.
+For a process, Alice requests an exchanged token for one additional profile.
+The recipient supplies that token through `DATALAB_ACCESS_TOKEN_FILE` and
+uses the downloaded profile without a browser prompt. The token keeps Alice's
+subject and selected roles. A namespace kubeconfig alone cannot restrict a
+token that still has administrator roles.
+
+Follow [Access a workspace virtual cluster](../getting-started/vcluster-access.md)
+for UI downloads, token exchange, namespace checks, and login lifetimes. The
+[Provider Datalab guide](https://github.com/versioneer-tech/provider-datalab/blob/main/docs/how-to-guides/vcluster.md)
+describes the underlying profiles, cache, and revocation limits.
 
 ## Route protection
 

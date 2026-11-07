@@ -12,7 +12,7 @@ digraph data_flow {
         style="rounded";
         prepare [label="DLR GeoService STAC endpoint\nClip three observations\naround Vienna"];
         published [label="Portolan: create metadata and upload\nWorkspace bucket: published/\nAssets and item table", fillcolor="#f0fdf4"];
-        private_api [label="First STAC API in Datalab\nLoad private S3 item table\nSearch with private S3 asset links"];
+        private_api [label="First STAC API in workspace vCluster\nLoad private S3 item table\nSearch with private S3 asset links"];
         prepare -> published -> private_api;
     }
 
@@ -35,7 +35,7 @@ digraph data_flow {
         color="#c4b5fd";
         style="rounded";
         package [label="stacpkg: build metadata package\nItem table, asset lock, collections\nImage bytes stay in the bucket"];
-        registry [label="Push artifact to workspace\nOCI registry; verify digest"];
+        registry [label="Publisher Job: push to Distribution\nWorkspace vCluster; persistent volume\nPull by digest and compare hashes"];
         init [label="Second API's init container\nPull metadata package by digest"];
         oci_api [label="Second STAC API\nRead local metadata and search\nReuse public HTTP asset links"];
         package -> registry -> init -> oci_api;

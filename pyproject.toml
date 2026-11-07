@@ -1,7 +1,7 @@
 [project]
 name = "workspace-docs"
 version = "0.1.0"
-description = "Documentation notebooks and examples for workspace user and operator journeys."
+description = "Workspace documentation, notebooks, and examples."
 readme = "README.md"
 requires-python = "==3.13.5"
 dependencies = [

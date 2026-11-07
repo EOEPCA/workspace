@@ -1,9 +1,9 @@
 """Resolve notebook links against the source tree when building the site."""
 
-from html import escape, unescape
-from html.parser import HTMLParser
 import posixpath
 import re
+from html import escape, unescape
+from html.parser import HTMLParser
 from urllib.parse import urlsplit, urlunsplit
 
 from mkdocs.utils import get_relative_url
@@ -33,7 +33,7 @@ def collapse_code(html):
                     and "celltag_collapse-input" in classes):
                 self.folded = self.depth
                 insertions.append((self.position(),
-                                   "<details><summary>Notebook functions</summary>"))
+                                   "<details><summary>Helper code</summary>"))
 
         def handle_endtag(self, tag):
             if tag != "div":

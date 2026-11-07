@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{PUBLISH_JOB}}
+  labels:
+    app: cng-stac-publisher
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: cng-stac-publisher
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: publish
+          image: python:3.13-slim
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - >-
+              python -m pip install --no-cache-dir
+              'stacpkg==0.2.0' 'oras==0.2.42'
+              && mkdir -p /data/package
+              && cp -L /input/* /data/package/
+              && exec python /scripts/registry.py push "${OCI_REFERENCE}" /data/package
+          env:
+            - name: OCI_REFERENCE
+              value: {{OCI_REFERENCE}}
+          volumeMounts:
+            - name: input
+              mountPath: /input
+              readOnly: true
+            - name: client
+              mountPath: /scripts
+              readOnly: true
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: input
+          configMap:
+            name: {{PACKAGE_CONFIGMAP}}
+        - name: client
+          configMap:
+            name: cng-stac-registry-client
+        - name: data
+          emptyDir: {}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

@@ -88,6 +88,9 @@ metadata:
 spec:
   users:
     - alice
+  sessions:
+    - name: default
+      state: stopped
   databases:
     pg0:
       type: postgres
@@ -106,9 +109,6 @@ spec:
         - name: demo
           namespace: stac-fastapi-pgstac
           role: edit
-        - name: cluster-admin
-          namespace: "*"
-          role: cluster-admin
 ---
 apiVersion: pkg.internal/v1beta2
 kind: Datalab
@@ -125,6 +125,9 @@ spec:
     alice:
       grantedAt: "2025-10-15T08:08:53.953000+00:00"
       role: user
+  sessions:
+    - name: default
+      state: stopped
   documentStores:
     prod:
       type: mongo
@@ -152,3 +155,6 @@ metadata:
 spec:
   users:
     - eric
+  sessions:
+    - name: default
+      state: stopped

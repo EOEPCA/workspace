@@ -27,33 +27,15 @@ spec:
               python -m pip install --no-cache-dir
               'stacpkg==0.2.0'
               'oras==0.2.42'
-              && exec python /scripts/pull.py
+              && exec python /registry-client/registry.py pull "${OCI_REFERENCE}" /data/package
           env:
-            - name: REGISTRY_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: cng-stac-api-registry
-                  key: host
-            - name: REGISTRY_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: cng-stac-api-registry
-                  key: username
-            - name: REGISTRY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: cng-stac-api-registry
-                  key: password
             - name: OCI_REFERENCE
-              valueFrom:
-                secretKeyRef:
-                  name: cng-stac-api-registry
-                  key: reference
+              value: {{OCI_REFERENCE}}
           volumeMounts:
             - name: data
               mountPath: /data
-            - name: init-script
-              mountPath: /scripts
+            - name: registry-client
+              mountPath: /registry-client
               readOnly: true
           resources:
             requests:
@@ -90,7 +72,7 @@ spec:
               'rustac==0.9.3'
               'obstore==0.8.2'
               && exec python -m uvicorn
-              stac_fastapi.geoparquet.main:app
+              app:create_app --factory --app-dir /scripts
               --host 0.0.0.0
               --port 8000
               --root-path "${ROOT_PATH}"
@@ -99,6 +81,8 @@ spec:
               value: /data/package/collections.json
             - name: ROOT_PATH
               value: {{OCI_ROOT_PATH}}
+            - name: LOCAL_API_ORIGIN
+              value: {{OCI_API_ORIGIN}}
           ports:
             - name: http
               containerPort: 8000
@@ -111,6 +95,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+              readOnly: true
+            - name: init-script
+              mountPath: /scripts
               readOnly: true
           resources:
             requests:
@@ -125,6 +112,9 @@ spec:
               drop:
                 - ALL
       volumes:
+        - name: registry-client
+          configMap:
+            name: cng-stac-registry-client
         - name: data
           emptyDir: {}
         - name: init-script

@@ -1,6 +1,8 @@
 # Concepts
 
-Use workspace storage to keep a team's datasets in one place. Add members to work with those files, grant another workspace access to a bucket, or publish results for readers without an account. Sessions and managed services give the team tools to process that data.
+Workspaces provide shared storage, virtual clusters, a registry, and Data.
+Members can share buckets with another workspace or publish files for readers
+without an account.
 
 Open your workspace dashboard and select **Management** to manage members, buckets, sessions, and services. The available tabs and actions depend on your [workspace role](design/iam-integration.md#roles).
 
@@ -42,6 +44,22 @@ Mark a bucket as discoverable to let other workspaces find it and request access
 
 Use `ReadOnly` for a reader. The [permission table](#storage) describes each level.
 
+## Virtual clusters and registry
+
+On the demo, a new workspace includes the `vc0` virtual Kubernetes cluster
+and a managed OCI registry. Their ready connection settings appear on the
+dashboard. Workspace administrators receive virtual cluster administration
+automatically. They can add namespace profiles in **Management > Vclusters**
+and exchange a user token to delegate one profile.
+
+The registry stores container images and OCI packages in the workspace
+bucket. Its connection supplies a separate registry user and password. Use
+ORAS to push a file package, or a container client to push an image. The
+[Workspace Management notebook](workspace-management.ipynb) shows the API
+calls, delegated access, registry login, and package push and pull. See
+[virtual cluster access](getting-started/vcluster-access.md) for standalone
+kubectl commands.
+
 ## Datalabs and sessions
 
 A `Datalab` resource defines the team's users, sessions, and shared services. Start a session when you need an editor, a terminal, or a place to run code. Each named session has a persistent home volume, so you can stop it and keep your files for the next run.
@@ -58,7 +76,7 @@ Shared storage, Data, and managed databases have separate lifecycles. See [sessi
 
 ## Managed services
 
-Use a managed service when your code needs a database, cache, or vector store shared within the workspace. PostgreSQL, MongoDB, Redis, and Qdrant need their operators installed in the platform. A registry can store container images and OCI packages for use by session workloads.
+Use a managed service when your code needs a database, cache, or vector store shared within the workspace. PostgreSQL, MongoDB, Redis, and Qdrant need their operators installed in the platform.
 
 ### Add a managed service
 
@@ -109,7 +127,7 @@ Put a STAC GeoParquet file at `public/catalog.parquet` to publish a catalogue th
 
 Start with the [Vienna notebook](getting-started/vienna-imagery-with-stac-and-s3.ipynb) to publish satellite images and let other people download them. It crops three images, adds descriptions for the cropped area, and checks public and authenticated S3 downloads.
 
-The [registration notebook](getting-started/register-stac-metadata.ipynb) has three flows. Flow 1 uploads with Portolan under `published/` and demonstrates API search. Flow 2 uses stacpkg relocation to copy the assets under `public/` in the same workspace bucket. The source files stay in place. PackageR serves the public catalogue through the existing Data service, with HTTP asset links for browser access. Flow 3 pushes a metadata package to the workspace OCI container registry as an artifact. A second API reads the package by digest, so a team can deploy the same catalogue again. The [notebook guide](usage/notebook-guide.md#process-data-and-add-search) compares these views and their setup.
+The [registration notebook](getting-started/register-stac-metadata.ipynb) uploads with Portolan under `published/` and demonstrates API search in the workspace vCluster. It copies the assets under `public/` with stacpkg and keeps the source files. PackageR serves the public catalogue through the Data service, with HTTP asset links. A third flow deploys CNCF Distribution in that vCluster, pushes a metadata package, and starts a second API from its digest. The [notebook guide](usage/notebook-guide.md#process-data-and-add-search) compares these views and their setup.
 
 ### S3 clients
 
@@ -126,7 +144,7 @@ The signing names are public identifiers. The token must include the workspace n
 
 The endpoint supports bucket and object listing, HEAD, GET, and byte-range GET. It rejects uploads and S3 query-presigned requests. S3 reads of `public/` objects still need a token; public-share links use a separate route.
 
-Operators enable S3 through the [Gateway settings](getting-started/installation.md#example-values). The Vienna notebook refreshes its device login before the S3 and AWS CLI steps and checks the downloaded files by SHA-256.
+Operators enable S3 through the [environment configuration](getting-started/installation.md#1-set-the-environment). The Vienna notebook refreshes its device login before the S3 and AWS CLI steps and checks the downloaded files by SHA-256.
 
 #### Automatic token renewal
 

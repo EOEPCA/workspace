@@ -7,3 +7,4 @@ metadata:
 data:
   collections.json: {{REMOTE_COLLECTIONS_JSON}}
   load.py: {{INDEX_LOADER_SCRIPT}}
+  app.py: {{API_APP_SCRIPT}}

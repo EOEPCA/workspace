@@ -1,12 +1,15 @@
 # Workspace
 
-A workspace gives a team a place to keep data, run code, and share results. Members use shared object storage and services, with browser sessions for their code. They can grant another workspace access to a bucket or publish files for anyone to download.
-
-Open a Datalab session for its editor and terminal. Use its Data tab to browse storage with PackageR. A permanent Data address lets people read and download published results even when compute sessions are stopped.
+A workspace provides shared object storage, virtual Kubernetes clusters, an
+OCI registry, and a Data service. Teams can share buckets or publish files
+for anyone to download. Browser sessions provide an editor and terminal when
+needed; the other services run independently.
 
 ## Start here
 
-Follow the [quickstart](getting-started/quickstart.md) to create a test workspace, publish satellite images, and read them through public links and S3 clients. The STAC registration example has three flows: publish with Portolan and demonstrate search; copy assets to the public folder in the same workspace bucket with stacpkg relocation and share the catalogue; then deploy a second API from an OCI metadata package by digest.
+Follow the [quickstart](getting-started/quickstart.md) to create a workspace,
+access its virtual cluster, delegate namespace access, and push a registry
+package. The STAC notebooks publish satellite data and serve search APIs.
 
 Use the [notebook guide](usage/notebook-guide.md) to choose an example and check what it needs before you run it.
 

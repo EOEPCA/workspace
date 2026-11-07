@@ -1,13 +1,18 @@
 # Workspace
 
-The EOEPCA Workspace Building Block gives a team a place to store data, run code, and share results. Team members use the same storage and can request browser sessions and managed services. A permanent Data address keeps published files available when compute sessions stop.
+The EOEPCA Workspace Building Block provides shared storage, virtual Kubernetes
+clusters, an OCI registry, and data services for a team. Browser sessions and
+managed databases are available when configured. Published files remain
+available through the Data service when browser sessions stop.
 
-The notebooks take you from an empty workspace to public satellite images and searchable STAC metadata. Start with the quickstart to create a workspace. Use the notebook guide to choose an example for public downloads, automated uploads with Portolan, or STAC search.
+Start with [Workspace Management](docs/workspace-management.ipynb) to create a workspace, access its virtual
+cluster, delegate a namespace profile, and push a registry package. The other
+notebooks publish satellite images and serve STAC search.
 
 This repository contains the Helm charts, documentation, and examples. Deploy the Workspace API and UI separately from their source repository.
 
 - [Documentation](https://eoepca.readthedocs.io/projects/workspace/)
-- [Installation and chart settings](docs/getting-started/installation.md)
+- [Components and environment configuration](docs/getting-started/installation.md)
 - [Quickstart](docs/getting-started/quickstart.md)
 - [Choose a notebook](docs/usage/notebook-guide.md)
 - [Concepts](docs/concepts.md)

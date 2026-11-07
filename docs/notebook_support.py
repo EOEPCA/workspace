@@ -21,7 +21,6 @@ from urllib.parse import quote, urljoin, urlsplit
 import requests
 from dotenv import dotenv_values
 
-
 # Only these fields can appear in notebook output.
 PUBLIC_KEYS = (
     "ENVIRONMENT", "OIDC_ISSUER", "EOAPI_CLIENT_ID", "WORKSPACE_CLIENT_ID",
@@ -217,47 +216,47 @@ def workspace_data_url(data_domain, workspace_name):
 
 
 def relative_path(path):
-    """Show a local path relative to the notebook directory."""
+    """Show a file path relative to the notebook directory."""
     return os.path.relpath(path, Path.cwd())
 
 
-def workspace_kubeconfig(config, workspace, tokens, *, instance, group):
-    """Save a workspace profile, or use a file supplied by the user."""
-    directory = tempfile.TemporaryDirectory(prefix="test-")
-    target = Path(directory.name) / "vc0.kubeconfig"
-    with requests.Session() as session:
-        session.trust_env = False
-        response = session.get(
-            f"{config['WORKSPACE_API_ENDPOINT']}/{workspace}",
-            params={"resolve_connections": "true"},
-            headers={"Authorization": f"Bearer {tokens['access_token']}",
-                     "Accept": "application/json"},
-            timeout=60,
-        )
-        if response.status_code != 200:
-            directory.cleanup()
-            raise RuntimeError(f"Workspace lookup failed (HTTP {response.status_code}).")
-        profiles = response.json().get("datalab", {}).get("vcluster", [])
-    profile = next((value for value in profiles
-                    if value.get("instance") == instance and value.get("group") == group), {})
-    content = profile.get("credentials", {}).get("kubeconfig")
-    if content:
-        target.touch(mode=0o600)
-        target.write_text(content)
-        print(f"Saved the {workspace}/{instance}/{group} profile in a private temporary file.")
-    else:
-        print(f"Ask the workspace operator for the {workspace}/{instance}/{group} kubeconfig.")
-        supplied = Path(input("Relative path to the supplied kubeconfig: ").strip())
-        if supplied.is_absolute() or not supplied.is_file():
-            directory.cleanup()
-            raise ValueError("Enter a relative path to the supplied kubeconfig file.")
-        target.touch(mode=0o600)
-        target.write_bytes(supplied.read_bytes())
+def workspace_kubeconfig(api, config, tokens, workspace, *, instance, group):
+    """Download one ready profile without printing its contents."""
+    url = f"{config['WORKSPACE_API_ENDPOINT']}/{quote(workspace, safe='')}"
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+    response = api.get(url, headers=headers, params={"resolve_connections": "none"})
+    response.raise_for_status()
+    matches = [
+        entry for entry in response.json().get("datalab", {}).get("connections", [])
+        if entry.get("type") == "vcluster" and entry.get("instance") == instance
+        and entry.get("group") == group and entry.get("ready")
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("The requested virtual cluster profile is not ready or unique.")
+    name = matches[0]["name"]
+    response = api.get(url, headers=headers, params={"resolve_connections": f"vcluster:{name}"})
+    response.raise_for_status()
+    connection = next(
+        entry for entry in response.json()["datalab"]["connections"]
+        if entry.get("type") == "vcluster" and entry.get("name") == name
+    )
+    kubeconfig = connection.get("credentials", {}).get("kubeconfig")
+    if not isinstance(kubeconfig, str) or not kubeconfig:
+        raise RuntimeError("The API did not return the requested kubeconfig.")
+    directory = tempfile.TemporaryDirectory(prefix="workspace-profile-")
+    target = Path(directory.name) / f"{instance}.kubeconfig"
+    target.touch(mode=0o600)
+    target.write_text(kubeconfig)
+    print(f"Downloaded {workspace}/{instance}/{group}; caller authentication is separate.")
     return directory, target
 
 
 class ApiSession(requests.Session):
     """Use a request timeout and stop redirects for API calls."""
+
+    def __init__(self):
+        super().__init__()
+        self.trust_env = False
 
     def request(self, method, url, **kwargs):
         kwargs.setdefault("timeout", 30)
@@ -265,16 +264,10 @@ class ApiSession(requests.Session):
         return super().request(method, url, **kwargs)
 
 
-def expect_status(response, expected):
-    if response.status_code != expected:
-        raise RuntimeError(f"Expected HTTP {expected}; received HTTP {response.status_code}.")
-    print(f"PASS (HTTP {expected})")
-
-
 def wait_for_workspace(api, url, headers, timeout=600, interval=10):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        response = api.get(url, headers=headers)
+        response = api.get(url, headers=headers() if callable(headers) else headers)
         response.raise_for_status()
         if response.status_code != 200:
             raise RuntimeError(f"Unexpected workspace status: HTTP {response.status_code}.")
@@ -414,7 +407,7 @@ def aws_cli(endpoint, workspace, token, region="us-east-1"):
         def command(*arguments):
             result = subprocess.run(
                 [executable, "--endpoint-url", endpoint, "--region", region, *arguments],
-                env=environment, capture_output=True, text=True,
+                env=environment, capture_output=True, text=True, check=False,
             )
             if result.returncode:
                 raise RuntimeError(f"AWS CLI failed: {result.stderr.strip()}")
@@ -426,107 +419,12 @@ def aws_cli(endpoint, workspace, token, region="us-east-1"):
             environment.clear()
 
 
-def require_environment(*names: str) -> None:
-    missing = [name for name in names if not os.getenv(name)]
-    if missing:
-        raise RuntimeError(
-            "Set these runtime settings before running this cell: "
-            f"{', '.join(missing)}"
-        )
-
-
-def run(
-    command: list[str],
-    *,
-    input_text: str | None = None,
-    attempts: int = 1,
-) -> subprocess.CompletedProcess:
-    for attempt in range(1, attempts + 1):
-        try:
-            completed = subprocess.run(
-                command,
-                input=input_text,
-                text=True,
-                check=True,
-                capture_output=True,
-            )
-            break
-        except subprocess.CalledProcessError as error:
-            if attempt < attempts:
-                time.sleep(2 ** (attempt - 1))
-                continue
-            detail = (error.stderr or error.stdout or "").strip()
-            raise RuntimeError(
-                f"Command failed ({' '.join(command)}): {detail}"
-            ) from error
-    if completed.stdout.strip():
-        print(completed.stdout.strip())
-    return completed
-
-
-def pipe(
-    first: list[str],
-    second: list[str],
-    *,
-    input_text: str | None = None,
-) -> None:
-    with subprocess.Popen(
-        first,
-        stdin=subprocess.PIPE if input_text is not None else None,
-        stdout=subprocess.PIPE,
-    ) as producer:
-        assert producer.stdout is not None
-        consumer = subprocess.Popen(
-            second,
-            stdin=producer.stdout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        producer.stdout.close()
-        if input_text is not None:
-            assert producer.stdin is not None
-            try:
-                producer.stdin.write(input_text.encode("utf-8"))
-            except BrokenPipeError:
-                pass
-            finally:
-                producer.stdin.close()
-        consumer_stdout, consumer_stderr = consumer.communicate()
-        producer_status = producer.wait()
-    if producer_status:
-        raise subprocess.CalledProcessError(producer_status, first)
-    if consumer.returncode:
-        detail = consumer_stderr.decode().strip()
-        raise RuntimeError(f"Command failed ({' '.join(second)}): {detail}")
-    if consumer_stdout:
-        print(consumer_stdout.decode().strip())
-
-
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def kubectl_apply(manifest: str, *, attempts: int = 5) -> None:
-    for attempt in range(1, attempts + 1):
-        completed = subprocess.run(
-            ["kubectl", "apply", "-f", "-"],
-            input=manifest,
-            text=True,
-            capture_output=True,
-        )
-        if completed.returncode == 0:
-            print(completed.stdout.strip())
-            return
-        if attempt < attempts:
-            time.sleep(2 ** (attempt - 1))
-    raise RuntimeError(
-        f"kubectl apply failed after {attempts} attempts: "
-        f"{completed.stderr.strip()}"
-    )
 
 
 def render_manifest(template: str, values: dict[str, str]) -> str:

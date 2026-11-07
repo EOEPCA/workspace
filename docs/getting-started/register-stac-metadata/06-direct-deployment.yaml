@@ -43,7 +43,7 @@ spec:
               && python /config/load.py
               && unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
               && exec python -m uvicorn
-              stac_fastapi.geoparquet.main:app
+              app:create_app --factory --app-dir /config
               --host 0.0.0.0
               --port 8000
               --root-path "${ROOT_PATH}"
@@ -56,6 +56,8 @@ spec:
               value: {{INDEX_SHA256}}
             - name: ROOT_PATH
               value: {{DIRECT_ROOT_PATH}}
+            - name: LOCAL_API_ORIGIN
+              value: {{DIRECT_API_ORIGIN}}
           envFrom: {{STORAGE_ENV_FROM}}
           ports:
             - name: http
