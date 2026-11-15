@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  namespace: stac-fastapi-pgstac
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: catalog}
+  template:
+    metadata:
+      labels: {app: catalog}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: api
+          image: ghcr.io/stac-utils/stac-fastapi-pgstac:7.2.1
+          command: [uvicorn, app:create_app, --app-dir, /scripts, --factory, --host, 0.0.0.0, --port, "8080"]
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: catalog-settings
+            - secretRef:
+                name: catalog-postgres
+          env:
+            - name: PGHOST
+              valueFrom:
+                secretKeyRef:
+                  name: managed-postgres
+                  key: host
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                  name: managed-postgres
+                  key: port
+            - {name: PGDATABASE, value: catalog}
+            - {name: PGSSLMODE, value: require}
+            - {name: ENABLE_TRANSACTIONS_EXTENSIONS, value: "true"}
+            - {name: STAC_FASTAPI_TITLE, value: Workspace sample catalog}
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            initialDelaySeconds: 3
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 512Mi}
+      volumes:
+        - name: scripts
+          configMap:
+            name: catalog-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+  namespace: stac-fastapi-pgstac
+spec:
+  selector: {app: catalog}
+  ports:
+    - {name: http, port: 8080, targetPort: http}

@@ -1,0 +1,25 @@
+// Render: dot -Tsvg data-flow.dot -o data-flow.svg
+digraph data_flow {
+    graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.4, ranksep=0.4];
+    node [shape=box, style="rounded,filled", fillcolor="#eff6ff",
+          color="#475569", fontname="DejaVu Sans", fontsize=12, margin="0.18,0.12"];
+    edge [color="#475569", fontname="DejaVu Sans", fontsize=10, arrowsize=0.8];
+
+    source [label="Sentinel-2 imagery\nSelect three scenes"];
+    crop [label="Crop around Vienna\nCOGs, PNG previews, STAC GeoParquet"];
+    login [label="Owner device login\nWorkspace API: get storage credentials", fillcolor="#fff7ed"];
+    storage [label="Upload through backing S3\nWorkspace public/ storage", fillcolor="#f0fdf4"];
+    catalogue [label="PackageR catalogue\nCollection and Item links"];
+    public [label="Public image downloads\nNo sign-in"];
+    s3 [label="Read-only Data S3 with owner token\nPython client and AWS CLI"];
+    checks [label="Compare downloaded files\nSHA-256 checksums"];
+
+    source -> crop -> storage;
+    login -> storage;
+    storage -> catalogue [label="catalog.parquet"];
+    catalogue -> public [label="Asset links"];
+    storage -> s3;
+    public -> checks;
+    s3 -> checks;
+    { rank=same; public; s3; }
+}

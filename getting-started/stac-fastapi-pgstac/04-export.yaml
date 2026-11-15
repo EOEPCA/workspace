@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: catalog-export
+  namespace: stac-fastapi-pgstac
+spec:
+  schedule: "0 * * * *"
+  timeZone: Etc/UTC
+  suspend: true
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          containers:
+            - name: export
+              image: python:3.13-slim
+              command:
+                - sh
+                - -ec
+                - >-
+                  pip install --quiet --no-cache-dir --target=/tmp/packages
+                  stac-geoparquet==0.8.3 boto3==1.43.117 requests==2.34.2 &&
+                  PYTHONPATH=/tmp/packages exec python /scripts/export.py
+              envFrom:
+                - secretRef:
+                    name: catalog-export-storage
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests: {cpu: 100m, memory: 256Mi}
+                limits: {memory: 1Gi}
+          volumes:
+            - name: scripts
+              configMap:
+                name: catalog-export
