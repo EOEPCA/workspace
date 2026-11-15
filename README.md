@@ -9,7 +9,8 @@ Start with [Workspace Management](docs/workspace-management.ipynb) to create a w
 cluster, delegate a namespace profile, and push a registry package. The other
 notebooks publish satellite images and serve STAC search.
 
-This repository contains the Helm charts, documentation, and examples. Deploy the Workspace API and UI separately from their source repository.
+This repository contains documentation, examples, and Educates dependency chart
+packaging. Deploy the Workspace API and UI separately from their source repository.
 
 - [Documentation](https://eoepca.readthedocs.io/projects/workspace/)
 - [Components and environment configuration](docs/getting-started/installation.md)
@@ -19,11 +20,6 @@ This repository contains the Helm charts, documentation, and examples. Deploy th
 - [Workspace API source](https://github.com/EOEPCA/rm-workspace-api/)
 
 ## Local checks
-
-```bash
-helm lint pipeline
-helm template workspace-pipeline pipeline
-```
 
 To build the documentation and check links within it:
 

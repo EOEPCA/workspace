@@ -31,13 +31,24 @@ notebooks use clusters configured under `spec.vclusters`; Workspace API
 supplies their kubeconfig profiles. These services run independently of
 browser sessions.
 
-The API and UI run as separate components from the composition packages. The pipeline chart installs the Storage and Datalab packages and their shared configuration. It does not deploy the Workspace API or UI.
+The API and UI run as separate components from the Composition packages.
+Install Storage and Datalab through native Crossplane Configuration resources.
+Multiple Storage backend packages share one Storage API package.
+Manage their EnvironmentConfig resources with Kubernetes manifests
+or GitOps.
+
+The separate Educates dependency chart supplies the Educates platform manifests.
+Its packaging remains in `dependencies/` and the release workflow.
 
 ## Shared configuration
 
 Use an `EnvironmentConfig` to apply common platform settings to workspaces. It holds the domain, IAM, storage, network, and default resource settings used by the compositions. A resource selects it with its environment annotation or label.
 
-The pipeline chart creates one EnvironmentConfig, named `datalab` by default. Educates has separate installation values for the session ingress domain, class, and TLS Secret. Those values must match the Datalab environment settings. See [installation](../getting-started/installation.md).
+The installation example uses an EnvironmentConfig named `datalab`. Other
+storage backends can use separate environments. Educates has separate
+installation values for the session ingress domain, class, and TLS Secret.
+Those values must match the Datalab environment settings. See
+[installation](../getting-started/installation.md).
 
 Crossplane updates resources from the declared configuration. An operator can use GitOps or the Workspace API to manage that configuration. Assign each field to one writer so the API and GitOps do not replace each other's changes.
 

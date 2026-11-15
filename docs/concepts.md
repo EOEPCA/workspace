@@ -144,7 +144,7 @@ The signing names are public identifiers. The token must include the workspace n
 
 The endpoint supports bucket and object listing, HEAD, GET, and byte-range GET. It rejects uploads and S3 query-presigned requests. S3 reads of `public/` objects still need a token; public-share links use a separate route.
 
-Operators enable S3 through the [environment configuration](getting-started/installation.md#1-set-the-environment). The Vienna notebook refreshes its device login before the S3 and AWS CLI steps and checks the downloaded files by SHA-256.
+Operators enable S3 through the [environment configuration](getting-started/installation.md#2-set-the-environment). The Vienna notebook refreshes its device login before the S3 and AWS CLI steps and checks the downloaded files by SHA-256.
 
 #### Automatic token renewal
 

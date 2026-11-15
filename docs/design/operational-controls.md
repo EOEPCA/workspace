@@ -53,7 +53,7 @@ Use a permanent Data address for downloads that must stay available when a compu
 
 Manage public routes in the host cluster. For a permanent Data address, the public load balancer must reach the selected Gateway listener, and that listener must terminate TLS. Storage can be ready before the Data workload and its route are ready.
 
-See [environment configuration](../getting-started/installation.md#1-set-the-environment) for routing values and [IAM integration](iam-integration.md#route-protection) for authentication.
+See [environment configuration](../getting-started/installation.md#2-set-the-environment) for routing values and [IAM integration](iam-integration.md#route-protection) for authentication.
 
 ## Persistent data
 

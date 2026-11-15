@@ -101,4 +101,4 @@ describes the underlying profiles, cache, and revocation limits.
 
 Protect the shared UI and session routes with the workspace roles in `resource_access`. A service owned by one workspace can use its confidential client and require the expected audience, client ID, and roles.
 
-Provider Datalab supplies OAuth protection for the permanent Data browser. Public-share routes allow anonymous downloads. The read-only Data S3 endpoint validates its own signed requests and bearer tokens. Configure the Data issuer URLs in the [installation values](../getting-started/installation.md).
+Provider Datalab supplies OAuth protection for the permanent Data browser. Public-share routes allow anonymous downloads. The read-only Data S3 endpoint validates its own signed requests and bearer tokens. Configure the Data issuer URLs in the [environment configuration](../getting-started/installation.md#2-set-the-environment).

@@ -1,6 +1,7 @@
 # Configure Workspace
 
-Follow the component guides for installation. The [EOEPCA+ deployment][deployment] links below use a fixed revision with the configuration examples.
+Follow the component guides for installation. The [EOEPCA+ deployment][deployment]
+links below use a fixed revision for the API, gateway, and Educates examples.
 
 ## Components
 
@@ -14,7 +15,7 @@ Follow the component guides for installation. The [EOEPCA+ deployment][deploymen
 | [Educates](https://docs.educates.dev/en/stable/installation-guides/installation-instructions.html) | Provides browser sessions, terminals, and editors. The notebooks use workspace vClusters instead. | [Pinned to 3.8.0][dependency-input]; no minimum stated. |
 | [Kyverno](https://kyverno.io/docs/installation/) | Enforces the selected Educates security policies. | [Bundled policies][educates-base] require 1.11.0 or later. Extra platform policies can require newer versions. |
 | [S3-compatible object storage][storage-guide] | Stores workspace data. | Backend supported by Provider Storage; no common minimum stated. |
-| [Provider Storage][storage-guide] | Creates buckets, storage identities, grants, and credential Secrets. | [`>= 0.4.0`][api-requirements] for the current Workspace API. |
+| [Provider Storage][storage-guide] | Creates buckets, storage identities, grants, and credential Secrets. | `>= 0.5.0`. |
 | [Provider Datalab][datalab-guide] | Creates membership, Data services, workspace vClusters, browser sessions, and managed services. | Documented API requirement: [`>= 0.12.0`][api-requirements]. This demo was checked with `0.12.0-rc.8`. |
 | [rm-workspace-api][api-setup] | Optional Workspace management UI, HTTP API, and token exchange. | No minimum stated; see the deployment's [image tag][api-deployment]. |
 | [Managed-store operators][datalab-guide] | Optional PostgreSQL, MongoDB, and Redis services. | See the provider guide's tested operator pins for enabled stores. |
@@ -22,13 +23,63 @@ Follow the component guides for installation. The [EOEPCA+ deployment][deploymen
 
 Install provider and function dependencies, namespaced ProviderConfigs, and RBAC through the provider guides. Pins and tested versions do not establish minimum versions.
 
+The release workflow packages the [Educates dependency input][dependency-input]
+as a Helm chart. Use the deployment's [Educates application][runtime-values]
+for its GitOps configuration.
+
 Without `rm-workspace-api`, create `Storage` and `Datalab` resources through Kubernetes or GitOps. You then have no Workspace management UI, Workspace HTTP API, or Workspace token-exchange endpoint. The notebook quickstart needs the API.
 
-## 1. Set the environment
+## 1. Install the Composition packages
 
-Adapt the deployment's [pipeline values][pipeline-values]: IAM URLs and realm, storage endpoint, ingress domain and certificate, Gateway listeners, and Pod and Service network ranges. For browser sessions, keep the [Educates ingress values][runtime-values] consistent. The [provider guide][datalab-guide] lists fields and defaults.
+Install one native Crossplane [Configuration package][configuration-guide]
+for each storage backend you need. Each backend depends on the shared Storage
+API package, which Crossplane installs once.
 
-The `workspace-pipeline` chart installs the configuration packages and creates the EnvironmentConfig. It copies `environmentconfig` into `EnvironmentConfig.data`, except for `name` and `annotations`. The example's prerelease package overrides differ from the [chart defaults][pipeline-defaults]. Keep exact pins in your deployment.
+Save these native resources as `configurations.yaml` in your GitOps repository,
+or apply them directly with `kubectl`:
+
+```yaml
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: storage-minio
+spec:
+  package: ghcr.io/versioneer-tech/provider-storage/minio:<storage-version>
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: datalab-educates
+spec:
+  package: ghcr.io/versioneer-tech/provider-datalab:<datalab-version>
+  skipDependencyResolution: true
+```
+
+Replace the version placeholders with exact release tags. Use the same release
+for all Storage backend packages. To add another backend, add a Configuration
+with its own name and backend package from the [storage guide][storage-guide].
+Keep Storage dependency resolution enabled so Crossplane can install its API
+package. The Datalab example uses the dependencies installed through its guide.
+
+```bash
+kubectl apply -f configurations.yaml
+kubectl get configurations,providers,functions
+```
+
+## 2. Set the environment
+
+Create a native `EnvironmentConfig` named `datalab`. Start with the
+[provider guide's environment example][datalab-guide] and save it as
+`environmentconfig.yaml`. Put the cluster settings under `data`: IAM URLs
+and realm, storage endpoint, ingress domain and certificate, Gateway listeners,
+and Pod and Service network ranges. The provider guide lists fields and
+defaults. For browser sessions, keep the [Educates ingress values][runtime-values]
+consistent. Enable only one of `ingress.enabled` and `httpRoute.enabled`;
+`httpRoute.enableS3` requires `httpRoute.enabled`.
+
+```bash
+kubectl apply -f environmentconfig.yaml
+```
 
 The example uses the EnvironmentConfig name `datalab`. Select it on each resource with an annotation or label:
 
@@ -39,7 +90,12 @@ The example uses the EnvironmentConfig name `datalab`. Select it on each resourc
 
 For resources created by Workspace API, set `PROVIDER_ENVIRONMENT=datalab`.
 
-## 2. Create a workspace
+For additional Storage backends, create their EnvironmentConfig resources as
+described in the [storage guide][storage-guide]. A Storage resource can use
+its backend's default environment, such as `storage-minio`, or select another
+environment with the key above.
+
+## 3. Create a workspace
 
 With Workspace API, configure its [deployment][api-deployment] and [accounts and roles](https://github.com/EOEPCA/workspace/tree/main/setup), then run [Workspace Management](../workspace-management.ipynb). It creates a workspace and waits for storage, Data, the virtual cluster, and the managed registry.
 
@@ -58,12 +114,11 @@ kubectl wait -n workspace --for=condition=Ready datalab/ws-example --timeout=300
 kubectl get storages,datalabs -n workspace
 ```
 
-## 3. Use the workspace
+## 4. Use the workspace
 
 With Workspace API, continue with the [quickstart](quickstart.md). The [notebook guide](../usage/notebook-guide.md) lists services needed for each example. For direct Kubernetes use, check Datalab status for service and session addresses.
 
 [deployment]: https://github.com/EOEPCA/eoepca-plus/tree/ae95041d7ab18e54fce4bf28691cfbe5c0f35b7c/argocd/eoepca/workspace
-[pipeline-values]: https://github.com/EOEPCA/eoepca-plus/blob/ae95041d7ab18e54fce4bf28691cfbe5c0f35b7c/argocd/eoepca/workspace/parts/app-workspace-pipeline.yaml
 [runtime-values]: https://github.com/EOEPCA/eoepca-plus/blob/ae95041d7ab18e54fce4bf28691cfbe5c0f35b7c/argocd/eoepca/workspace/parts/app-workspace-dependencies.yaml
 [api-deployment]: https://github.com/EOEPCA/eoepca-plus/blob/ae95041d7ab18e54fce4bf28691cfbe5c0f35b7c/argocd/eoepca/workspace/parts/app-workspace-api.yaml
 [gateway]: https://github.com/EOEPCA/eoepca-plus/tree/ae95041d7ab18e54fce4bf28691cfbe5c0f35b7c/argocd/infra/gateway
@@ -76,7 +131,7 @@ With Workspace API, continue with the [quickstart](quickstart.md). The [notebook
 [datalab-guide]: https://github.com/versioneer-tech/provider-datalab/blob/0.12.0-rc.8/docs/how-to-guides/installation.md
 [api-requirements]: https://github.com/EOEPCA/rm-workspace-api#set-up-workspace-api
 [api-setup]: https://github.com/EOEPCA/rm-workspace-api/blob/main/docs/setup.md
-[storage-example]: https://github.com/versioneer-tech/provider-storage/blob/0.4.0/examples/base/001-buckets.yaml
+[storage-example]: https://github.com/versioneer-tech/provider-storage/blob/main/examples/base/001-buckets.yaml
 [datalab-example]: https://github.com/versioneer-tech/provider-datalab/blob/0.12.0-rc.8/examples/base/001-lab.yaml
 [dependency-input]: https://github.com/EOEPCA/workspace/blob/main/dependencies/input.yaml
-[pipeline-defaults]: https://github.com/EOEPCA/workspace/blob/main/pipeline/values.yaml
+[configuration-guide]: https://docs.crossplane.io/latest/packages/configurations/
